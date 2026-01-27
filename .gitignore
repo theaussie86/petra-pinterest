@@ -1,21 +1,23 @@
-# Dependencies
-node_modules
 
 # Build output
-dist
-.vinxi
-
+# Dependencies
+# Editor
 # Environment variables
+# Logs
+# OS files
+*.local
+*.log
+.DS_Store
 .env
 .env.local
-
-# OS files
-.DS_Store
-
-# Editor
-.vscode
 .idea
-
-# Logs
-*.log
+.nitro
+.tanstack
+.vinxi
+.vscode
+.wrangler
+count.txt
+dist
+dist-ssr
+node_modules
 npm-debug.log*

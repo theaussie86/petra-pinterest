@@ -1,34 +1,41 @@
 {
   "name": "petra-pinterest",
-  "version": "0.1.0",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "vinxi dev",
-    "build": "vinxi build",
-    "start": "vinxi start"
+    "dev": "vite --port 3000",
+    "build": "vite build && tsc",
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@tanstack/react-start": "^1.118.1",
-    "@tanstack/react-router": "^1.118.1",
-    "@tanstack/react-query": "^5.62.11",
-    "@supabase/supabase-js": "^2.48.1",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "@supabase/supabase-js": "^2.49.0",
+    "@tailwindcss/vite": "^4.0.6",
+    "@tanstack/react-devtools": "^0.7.0",
+    "@tanstack/react-query": "^5.64.0",
+    "@tanstack/react-router": "^1.132.0",
+    "@tanstack/react-router-devtools": "^1.132.0",
+    "@tanstack/router-plugin": "^1.132.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.6.0"
+    "lucide-react": "^0.545.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "sonner": "^2.0.0",
+    "tailwind-merge": "^3.0.0",
+    "tailwindcss": "^4.0.6"
   },
   "devDependencies": {
-    "@tanstack/react-router-devtools": "^1.118.1",
-    "@tanstack/start": "^1.118.1",
-    "@vitejs/plugin-react": "^4.3.4",
-    "@tailwindcss/vite": "^4.0.0",
-    "vite": "^7.0.0",
-    "vite-tsconfig-paths": "^6.0.5",
-    "vinxi": "^0.5.4",
-    "typescript": "^5.7.3",
-    "tailwindcss": "^4.0.0",
-    "postcss": "^8.4.49",
-    "autoprefixer": "^10.4.20"
+    "@tanstack/devtools-vite": "^0.3.11",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.2.0",
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "jsdom": "^27.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.1.7",
+    "vitest": "^3.0.5",
+    "web-vitals": "^5.1.0"
   }
 }
