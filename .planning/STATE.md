@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 2 of 7 (Blog Project Management) — COMPLETE
-Plan: 5 of 5 in current phase
-Status: Verified ✓ (post gap closure)
-Last activity: 2026-01-27 — Phase 2 gap closure executed and verified
+Plan: 6 of 6 in current phase
+Status: Complete ✓ (all gaps closed)
+Last activity: 2026-01-27 — Completed 02-06 (post-delete navigation fix)
 
-Progress: [████░░░░░░] 31%
+Progress: [████░░░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: ~4.8min
-- Total execution time: ~0.88 hours
+- Total plans completed: 12
+- Average duration: ~4.5min
+- Total execution time: ~0.90 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
-| 2. Blog Project Management | 5 | ~14.5min | ~2.9min |
+| 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 
 **Recent Trend:**
-- Last 5 plans: 02-05 (2min), 02-04 (2min), 02-03 (5min), 02-02 (2min), 02-01 (3.5min)
+- Last 5 plans: 02-06 (1min), 02-05 (2min), 02-04 (2min), 02-03 (5min), 02-02 (2min)
 - Trend: Exceptional velocity on Phase 2 (sub-3min average)
 
 *Updated after each plan completion*
@@ -99,6 +99,10 @@ Recent decisions affecting current work:
 - Apply ensureProfile() in both getUser() and createBlogProject() — Comprehensive coverage eliminates race conditions, proactive profile creation
 - Handle race conditions with ON CONFLICT DO NOTHING + re-select — Allows graceful handling of concurrent profile creation attempts
 
+**From 02-06 (Post-Delete Navigation Fix):**
+- Navigation is a UI concern, not a data layer concern — Optional callback added to DeleteDialog component, not mutation hook
+- onDeleted callback is optional and backward-compatible — Dashboard doesn't need it (stays on dashboard), detail page uses it (navigates to dashboard)
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -118,9 +122,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Phase 2 gap closure complete and verified
+Stopped at: Completed 02-06-PLAN.md (post-delete navigation fix)
 Resume file: None
-Next: Plan Phase 3 (Blog Scraping & Articles)
+Next: Phase 2 fully complete — ready for Phase 3 (Blog Scraping & Articles)
 
 Config:
 {
