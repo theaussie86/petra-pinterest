@@ -7,7 +7,7 @@ export const Route = createRootRoute({
   component: () => (
     <>
       <Outlet />
-      <Toaster position="top-right" />
+      <Toaster richColors position="top-right" />
       <TanStackDevtools
         config={{
           position: 'bottom-right',
