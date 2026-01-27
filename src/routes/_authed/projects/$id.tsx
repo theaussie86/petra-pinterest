@@ -1,8 +1,8 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ExternalLink, FileText, Pin, ArrowLeft } from 'lucide-react'
 import { Header } from '@/components/layout/header'
-import { useBlogProject, useDeleteBlogProject } from '@/lib/hooks/use-blog-projects'
+import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { ProjectDialog } from '@/components/projects/project-dialog'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
 import { Button } from '@/components/ui/button'
@@ -15,9 +15,7 @@ export const Route = createFileRoute('/_authed/projects/$id')({
 function ProjectDetail() {
   const { user } = Route.useRouteContext()
   const { id } = Route.useParams()
-  const navigate = useNavigate()
   const { data: project, isLoading, error } = useBlogProject(id)
-  const deleteMutation = useDeleteBlogProject()
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -54,10 +52,6 @@ function ProjectDetail() {
     )
   }
 
-  const handleDeleteSuccess = async () => {
-    setDeleteDialogOpen(false)
-    await navigate({ to: '/dashboard' })
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -190,22 +184,12 @@ function ProjectDetail() {
         {/* Dialogs */}
         <ProjectDialog
           open={editDialogOpen}
-          onOpenChange={(open) => {
-            setEditDialogOpen(open)
-            if (!open) {
-              // Optional: refresh data after edit
-            }
-          }}
+          onOpenChange={setEditDialogOpen}
           project={project}
         />
         <DeleteDialog
           open={deleteDialogOpen}
-          onOpenChange={(open) => {
-            setDeleteDialogOpen(open)
-            if (!open && !deleteMutation.isPending) {
-              handleDeleteSuccess()
-            }
-          }}
+          onOpenChange={setDeleteDialogOpen}
           project={project}
         />
       </main>
