@@ -1,53 +1,53 @@
 ---
 phase: 02-blog-project-management
-verified: 2026-01-27T16:13:00Z
+verified: 2026-01-27T16:37:23Z
 status: passed
-score: 8/8 must-haves verified
+score: 11/11 must-haves verified
 re_verification:
   previous_status: passed
-  previous_score: 5/5
-  previous_gaps: "UAT revealed project creation failure for pre-migration users"
+  previous_verified: 2026-01-27T16:13:00Z
+  previous_score: 8/8
   gaps_closed:
-    - "User can create blog project even when profile was not auto-created by signup trigger"
-    - "createBlogProject() self-heals missing profiles via ensureProfile()"
-    - "getUser() proactively creates profiles via ensureProfile()"
+    - "After confirming delete on the project detail page, user is automatically navigated to /dashboard"
+    - "Deleting a project from the dashboard does NOT navigate away (user stays on dashboard)"
+    - "Delete still shows success toast and removes project from cache"
   gaps_remaining: []
   regressions: []
   new_must_haves:
-    - "ensureProfile() function exists and creates profiles on-demand"
-    - "ensure_profile_exists() RPC function defined with SECURITY DEFINER"
-    - "createBlogProject() uses ensureProfile() instead of raw .single() query"
+    - "DeleteDialog has optional onDeleted callback prop"
+    - "Project detail page passes navigation callback to DeleteDialog"
+    - "Dashboard DeleteDialog usage unchanged (no onDeleted prop)"
 ---
 
 # Phase 2: Blog Project Management — Re-Verification Report
 
 **Phase Goal:** Users can create and manage multiple blog projects with dashboard overview
 
-**Verified:** 2026-01-27T16:13:00Z
+**Verified:** 2026-01-27T16:37:23Z
 
 **Status:** PASSED
 
-**Re-verification:** Yes — after gap closure plan 02-05
+**Re-verification:** Yes — after gap closure plan 02-06 (post-delete navigation fix)
 
 ## Executive Summary
 
-**Re-verification after UAT failure and gap closure.**
+**Re-verification after gap closure plan 02-06** which fixed post-delete navigation behavior.
 
-Previous verification (2026-01-27T18:30:00Z) showed all code structures in place and marked as PASSED. However, UAT revealed critical runtime failure: project creation threw PGRST116 errors for users whose profiles were not auto-created by the signup trigger (pre-migration users). The verification had validated code structure but not the edge case of missing profiles.
+Previous verification (2026-01-27T16:13:00Z) passed after gap closure plan 02-05 (on-demand profile creation). UAT identified one remaining issue: Test 5 failed because deleting a project from the detail page did not navigate back to the dashboard, leaving the user on a stale page.
 
-**Gap closure plan 02-05** (commit 695c630) added on-demand profile creation via:
-1. `ensure_profile_exists()` RPC function (SECURITY DEFINER, bypasses RLS)
-2. `ensureProfile()` wrapper in auth.ts
-3. Integration in both `createBlogProject()` and `getUser()`
+**Gap closure plan 02-06** (commit 3802abe) fixed the navigation issue by:
+1. Adding optional `onDeleted?: () => void` callback prop to DeleteDialog
+2. Wiring navigation in project detail page via `useNavigate()` 
+3. Maintaining backward compatibility — dashboard DeleteDialog unchanged
 
-**Result:** All 8 must-haves now verified (5 original + 3 gap closure). The phase goal is fully achieved for all users, including pre-migration users.
+**Result:** All 11 must-haves now verified (5 original Phase 2 + 3 from plan 02-05 + 3 from plan 02-06). The phase goal is fully achieved. All CRUD operations work correctly with proper navigation behavior.
 
 ## Re-Verification Context
 
-**Previous verification status:** PASSED (code structure verified)
-**UAT results:** 2/7 tests passed, 2 failed, 3 blocked
-**Root cause:** createBlogProject() queried profiles with `.single()`, throwing when profile missing
-**Gap closure:** Plan 02-05 executed, commit 695c630
+**Previous verification status:** PASSED (after plan 02-05)
+**Previous score:** 8/8 must-haves
+**UAT Test 5 failure:** Deleting project from detail page left user on stale page
+**Gap closure:** Plan 02-06 executed, commit 3802abe
 **This verification:** Confirms gap closure + validates no regressions
 
 ## Goal Achievement
@@ -56,16 +56,19 @@ Previous verification (2026-01-27T18:30:00Z) showed all code structures in place
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | User can create blog project with name, URL, and scraping settings | ✓ VERIFIED | ProjectDialog component with React Hook Form + Zod validation submits via useCreateBlogProject hook. createBlogProject() now calls ensureProfile() (line 33) which creates missing profiles via RPC, then inserts with tenant_id. Works for all users. |
-| 2 | User can view list of all their blog projects | ✓ VERIFIED | Dashboard route uses useBlogProjects hook → getBlogProjects API (Supabase SELECT with RLS). Projects render in responsive CSS Grid. Empty state when no projects. No changes from gap closure. |
-| 3 | User can edit blog project details | ✓ VERIFIED | ProjectCard edit button → ProjectDialog edit mode. All 4 fields editable. useUpdateBlogProject → updateBlogProject API. Cache invalidation on success. No changes from gap closure. |
-| 4 | User can delete blog projects | ✓ VERIFIED | DeleteDialog → useDeleteBlogProject → deleteBlogProject API. Cache invalidation + toast. Detail page navigates to dashboard after delete. No changes from gap closure. |
-| 5 | Dashboard displays overview statistics | ✓ VERIFIED | StatsBar component renders 3 stat cards (Scheduled, Published, Pending). Hard-coded to 0 for Phase 2. Structure ready for real data. No changes from gap closure. |
-| 6 | ensureProfile() creates profiles on-demand for missing profiles | ✓ VERIFIED | ensureProfile() function in auth.ts (lines 45-50). Calls supabase.rpc('ensure_profile_exists'). Returns { tenant_id }. Error handling for RPC failures. Used in createBlogProject (line 33) and getUser (line 85). |
-| 7 | ensure_profile_exists() RPC function handles race conditions | ✓ VERIFIED | Migration 00003_ensure_profile.sql defines RPC with SECURITY DEFINER. SELECT → INSERT (ON CONFLICT DO NOTHING) → SELECT pattern handles concurrent requests. Returns TABLE(tenant_id UUID). |
-| 8 | All write operations work for users without existing profiles | ✓ VERIFIED | createBlogProject() uses ensureProfile() which self-heals missing profiles. getUser() also uses ensureProfile(), creating profiles proactively during auth guard check. Profile creation happens before first write operation. |
+| 1 | User can create blog project with name, URL, and scraping settings | ✓ VERIFIED | ProjectDialog component with React Hook Form + Zod validation submits via useCreateBlogProject hook. createBlogProject() calls ensureProfile() (line 33) then inserts with tenant_id. Works for all users. No changes from plan 02-06. |
+| 2 | User can view list of all their blog projects | ✓ VERIFIED | Dashboard route uses useBlogProjects hook → getBlogProjects API (Supabase SELECT with RLS). Projects render in responsive CSS Grid. Empty state when no projects. No changes from plan 02-06. |
+| 3 | User can edit blog project details | ✓ VERIFIED | ProjectCard edit button → ProjectDialog edit mode. All 4 fields editable. useUpdateBlogProject → updateBlogProject API. Cache invalidation on success. No changes from plan 02-06. |
+| 4 | User can delete blog projects | ✓ VERIFIED | DeleteDialog → useDeleteBlogProject → deleteBlogProject API. Cache invalidation + toast. **NEW: Detail page navigates to dashboard after delete via onDeleted callback (line 195 of $id.tsx). Dashboard stays in place (no onDeleted passed, lines 104-111 of dashboard.tsx).** |
+| 5 | Dashboard displays overview statistics | ✓ VERIFIED | StatsBar component renders 3 stat cards (Scheduled, Published, Pending). Hard-coded to 0 for Phase 2. Structure ready for real data. No changes from plan 02-06. |
+| 6 | ensureProfile() creates profiles on-demand for missing profiles | ✓ VERIFIED | ensureProfile() function in auth.ts (lines 45-50). Calls supabase.rpc('ensure_profile_exists'). Returns { tenant_id }. Error handling for RPC failures. Used in createBlogProject (line 33) and getUser (line 85). No changes from plan 02-06. |
+| 7 | ensure_profile_exists() RPC function handles race conditions | ✓ VERIFIED | Migration 00003_ensure_profile.sql defines RPC with SECURITY DEFINER. SELECT → INSERT (ON CONFLICT DO NOTHING) → SELECT pattern handles concurrent requests. Returns TABLE(tenant_id UUID). No changes from plan 02-06. |
+| 8 | All write operations work for users without existing profiles | ✓ VERIFIED | createBlogProject() uses ensureProfile() which self-heals missing profiles. getUser() also uses ensureProfile(), creating profiles proactively during auth guard check. No changes from plan 02-06. |
+| 9 | After confirming delete on the project detail page, user is automatically navigated to /dashboard | ✓ VERIFIED | Project detail page ($id.tsx) line 19: imports useNavigate. Line 195: passes `onDeleted={() => navigate({ to: '/dashboard' })}` to DeleteDialog. DeleteDialog line 29 calls `onDeleted?.()` after successful mutation. Navigation happens after delete completes. |
+| 10 | Deleting a project from the dashboard does NOT navigate away (user stays on dashboard) | ✓ VERIFIED | Dashboard DeleteDialog usage (lines 104-111 of dashboard.tsx) only passes `open`, `onOpenChange`, and `project` props. No `onDeleted` prop passed. User remains on dashboard after deletion. Backward compatible with plan 02-06 changes. |
+| 11 | Delete still shows success toast and removes project from cache | ✓ VERIFIED | useDeleteBlogProject hook (lines 92-105 of use-blog-projects.ts) handles onSuccess with toast.success('Project deleted') and queryClient.invalidateQueries. No changes from plan 02-06 — mutation hook unchanged. Toast + cache invalidation work for both dashboard and detail page deletions. |
 
-**Score:** 8/8 truths verified (5 original + 3 gap closure)
+**Score:** 11/11 truths verified (5 original + 3 from plan 02-05 + 3 from plan 02-06)
 
 ### Required Artifacts
 
@@ -73,26 +76,31 @@ Previous verification (2026-01-27T18:30:00Z) showed all code structures in place
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/routes/_authed/dashboard.tsx` | Main dashboard with project grid, stats bar, create button | ✓ VERIFIED | 116 lines. No changes from gap closure. All original functionality intact. |
-| `src/components/projects/project-dialog.tsx` | Create/Edit modal with React Hook Form + Zod validation | ✓ VERIFIED | 212 lines. No changes from gap closure. Form validation unchanged. |
-| `src/components/projects/delete-dialog.tsx` | Delete confirmation dialog | ✓ VERIFIED | 69 lines. No changes from gap closure. |
-| `src/components/dashboard/stats-bar.tsx` | Global statistics summary bar | ✓ VERIFIED | 52 lines. No changes from gap closure. Hard-coded 0s with comment intact. |
-| `src/components/dashboard/project-card.tsx` | Individual project card | ✓ VERIFIED | 92 lines. No changes from gap closure. |
-| `src/components/dashboard/empty-state.tsx` | Empty state with CTA | ✓ VERIFIED | 24 lines. No changes from gap closure. |
-| `src/routes/_authed/projects/$id.tsx` | Project detail page | ✓ VERIFIED | 199 lines. No changes from gap closure. |
-| `src/types/blog-projects.ts` | TypeScript types | ✓ VERIFIED | 27 lines. No changes from gap closure. |
-| `src/lib/hooks/use-blog-projects.ts` | TanStack Query hooks | ✓ VERIFIED | 106 lines. No changes from gap closure. Optimistic updates + cache invalidation intact. |
-| `supabase/migrations/00002_blog_projects.sql` | Database schema with RLS | ✓ VERIFIED | 102 lines. No changes from gap closure. |
+| `src/routes/_authed/dashboard.tsx` | Main dashboard with project grid, stats bar, create button | ✓ VERIFIED | 116 lines. No changes from plan 02-06. DeleteDialog usage unchanged (lines 104-111). All original functionality intact. |
+| `src/components/projects/project-dialog.tsx` | Create/Edit modal with React Hook Form + Zod validation | ✓ VERIFIED | 212 lines. No changes from plan 02-06. Form validation unchanged. |
+| `src/components/dashboard/stats-bar.tsx` | Global statistics summary bar | ✓ VERIFIED | 52 lines. No changes from plan 02-06. Hard-coded 0s with comment intact. |
+| `src/components/dashboard/project-card.tsx` | Individual project card | ✓ VERIFIED | 92 lines. No changes from plan 02-06. |
+| `src/components/dashboard/empty-state.tsx` | Empty state with CTA | ✓ VERIFIED | 24 lines. No changes from plan 02-06. |
+| `src/types/blog-projects.ts` | TypeScript types | ✓ VERIFIED | 27 lines. No changes from plan 02-06. |
+| `src/lib/hooks/use-blog-projects.ts` | TanStack Query hooks | ✓ VERIFIED | 106 lines. **No changes from plan 02-06 — mutation hook unchanged (plan correctly kept navigation in UI layer).** Optimistic updates + cache invalidation intact. |
+| `supabase/migrations/00002_blog_projects.sql` | Database schema with RLS | ✓ VERIFIED | 102 lines. No changes from plan 02-06. |
 
-#### Gap Closure Artifacts (New)
+#### Gap Closure 02-05 Artifacts (No Regressions)
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/lib/auth.ts` | ensureProfile() function with RPC call | ✓ VERIFIED | 125 lines (+7 exports). ensureProfile() at lines 45-50. Calls supabase.rpc('ensure_profile_exists'). Error handling: throws on RPC error or empty data. Returns { tenant_id: data[0].tenant_id }. getUser() updated (lines 84-106) to use ensureProfile(). |
-| `src/lib/api/blog-projects.ts` | createBlogProject() using ensureProfile() | ✓ VERIFIED | 93 lines (reduced from 100, -7 lines from removing .single() query). Import ensureProfile on line 2. Lines 32-33: replaced raw profile query with `const { tenant_id } = await ensureProfile()`. Comment explains pre-migration users. |
-| `supabase/migrations/00003_ensure_profile.sql` | SECURITY DEFINER RPC function | ✓ VERIFIED | 40 lines. CREATE OR REPLACE FUNCTION ensure_profile_exists() RETURNS TABLE(tenant_id UUID). SECURITY DEFINER allows profile insert bypassing RLS. SELECT → INSERT (ON CONFLICT DO NOTHING) → SELECT pattern. Handles race conditions. Uses auth.uid() for current user. |
+| `src/lib/auth.ts` | ensureProfile() function with RPC call | ✓ VERIFIED | 126 lines. No changes from plan 02-06. ensureProfile() at lines 45-50. getUser() uses ensureProfile() at line 85. |
+| `src/lib/api/blog-projects.ts` | createBlogProject() using ensureProfile() | ✓ VERIFIED | 94 lines. No changes from plan 02-06. Import ensureProfile on line 2. Line 33 calls ensureProfile(). |
+| `supabase/migrations/00003_ensure_profile.sql` | SECURITY DEFINER RPC function | ✓ VERIFIED | 40 lines. No changes from plan 02-06. |
 
-**All artifacts exist, substantive (not stubs), and properly wired. No regressions from gap closure.**
+#### Gap Closure 02-06 Artifacts (New)
+
+| Artifact | Expected | Status | Details |
+|----------|----------|--------|---------|
+| `src/components/projects/delete-dialog.tsx` | Optional onDeleted callback prop, called after successful deletion | ✓ VERIFIED | 71 lines (+2 from previous). Line 17: `onDeleted?: () => void` added to interface. Line 20: destructures onDeleted from props. Line 29: calls `onDeleted?.()` after successful mutateAsync. Call order: `await mutateAsync` → `onOpenChange(false)` → `onDeleted?.()`. No changes to mutation hook call or error handling. |
+| `src/routes/_authed/projects/$id.tsx` | Navigation callback passed to DeleteDialog | ✓ VERIFIED | 201 lines (+2 from previous). Line 1: imports `useNavigate` from @tanstack/react-router. Line 19: calls `const navigate = useNavigate()`. Line 195: passes `onDeleted={() => navigate({ to: '/dashboard' })}` to DeleteDialog. Wired correctly. |
+
+**All artifacts exist, substantive (not stubs), and properly wired. No regressions from gap closure 02-06.**
 
 ### Key Link Verification
 
@@ -102,7 +110,7 @@ Previous verification (2026-01-27T18:30:00Z) showed all code structures in place
 |------|----|----|--------|---------|
 | Dashboard → Data Layer | src/lib/hooks/use-blog-projects.ts | useBlogProjects hook | ✓ WIRED | No changes. Dashboard line 20, destructures data/isLoading/error/refetch. |
 | Project Dialog → Mutations | src/lib/hooks/use-blog-projects.ts | useCreateBlogProject, useUpdateBlogProject | ✓ WIRED | No changes. Line 22 imports, lines 103/111 call mutations. |
-| Delete Dialog → Mutation | src/lib/hooks/use-blog-projects.ts | useDeleteBlogProject | ✓ WIRED | No changes. Line 10 import, line 26 calls mutation. |
+| Delete Dialog → Mutation | src/lib/hooks/use-blog-projects.ts | useDeleteBlogProject | ✓ WIRED | No changes. Line 10 import, line 27 calls mutation (updated line number after onDeleted addition). |
 | Hooks → API Layer | src/lib/api/blog-projects.ts | API functions as queryFn/mutationFn | ✓ WIRED | No changes. All 5 API functions used in hooks. |
 | API Layer → Supabase | src/lib/supabase.ts | supabase client | ✓ WIRED | No changes. All functions use supabase.from('blog_projects'). |
 | API Layer → Types | src/types/blog-projects.ts | BlogProject types | ✓ WIRED | No changes. Line 2 imports all types. |
@@ -110,14 +118,22 @@ Previous verification (2026-01-27T18:30:00Z) showed all code structures in place
 | App Root → TanStack Query | @tanstack/react-query | QueryClientProvider | ✓ WIRED | No changes. main.tsx wraps app. |
 | Root Route → Toast System | sonner | Toaster component | ✓ WIRED | No changes. __root.tsx renders Toaster. |
 
-#### New Gap Closure Links
+#### Gap Closure 02-05 Links (No Regressions)
 
 | From | To | Via | Status | Details |
 |------|----|----|--------|---------|
-| createBlogProject → ensureProfile | src/lib/auth.ts | ensureProfile() call | ✓ WIRED | blog-projects.ts line 2 imports ensureProfile. Line 33 calls `const { tenant_id } = await ensureProfile()`. Replaces previous .single() query (lines 31-39 removed). Comment on line 32 explains purpose. |
-| getUser → ensureProfile | src/lib/auth.ts | ensureProfile() call | ✓ WIRED | auth.ts line 85 calls `const { tenant_id } = await ensureProfile()` inside try block. Fallback catch block (lines 98-106) returns empty tenant_id if ensureProfile fails. |
-| ensureProfile → RPC Function | supabase | supabase.rpc() call | ✓ WIRED | auth.ts line 46: `await supabase.rpc('ensure_profile_exists')`. Error handling lines 47-48. Data validation line 48. Return line 49 accesses data[0].tenant_id (RPC returns TABLE). |
-| RPC Function → Profiles Table | public.profiles | INSERT with ON CONFLICT | ✓ WIRED | Migration 00003 lines 22-31: INSERT INTO public.profiles (id, display_name). Uses auth.uid() for id. COALESCE for display_name from user metadata or email. ON CONFLICT (id) DO NOTHING handles race conditions. Line 34-36 re-SELECT after insert. |
+| createBlogProject → ensureProfile | src/lib/auth.ts | ensureProfile() call | ✓ WIRED | No changes. blog-projects.ts line 2 imports ensureProfile. Line 33 calls it. |
+| getUser → ensureProfile | src/lib/auth.ts | ensureProfile() call | ✓ WIRED | No changes. auth.ts line 85 calls ensureProfile. |
+| ensureProfile → RPC Function | supabase | supabase.rpc() call | ✓ WIRED | No changes. auth.ts line 46 calls RPC. |
+| RPC Function → Profiles Table | public.profiles | INSERT with ON CONFLICT | ✓ WIRED | No changes. Migration 00003 handles race conditions. |
+
+#### New Gap Closure 02-06 Links
+
+| From | To | Via | Status | Details |
+|------|----|----|--------|---------|
+| DeleteDialog → Parent Component | onDeleted callback | Optional callback prop | ✓ WIRED | delete-dialog.tsx line 17: interface defines `onDeleted?: () => void`. Line 20: destructures from props. Line 29: calls `onDeleted?.()` after successful mutation. Pattern: `await mutateAsync` → `onOpenChange(false)` → `onDeleted?.()`. |
+| Project Detail Page → Dashboard | TanStack Router navigate | useNavigate hook | ✓ WIRED | $id.tsx line 1: imports useNavigate. Line 19: calls `const navigate = useNavigate()`. Line 195: passes `onDeleted={() => navigate({ to: '/dashboard' })}` to DeleteDialog. Navigation triggered after deletion succeeds. |
+| Dashboard → DeleteDialog | No onDeleted prop | Backward compatibility | ✓ WIRED | dashboard.tsx lines 104-111: DeleteDialog usage only passes `open`, `onOpenChange`, `project`. No `onDeleted` prop. Optional callback pattern ensures no regression — dashboard stays in place after deletion. |
 
 **All critical links verified. New links properly integrated without breaking existing wiring.**
 
@@ -127,14 +143,14 @@ Requirements from ROADMAP.md mapped to Phase 2:
 
 | Requirement | Status | Implementation |
 |-------------|--------|----------------|
-| BLOG-01: Create blog project with name, URL, scraping settings | ✓ SATISFIED | ProjectDialog → useCreateBlogProject → createBlogProject → **ensureProfile()** → insert with tenant_id. **Now works for all users.** |
-| BLOG-02: View list of all blog projects | ✓ SATISFIED | Dashboard → useBlogProjects → getBlogProjects. No changes from gap closure. |
-| BLOG-03: Edit blog project details | ✓ SATISFIED | ProjectDialog edit mode → useUpdateBlogProject → updateBlogProject. No changes from gap closure. |
-| BLOG-04: Delete blog projects | ✓ SATISFIED | DeleteDialog → useDeleteBlogProject → deleteBlogProject. No changes from gap closure. |
-| BLOG-05: Scraping frequency setting | ✓ SATISFIED | scraping_frequency field in DB + dialog + badge. No changes from gap closure. |
-| DASH-01: Dashboard overview statistics | ✓ SATISFIED | StatsBar with 3 stat cards. Hard-coded to 0 for Phase 2. No changes from gap closure. |
+| BLOG-01: Create blog project with name, URL, scraping settings | ✓ SATISFIED | ProjectDialog → useCreateBlogProject → createBlogProject → ensureProfile() → insert with tenant_id. Works for all users including pre-migration users. No changes from plan 02-06. |
+| BLOG-02: View list of all blog projects | ✓ SATISFIED | Dashboard → useBlogProjects → getBlogProjects. No changes from plan 02-06. |
+| BLOG-03: Edit blog project details | ✓ SATISFIED | ProjectDialog edit mode → useUpdateBlogProject → updateBlogProject. No changes from plan 02-06. |
+| BLOG-04: Delete blog projects | ✓ SATISFIED | DeleteDialog → useDeleteBlogProject → deleteBlogProject. **Enhanced with context-aware navigation: detail page navigates to dashboard, dashboard stays in place. Gap closure plan 02-06 completed.** |
+| BLOG-05: Scraping frequency setting | ✓ SATISFIED | scraping_frequency field in DB + dialog + badge. No changes from plan 02-06. |
+| DASH-01: Dashboard overview statistics | ✓ SATISFIED | StatsBar with 3 stat cards. Hard-coded to 0 for Phase 2. No changes from plan 02-06. |
 
-**All 6 requirements satisfied. BLOG-01 now has stronger implementation covering edge cases.**
+**All 6 requirements satisfied. BLOG-04 now has complete implementation with proper post-delete navigation.**
 
 ### Anti-Patterns Found
 
@@ -144,86 +160,85 @@ Requirements from ROADMAP.md mapped to Phase 2:
 | src/components/dashboard/project-card.tsx | 14-19 | Hard-coded zero stats | ℹ️ INFO | Expected for Phase 2. Same rationale. Not a blocker. |
 | src/components/dashboard/stats-bar.tsx | 34-36 | Empty onClick handler | ℹ️ INFO | Comment states "Navigation wired in future phases". Not a blocker. |
 
-**No TODO, FIXME, XXX, or HACK patterns in src/lib/ (verified via grep).**
+**No TODO, FIXME, XXX, or HACK patterns in modified files (verified via grep).**
 
-**No blocking anti-patterns. All INFO items are intentional Phase 2 placeholders with explanatory comments. No new anti-patterns introduced by gap closure.**
+**No blocking anti-patterns. All INFO items are intentional Phase 2 placeholders with explanatory comments. No new anti-patterns introduced by gap closure 02-06.**
 
-### Gap Closure Verification
+### Gap Closure 02-06 Verification
 
-**Previous gap (from 02-UAT.md):**
-> "createBlogProject() queries profiles table with .single() to get tenant_id. If user signed up before the auto-profile trigger migration was applied, no profile row exists. .single() throws PGRST116 (0 rows), which propagates as the error toast."
+**Previous gap (from UAT Test 5):**
+> "Deleting a project from the detail page (/projects/:id) leaves the user on a stale page showing 'Project not found' instead of navigating back to the dashboard."
 
-**Fix implemented (from 02-05-PLAN.md):**
-1. ✓ Created `ensure_profile_exists()` RPC function with SECURITY DEFINER
-2. ✓ Added `ensureProfile()` wrapper in auth.ts
-3. ✓ Updated `createBlogProject()` to use `ensureProfile()` instead of `.single()` query
-4. ✓ Updated `getUser()` to use `ensureProfile()` for proactive profile creation
+**Fix implemented (from 02-06-PLAN.md):**
+1. ✓ Added optional `onDeleted?: () => void` callback to DeleteDialog
+2. ✓ Wired `useNavigate()` in project detail page
+3. ✓ Passed navigation callback to DeleteDialog: `onDeleted={() => navigate({ to: '/dashboard' })}`
+4. ✓ Maintained backward compatibility — dashboard DeleteDialog unchanged
 
 **Verification of fix:**
 
 **Level 1: Existence**
-- ✓ supabase/migrations/00003_ensure_profile.sql exists (40 lines)
-- ✓ ensureProfile() function exists in auth.ts (lines 45-50)
-- ✓ Import and usage in blog-projects.ts (lines 2, 33)
-- ✓ Integration in getUser() (line 85)
+- ✓ `onDeleted?: () => void` prop exists in DeleteDialog interface (line 17)
+- ✓ `onDeleted?.()` call exists in handleDelete (line 29)
+- ✓ `useNavigate` imported in $id.tsx (line 1)
+- ✓ Navigation callback passed to DeleteDialog (line 195)
 
 **Level 2: Substantive**
-- ✓ RPC function has real logic (SELECT → INSERT → SELECT pattern, 40 lines)
-- ✓ ensureProfile() has error handling (lines 47-48)
-- ✓ No stub patterns (no TODO, return null, empty implementations)
-- ✓ Proper exports and typing (returns Promise<{ tenant_id: string }>)
+- ✓ Callback prop properly typed as optional (TypeScript compilation clean)
+- ✓ Call order correct: `await mutateAsync` → `onOpenChange(false)` → `onDeleted?.()` (lines 27-29)
+- ✓ Navigation callback uses correct TanStack Router syntax: `navigate({ to: '/dashboard' })`
+- ✓ Dashboard usage unchanged (no onDeleted prop passed, lines 104-111)
+- ✓ No stub patterns (no TODO, empty implementations, or placeholders)
 
 **Level 3: Wired**
-- ✓ RPC function uses SECURITY DEFINER (bypasses RLS as required)
-- ✓ ensureProfile() imported in blog-projects.ts (line 2)
-- ✓ Called in createBlogProject before insert (line 33)
-- ✓ Called in getUser for proactive creation (line 85)
-- ✓ tenant_id result used in INSERT statement (line 40 of blog-projects.ts)
+- ✓ DeleteDialog callback invoked after successful deletion (line 29 inside try block)
+- ✓ Project detail page navigation callback wired (line 195)
+- ✓ Dashboard DeleteDialog backward compatible (no onDeleted prop)
+- ✓ Mutation hook unchanged (toast + cache invalidation still work)
+- ✓ Build succeeds with zero TypeScript errors
 
-**Race condition handling:**
-- ✓ ON CONFLICT (id) DO NOTHING in RPC (line 31 of migration)
-- ✓ Re-SELECT after insert to get tenant_id from winner (lines 34-36 of migration)
-- ✓ Error handling for all RPC failure modes (lines 47-48 of auth.ts)
+**Backward compatibility:**
+- ✓ Optional callback pattern (`onDeleted?: () => void`) ensures no breaking changes
+- ✓ Dashboard DeleteDialog works without passing onDeleted (verified lines 104-111)
+- ✓ Mutation hook logic unchanged (navigation separated from data operations)
 
-**Fix status:** COMPLETE. All planned changes implemented and wired correctly.
+**Fix status:** COMPLETE. All planned changes implemented and wired correctly. No regressions.
 
 ### Build Verification
 
 ```bash
-npx tsc --noEmit
-# ✓ PASSED — no TypeScript errors
-
-npx vite build
-# ✓ PASSED — built in 2.22s
-# Output: 11 chunks, main bundle 505.75 kB (gzip: 149.66 kB)
+npm run build
+# ✓ PASSED — built in 2.05s
+# Output: 11 chunks, main bundle 505.75 kB (gzip: 149.67 kB)
+# Warning: chunk size > 500kB (expected, not a blocker)
+# No TypeScript errors
 ```
 
-**No build errors. TypeScript compilation clean. Production build succeeds.**
+**TypeScript compilation clean. Production build succeeds. No errors.**
 
 ### Commit Verification
 
 ```bash
 git log --oneline | head -5
-# 95b9b3c docs(02-05): complete profile creation gap closure plan
-# 695c630 fix(02-05): add on-demand profile creation for missing profiles  ← GAP CLOSURE COMMIT
-# 9a1ffb9 docs(02): diagnose UAT gaps and plan fix for missing profile on create
-# 1a3d71d docs(02): create gap closure plan for project creation failure
+# 37d2a54 docs(02-06): complete post-delete navigation fix plan
+# 3802abe feat(02-06): add post-delete navigation from project detail page  ← GAP CLOSURE COMMIT
+# 412c73f docs(02): diagnose delete redirect gap and plan fix (02-06)
+# 28153a1 docs(02): create gap closure plan for post-delete navigation
+# 0b682df test(02): complete UAT - 4 passed, 1 issue
 ```
 
-**Gap closure commit 695c630:**
-- Created ensure_profile_exists() RPC function (SECURITY DEFINER)
-- Added ensureProfile() wrapper in auth.ts
-- Updated createBlogProject() to use ensureProfile()
-- Updated getUser() to use ensureProfile()
-- 3 files changed: +73 insertions, -26 deletions
+**Gap closure commit 3802abe:**
+- Added optional `onDeleted` callback to DeleteDialog
+- Wired `useNavigate` in project detail page
+- Passed navigation callback to DeleteDialog
+- 2 files changed: +4 insertions, -1 deletions
+- Clean, minimal change following separation of concerns
 
 **Commit message clearly documents change purpose and Co-Authored-By attribution.**
 
 ## Human Verification Required
 
-The following tests require manual execution to fully verify goal achievement. These are the **same tests from the original verification**, plus one new test for the gap closure fix.
-
-### Original Tests (Should Still Pass)
+The following tests require manual execution to fully verify goal achievement. These are the **updated tests from the original verification**, with Test 5 now expected to pass.
 
 ### 1. Create Project Flow
 **Test:** 
@@ -255,7 +270,7 @@ The following tests require manual execution to fully verify goal achievement. T
 
 **Why human:** Multi-step interaction, cache update timing.
 
-### 3. Delete Project Flow
+### 3. Delete Project from Dashboard
 **Test:**
 1. From dashboard, click Trash (delete) icon on a project card
 2. Confirm deletion in dialog
@@ -264,11 +279,27 @@ The following tests require manual execution to fully verify goal achievement. T
 - Dialog closes
 - Toast notification "Project deleted" appears
 - Project card disappears from grid
+- **User remains on dashboard (no navigation)**
 - If last project deleted, empty state appears
 
-**Why human:** Deletion confirmation flow and grid update timing.
+**Why human:** Deletion confirmation flow and grid update timing. **Updated to verify user stays on dashboard.**
 
-### 4. Project Detail Page Navigation
+### 4. Delete Project from Detail Page (Gap Closure 02-06)
+**Test:**
+1. From dashboard, click on a project card to navigate to detail page (/projects/:id)
+2. Click "Delete Project" button
+3. Confirm deletion in dialog
+
+**Expected:**
+- Dialog closes
+- Toast notification "Project deleted" appears
+- **User is automatically navigated back to /dashboard**
+- Project no longer appears in dashboard project grid
+- No "Project not found" page shown
+
+**Why human:** Multi-step navigation flow. **This is the new test for gap closure 02-06 — previously failed, should now pass.**
+
+### 5. Project Detail Page Navigation
 **Test:**
 1. From dashboard, click anywhere on a project card (not edit/delete buttons)
 2. Verify detail page loads at /projects/:id
@@ -281,7 +312,7 @@ The following tests require manual execution to fully verify goal achievement. T
 
 **Why human:** Full-page navigation and layout rendering.
 
-### 5. Empty State Experience
+### 6. Empty State Experience
 **Test:**
 1. Delete all projects (or use fresh account)
 2. View dashboard
@@ -294,7 +325,7 @@ The following tests require manual execution to fully verify goal achievement. T
 
 **Why human:** Empty state appearance and CTA interaction.
 
-### 6. Responsive Layout
+### 7. Responsive Layout
 **Test:**
 1. View dashboard on desktop (>1024px)
 2. Resize to tablet (768-1024px)
@@ -308,7 +339,7 @@ The following tests require manual execution to fully verify goal achievement. T
 
 **Why human:** Responsive breakpoints and visual layout.
 
-### 7. Form Validation
+### 8. Form Validation
 **Test:**
 1. Open create dialog
 2. Leave name empty, enter invalid URL "not-a-url"
@@ -321,9 +352,7 @@ The following tests require manual execution to fully verify goal achievement. T
 
 **Why human:** Inline validation appearance.
 
-### New Test for Gap Closure
-
-### 8. Pre-Migration User Project Creation
+### 9. Pre-Migration User Project Creation (Gap Closure 02-05)
 **Test:**
 1. **Simulate pre-migration user:** Manually DELETE your profile row from profiles table via Supabase Studio SQL editor:
    ```sql
@@ -342,47 +371,49 @@ The following tests require manual execution to fully verify goal achievement. T
 
 **Why human:** This tests the exact edge case that caused UAT failure. Cannot be verified programmatically without database manipulation and multi-step observation.
 
-**Critical:** This test verifies the fix works for the scenario that previously failed in UAT.
+**Critical:** This test verifies the fix from plan 02-05 works for users without profiles.
 
 ## Result
 
-**Status:** PASSED (Re-verification after gap closure)
+**Status:** PASSED (Re-verification after gap closure 02-06)
 
 **Confidence:** HIGH
 
-- All original code structures intact (no regressions)
-- Gap closure implementation complete and wired correctly
+- All original code structures intact (no regressions from plan 02-06)
+- Gap closure 02-06 implementation complete and wired correctly
+- Gap closure 02-05 implementation still functioning (no regressions)
 - TypeScript compiles cleanly
 - Production build succeeds
-- All 8 must-haves verified (5 original + 3 new)
+- All 11 must-haves verified (5 original + 3 from plan 02-05 + 3 from plan 02-06)
 - No blocking anti-patterns
-- Human verification test suite expanded to include gap closure scenario
+- Human verification test suite updated with new Test 4 for post-delete navigation
 
 **Blockers for next phase:** NONE
 
-**Gap closure effectiveness:**
-- ✓ createBlogProject() no longer throws PGRST116 for users without profiles
-- ✓ ensureProfile() self-heals missing profiles before write operations
-- ✓ getUser() proactively creates profiles during auth guard check
-- ✓ Race condition handling via ON CONFLICT DO NOTHING pattern
-- ✓ SECURITY DEFINER allows profile creation bypassing RLS restrictions
+**Gap closure 02-06 effectiveness:**
+- ✓ Project detail page navigates to /dashboard after successful deletion
+- ✓ Dashboard stays in place after deletion (backward compatible)
+- ✓ Toast and cache invalidation still work for both contexts
+- ✓ Navigation callback pattern clean and reusable
+- ✓ Separation of concerns maintained (navigation in UI, not data layer)
 
 **Recommendations:**
 
-1. **Run UAT Test Suite Again:** Execute all 7 UAT tests from 02-UAT.md. Tests 2-6 were previously blocked by the profile creation failure. They should now pass.
+1. **Run UAT Test Suite Again:** Execute all 9 UAT tests (updated). Test 4 (delete from detail page) should now pass. All tests expected to pass.
 
-2. **Run Gap Closure Test (Test 8):** Manually test the pre-migration user scenario to confirm the fix works in production.
+2. **Verify Navigation Behavior:** Manually test both deletion contexts:
+   - Delete from dashboard → user stays on dashboard
+   - Delete from detail page → user navigates to dashboard
 
-3. **Monitor for edge cases:** While the fix handles missing profiles, monitor for any other profile-related edge cases during Phase 3.
+3. **Phase 2 Complete:** With both gap closures verified, Phase 2 is fully complete and ready for Phase 3 (Blog Scraping & Articles).
 
-4. **Consider migration script:** If there are known pre-migration users, consider a one-time script to pre-create their profiles rather than relying on on-demand creation. (Optional — on-demand works fine.)
-
-**Phase goal achieved:** Users CAN create and manage multiple blog projects with dashboard overview. **All users, including pre-migration users, can successfully create projects.** All success criteria met through verified implementation. Gap closure successful with no regressions.
+**Phase goal achieved:** Users CAN create and manage multiple blog projects with dashboard overview. All CRUD operations work correctly with proper context-aware navigation. All success criteria met through verified implementation. Both gap closures successful with no regressions.
 
 ---
 
-**Verified:** 2026-01-27T16:13:00Z  
+**Verified:** 2026-01-27T16:37:23Z  
 **Verifier:** Claude (gsd-verifier)  
-**Verification Method:** Re-verification after gap closure — three-level artifact verification (existence, substance, wiring) + regression testing + gap closure validation  
-**Previous Verification:** 2026-01-27T18:30:00Z (initial, pre-UAT)  
-**Gap Closure Plan:** 02-05-PLAN.md (executed, commit 695c630)
+**Verification Method:** Re-verification after gap closure 02-06 — three-level artifact verification (existence, substance, wiring) + regression testing + gap closure validation  
+**Previous Verification:** 2026-01-27T16:13:00Z (after plan 02-05)  
+**Gap Closure Plan:** 02-06-PLAN.md (executed, commit 3802abe)  
+**Changes from Previous:** +3 must-haves (post-delete navigation), +2 artifacts (delete-dialog.tsx, $id.tsx modified), +3 key links (onDeleted callback wiring), Test 4 updated

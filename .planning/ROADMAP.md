@@ -58,7 +58,7 @@ Plans:
 - [x] 02-03-PLAN.md — Dashboard UI with project grid, stats bar, create/edit/delete dialogs
 - [x] 02-04-PLAN.md — Project detail page with metadata, actions, and future-phase placeholders
 - [x] 02-05-PLAN.md — Fix project creation failure: on-demand profile creation for pre-migration users (gap closure)
-- [ ] 02-06-PLAN.md — Fix post-delete navigation: redirect to dashboard after project deletion from detail page (gap closure)
+- [x] 02-06-PLAN.md — Fix post-delete navigation: redirect to dashboard after project deletion from detail page (gap closure)
 
 ### Phase 3: Blog Scraping & Articles
 **Goal**: Users can automatically scrape blog articles and view synchronized Pinterest boards
@@ -143,7 +143,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
-| 2. Blog Project Management | 5/6 | Gap closure | - |
+| 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
 | 3. Blog Scraping & Articles | 0/? | Not started | - |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
