@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 2 of 7 (Blog Project Management)
-Plan: 2 of 4 in current phase
+Plan: 4 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-27 — Completed 02-02-PLAN.md
+Last activity: 2026-01-27 — Completed 02-04-PLAN.md
 
-Progress: [██░░░░░░░░] 23%
+Progress: [███░░░░░░░] 27%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: ~6min
-- Total execution time: ~0.75 hours
+- Total plans completed: 8
+- Average duration: ~5.5min
+- Total execution time: ~0.8 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
-| 2. Blog Project Management | 2 | ~5.5min | ~2.75min |
+| 2. Blog Project Management | 3 | ~7.5min | ~2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (2min), 02-01 (3.5min), 01-05 (1min), 01-04 (10min), 01-03 (20min)
-- Trend: Exceptional velocity on Phase 2 data layer setup
+- Last 5 plans: 02-04 (2min), 02-02 (2min), 02-01 (3.5min), 01-05 (1min), 01-04 (10min)
+- Trend: Exceptional velocity continues on Phase 2 UI layer
 
 *Updated after each plan completion*
 
@@ -83,6 +83,11 @@ Recent decisions affecting current work:
 - Optimistic update only on create mutation — Update/delete don't benefit as much from optimistic UX, keeps code simpler
 - Graceful degradation in checkProjectRelatedData — blog_articles and pins tables don't exist yet, returns {0,0} when tables missing
 
+**From 02-04 (Project Detail Page):**
+- Use TanStack Router file-based routing for dynamic project ID parameter — Consistent with existing route patterns, type-safe params access
+- Handle delete navigation override with onSuccess callback — Need to navigate to dashboard after delete, override default mutation behavior
+- Include placeholder sections for Articles and Pins — Communicate future functionality, set user expectations
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -102,9 +107,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 02-02-PLAN.md
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
-Next: Execute 02-03-PLAN.md (Blog Projects UI components)
+Next: Phase 2 complete (02-03 parallel execution may still be in progress)
 
 Config:
 {
