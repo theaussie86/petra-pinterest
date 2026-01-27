@@ -21,3 +21,4 @@ dist
 dist-ssr
 node_modules
 npm-debug.log*
+supabase/.temp/
