@@ -66,11 +66,12 @@ Users can efficiently schedule Pinterest pins for multiple blogs from a single c
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| TanStack Start over Next.js | User preference, modern stack | — Pending |
+| TanStack Start over Next.js | User preference, modern stack | Done — SPA mode active |
+| Start SPA mode first, SSR later | Safe migration from Router SPA; all client-side code works unchanged | Done — `spa: { enabled: true }` |
 | Keep n8n for Pinterest API | Pinterest OAuth complexity, don't block v1 | — Pending |
 | Keep granular pin statuses | Preserve existing workflow, simplify later if needed | — Pending |
 | Blog scraping in-app | Less n8n complexity, better user control | — Pending |
 | AI metadata in-app | Direct integration, faster iteration | — Pending |
 
 ---
-*Last updated: 2026-01-26 after initialization*
+*Last updated: 2026-01-27 after TanStack Start migration*

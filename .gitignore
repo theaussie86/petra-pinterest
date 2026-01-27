@@ -17,6 +17,7 @@
 .vscode
 .wrangler
 count.txt
+.output
 dist
 dist-ssr
 node_modules

@@ -16,19 +16,21 @@ function AuthCallback() {
     // We just need to listen for the auth state change
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          // Successfully signed in
+        if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
+          // Successfully signed in (INITIAL_SESSION fires if tokens were
+          // processed before this listener was set up during hydration)
           toast.success('Signed in successfully')
-          // Navigate to dashboard
           navigate({ to: '/dashboard' })
-        } else if (event === 'SIGNED_OUT' || !session) {
-          // Auth failed
+        } else if (event === 'SIGNED_OUT') {
+          // Explicit sign-out during callback — treat as failure
           setStatus('error')
           toast.error('Authentication failed')
           setTimeout(() => {
             navigate({ to: '/login' })
           }, 2000)
         }
+        // INITIAL_SESSION with null session is ignored — tokens may still
+        // be processing, wait for SIGNED_IN to follow
       }
     )
 

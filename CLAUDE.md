@@ -6,29 +6,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Petra Pinterest is a multi-tenant Pinterest scheduling dashboard for managing pins across multiple blog projects. It replaces an existing Airtable + n8n workflow. Pinterest API publishing and board syncing remain in n8n for v1; this app handles data management, blog scraping, AI metadata, and the calendar UI.
 
-**Status:** Phase 2 of 7 complete. See `.planning/STATE.md` for current position and `.planning/ROADMAP.md` for the full plan.
+**Status:** Phase 3 of 7 complete. See `.planning/STATE.md` for current position and `.planning/ROADMAP.md` for the full plan.
 
 ## Commands
 
 ```bash
 npm run dev        # Start dev server on port 3000
-npm run build      # Production build (vite build + tsc)
+npm run build      # Production build (vite build)
+npm run start      # Run production server (node .output/server/index.mjs)
 npm run preview    # Preview production build
 npm test           # Run tests (vitest)
 ```
 
-No lint script is configured. TypeScript checking happens as part of `npm run build`.
-
 ## Tech Stack
 
-- **Framework:** React 19 SPA with TanStack Router (file-based routing) + Vite 7
+- **Framework:** TanStack Start (SPA mode) + TanStack Router (file-based routing) + Vite 7
 - **Language:** TypeScript (strict mode)
 - **Styling:** Tailwind CSS v4 + shadcn/ui ("new-york" style)
 - **Server state:** TanStack Query v5 (30s default staleTime)
 - **Forms:** React Hook Form + Zod v4
 - **Backend:** Supabase (Postgres, Auth, Storage)
 - **Auth:** Google OAuth via Supabase Auth (client-side only)
-- **Path alias:** `@/` maps to `./src/`
+- **Path alias:** `@/` maps to `./src/` (resolved by `vite-tsconfig-paths`)
 
 ## Architecture
 
@@ -40,11 +39,20 @@ Components → TanStack Query hooks (`src/lib/hooks/`) → API functions (`src/l
 - Optimistic updates on create mutations only
 - Errors displayed via Sonner toasts
 
+### Entry Points (TanStack Start)
+
+- `src/router.tsx` — Router factory (`getRouter()`), exports router config and type registration
+- `src/client.tsx` — Client entry, hydrates the document with `StartClient`
+- `src/server.ts` — Server entry, creates the Start handler with stream support
+- `src/routes/__root.tsx` — Full HTML document shell (`<html>`, `<head>`, `<body>`), hosts `QueryClientProvider`, `HeadContent`, and `Scripts`
+
+SPA mode is enabled (`spa: { enabled: true }` in vite.config.ts). All routing and rendering happens client-side. SSR can be enabled per-route later.
+
 ### Routing
 
 TanStack Router with file-based routes in `src/routes/`. The route tree is auto-generated in `src/routeTree.gen.ts` — never edit it manually.
 
-- `__root.tsx` — Root layout (Toaster, devtools)
+- `__root.tsx` — HTML document shell + root layout (QueryClientProvider, Toaster, devtools)
 - `_authed.tsx` — Auth guard layout, all protected routes live under `_authed/`
 - `_authed/dashboard.tsx`, `_authed/projects/$id.tsx` — Protected pages
 - `auth.callback.tsx` — OAuth redirect handler
@@ -81,7 +89,7 @@ Migrations live in `supabase/migrations/` and are applied via Supabase CLI or MC
 - **New tables** must include `tenant_id` and RLS policies before any data access
 - **Form validation:** React Hook Form + Zod schemas. For complex optional fields (like RSS URL), use manual validation in `onSubmit` rather than fighting Zod's `.optional()` inference with react-hook-form
 - **Create vs edit dialogs:** Single component, mode detected by presence of existing data prop
-- **Route generation:** TanStack Router CLI auto-generates `routeTree.gen.ts` on file changes during dev
+- **Route generation:** TanStack Start's built-in router plugin auto-generates `routeTree.gen.ts` on file changes during dev
 - **No foreign keys to profiles.tenant_id** — it lacks a unique constraint; RLS enforces the relationship instead
 
 ## Environment Variables

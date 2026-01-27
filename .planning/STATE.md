@@ -44,8 +44,8 @@ Progress: [█████░░░░░] 43%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- TanStack Router SPA over TanStack Start — Start had Vite 7 dependency conflicts; Router SPA via create-tsrouter-app works with same file-based routing
-- Path alias @/ instead of ~/ — Matches official template convention
+- Migrated from TanStack Router SPA to TanStack Start (SPA mode) — Vite 7 conflicts resolved; Start unlocks server functions and SSR capability while `spa: { enabled: true }` keeps all client-side code working unchanged
+- Path alias @/ instead of ~/ — Matches official template convention; now resolved by `vite-tsconfig-paths` instead of manual Vite alias
 - Keep n8n for Pinterest API — Pinterest OAuth complexity, don't block v1
 - Keep granular pin statuses — Preserve existing workflow
 - Blog scraping in-app — Less n8n complexity, better user control
@@ -126,6 +126,15 @@ Recent decisions affecting current work:
 - HTML sanitization removes script, style, iframe, object, embed tags and event handlers — Protects against XSS attacks from scraped content
 - Tailwind Typography prose classes for article content — Professional long-form content styling
 - Archive action navigates back to project detail page — Consistent navigation pattern with project delete
+
+**From TanStack Start Migration (between Phase 3 and 4):**
+- Entry points: `src/main.tsx` + `index.html` replaced by `src/router.tsx` (getRouter factory) + `src/client.tsx` (hydrateRoot) + `src/server.ts` (Start handler)
+- `__root.tsx` is now the full HTML document shell (`<html>`, `<head>`, `<body>`) with `HeadContent` and `Scripts` — replaces `index.html`
+- `QueryClientProvider` moved from deleted `main.tsx` into `__root.tsx`
+- CSS import (`styles.css`) moved from deleted `main.tsx` into `__root.tsx`
+- Vite config: `tanstackStart()` replaces both `tanstackRouter()` and `viteReact()`; `tsConfigPaths()` replaces manual `resolve.alias`
+- Auth callback: must handle both `SIGNED_IN` and `INITIAL_SESSION` events — `hydrateRoot` timing means Supabase may process URL tokens before the `onAuthStateChange` listener is registered
+- Build output: `.output/` directory (added to `.gitignore`), production server via `node .output/server/index.mjs`
 
 ### Pending Todos
 
