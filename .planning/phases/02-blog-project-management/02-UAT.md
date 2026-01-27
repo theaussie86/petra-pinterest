@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-blog-project-management
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md]
 started: 2026-01-27T12:00:00Z
-updated: 2026-01-27T12:05:00Z
+updated: 2026-01-27T12:10:00Z
 ---
 
 ## Current Test
@@ -62,13 +62,27 @@ skipped: 3
   reason: "User reported: Das Modal kommt und ich kann name und url eingeben. wenn ich create drücke kommt ein Fehler Toast, das das projekt nicht erstellt werden konnte."
   severity: major
   test: 2
-  artifacts: []
-  missing: []
+  root_cause: "createBlogProject() queries profiles table with .single() to get tenant_id. If user signed up before the auto-profile trigger migration was applied, no profile row exists. .single() throws PGRST116 (0 rows), which propagates as the error toast. getUser() in auth.ts masks this with a fallback, but the API layer has no such fallback."
+  artifacts:
+    - path: "src/lib/api/blog-projects.ts"
+      issue: "Lines 32-38: .single() on profiles query throws when profile missing, no fallback"
+    - path: "src/lib/auth.ts"
+      issue: "Lines 78-86: getUser() has fallback for missing profile, masking the problem"
+    - path: "supabase/migrations/00001_initial_schema.sql"
+      issue: "Lines 62-83: handle_new_user() trigger only fires for users created AFTER migration"
+  missing:
+    - "On-demand profile creation in createBlogProject when profile not found"
+  debug_session: ".planning/debug/create-project-failure.md"
 
 - truth: "Dashboard shows project card grid with stats after project creation"
   status: failed
   reason: "User reported: no because the project is not being created."
   severity: major
   test: 3
-  artifacts: []
-  missing: []
+  root_cause: "Same root cause as test 2 — project creation fails, so no projects exist to display in the grid"
+  artifacts:
+    - path: "src/lib/api/blog-projects.ts"
+      issue: "createBlogProject fails, blocking all downstream features"
+  missing:
+    - "Fix createBlogProject (see test 2 root cause)"
+  debug_session: ".planning/debug/create-project-failure.md"
