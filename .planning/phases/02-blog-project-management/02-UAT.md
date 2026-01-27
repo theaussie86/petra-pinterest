@@ -1,9 +1,9 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-blog-project-management
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md]
 started: 2026-01-27T17:00:00Z
-updated: 2026-01-27T17:10:00Z
+updated: 2026-01-27T17:12:00Z
 ---
 
 ## Current Test
@@ -49,7 +49,15 @@ skipped: 0
   reason: "User reported: confirmation dialog pops up and confirming deletes the projct, but i am not being redirected to dashboard after that."
   severity: major
   test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "DeleteDialog has no onDeleted/onSuccess callback prop. Project detail page passes no navigation callback and doesn't use useNavigate(). The mutation hook only toasts + invalidates cache — navigation was never implemented."
+  artifacts:
+    - path: "src/components/projects/delete-dialog.tsx"
+      issue: "No onDeleted/onSuccess callback prop to signal parent of successful deletion"
+    - path: "src/routes/_authed/projects/$id.tsx"
+      issue: "No useNavigate() hook, no navigation callback passed to DeleteDialog"
+    - path: "src/lib/hooks/use-blog-projects.ts"
+      issue: "useDeleteBlogProject onSuccess only toasts and invalidates, no navigation"
+  missing:
+    - "Add onDeleted callback prop to DeleteDialog, call after successful mutateAsync"
+    - "In project detail page, pass callback that navigates to /dashboard via useNavigate()"
+  debug_session: ".planning/debug/delete-no-redirect.md"
