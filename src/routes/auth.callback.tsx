@@ -19,8 +19,8 @@ function AuthCallback() {
         if (event === 'SIGNED_IN' && session) {
           // Successfully signed in
           toast.success('Signed in successfully')
-          // Navigate to index for now - dashboard route will be created in 01-04
-          navigate({ to: '/' })
+          // Navigate to dashboard
+          navigate({ to: '/dashboard' })
         } else if (event === 'SIGNED_OUT' || !session) {
           // Auth failed
           setStatus('error')
