@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Security** - Multi-tenant auth and database setup with RLS
 - [x] **Phase 2: Blog Project Management** - CRUD for blog projects and dashboard
-- [ ] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management
+- [x] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management
 - [ ] **Phase 4: Pin Management** - Complete pin CRUD with image upload and status workflow
 - [ ] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [ ] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
@@ -75,9 +75,9 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md — Database schema (blog_articles table + RLS) and scrape Edge Function
-- [ ] 03-02-PLAN.md — Articles data layer (types, API functions, TanStack Query hooks)
-- [ ] 03-03-PLAN.md — Articles list UI (sortable table, scrape button, manual add dialog)
-- [ ] 03-04-PLAN.md — Article detail page with content rendering
+- [x] 03-02-PLAN.md — Articles data layer (types, API functions, TanStack Query hooks)
+- [x] 03-03-PLAN.md — Articles list UI (sortable table, scrape button, manual add dialog)
+- [x] 03-04-PLAN.md — Article detail page with content rendering
 
 ### Phase 4: Pin Management
 **Goal**: Users can create, edit, and manage pins with image upload and status workflow
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
-| 3. Blog Scraping & Articles | 1/4 | In progress | - |
+| 3. Blog Scraping & Articles | 4/4 | Complete | 2026-01-27 |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |

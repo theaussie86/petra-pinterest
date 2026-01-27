@@ -19,9 +19,9 @@ Progress: [████░░░░░░] 42%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: ~3.8min
-- Total execution time: ~0.97 hours
+- Total plans completed: 16
+- Average duration: ~3.7min
+- Total execution time: ~1.0 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████░░░░░░] 42%
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
-| 3. Blog Scraping & Articles | 4 | ~7.5min | ~1.9min |
+| 3. Blog Scraping & Articles | 4 | ~10.5min | ~2.6min |
 
 **Recent Trend:**
-- Last 5 plans: 03-04 (2min), 03-02 (1.5min), 03-01 (2min), 02-06 (1min), 02-05 (2min)
-- Trend: Exceptional velocity maintained (sub-2min average continues)
+- Last 5 plans: 03-03 (3min), 03-04 (2min), 03-02 (1.5min), 03-01 (2min), 02-06 (1min)
+- Trend: Exceptional velocity maintained (Phase 3 completed in 10.5min total)
 
 *Updated after each plan completion*
 
@@ -115,6 +115,12 @@ Recent decisions affecting current work:
 - No ensureProfile() in article read operations — Articles are read-only from client (writes happen server-side via Edge Function)
 - Broad invalidation ['articles'] for archive/restore — Covers both active and archived lists with single invalidation
 - Scrape response feedback with exact counts — Toast shows found/created/updated to give users visibility into results
+
+**From 03-03 (Articles List UI):**
+- Client-side sorting on fetched data — Articles are per-project (small datasets), no server-side sorting needed yet
+- Use shadcn/ui Tabs for Active/Archived toggle — Consistent with existing shadcn patterns, accessible keyboard navigation
+- 3-second success state timeout for scrape button — Gives users time to see result summary before returning to normal
+- Inline + toast errors for scrape button — CONTEXT.md specifies inline errors near action, toast provides additional notification
 
 **From 03-04 (Article Detail Page):**
 - HTML sanitization removes script, style, iframe, object, embed tags and event handlers — Protects against XSS attacks from scraped content
