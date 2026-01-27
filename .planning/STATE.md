@@ -10,27 +10,27 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 1 of 7 (Foundation & Security)
-Plan: 1 of 4 in current phase
-Status: In progress
-Last activity: 2026-01-27 — Completed 01-02-PLAN.md (Database schema with multi-tenant RLS)
+Plan: 2 of 4 in current phase
+Status: In progress (Wave 1 complete, executing Wave 2)
+Last activity: 2026-01-27 — Completed 01-01-PLAN.md (TanStack Router project init) and 01-02-PLAN.md (Database schema with RLS)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 2min
-- Total execution time: 0.03 hours
+- Total plans completed: 2
+- Average duration: ~3min
+- Total execution time: ~0.1 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Security | 1 | 2min | 2min |
+| 1. Foundation & Security | 2 | ~6min | ~3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2min)
+- Last 5 plans: 01-02 (2min), 01-01 (4min)
 - Trend: N/A (need 3+ plans)
 
 *Updated after each plan completion*
@@ -42,7 +42,8 @@ Progress: [█░░░░░░░░░] 10%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- TanStack Start over Next.js — User preference, modern stack
+- TanStack Router SPA over TanStack Start — Start had Vite 7 dependency conflicts; Router SPA via create-tsrouter-app works with same file-based routing
+- Path alias @/ instead of ~/ — Matches official template convention
 - Keep n8n for Pinterest API — Pinterest OAuth complexity, don't block v1
 - Keep granular pin statuses — Preserve existing workflow
 - Blog scraping in-app — Less n8n complexity, better user control
@@ -71,8 +72,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-27 05:17:37 UTC
-Stopped at: Completed 01-02-PLAN.md (Database schema with multi-tenant RLS)
+Last session: 2026-01-27
+Stopped at: Wave 1 complete (01-01 + 01-02), executing Wave 2 (01-03)
 Resume file: None
 
 Config:
