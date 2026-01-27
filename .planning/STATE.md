@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 3 of 7 (Blog Scraping & Articles) — IN PROGRESS
-Plan: 2 of 4 in current phase
-Status: In progress (plan 03-02 complete)
-Last activity: 2026-01-27 — Completed 03-02 (articles data layer)
+Plan: 4 of 4 in current phase
+Status: Phase complete (plan 03-04 complete)
+Last activity: 2026-01-27 — Completed 03-04 (article detail page)
 
-Progress: [████░░░░░░] 39%
+Progress: [████░░░░░░] 42%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: ~3.9min
-- Total execution time: ~0.95 hours
+- Total plans completed: 15
+- Average duration: ~3.8min
+- Total execution time: ~0.97 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████░░░░░░] 39%
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
-| 3. Blog Scraping & Articles | 2 | ~3.5min | ~1.8min |
+| 3. Blog Scraping & Articles | 4 | ~7.5min | ~1.9min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (1.5min), 03-01 (2min), 02-06 (1min), 02-05 (2min), 02-04 (2min)
-- Trend: Exceptional velocity maintained (sub-2min average for last 5)
+- Last 5 plans: 03-04 (2min), 03-02 (1.5min), 03-01 (2min), 02-06 (1min), 02-05 (2min)
+- Trend: Exceptional velocity maintained (sub-2min average continues)
 
 *Updated after each plan completion*
 
@@ -116,6 +116,11 @@ Recent decisions affecting current work:
 - Broad invalidation ['articles'] for archive/restore — Covers both active and archived lists with single invalidation
 - Scrape response feedback with exact counts — Toast shows found/created/updated to give users visibility into results
 
+**From 03-04 (Article Detail Page):**
+- HTML sanitization removes script, style, iframe, object, embed tags and event handlers — Protects against XSS attacks from scraped content
+- Tailwind Typography prose classes for article content — Professional long-form content styling
+- Archive action navigates back to project detail page — Consistent navigation pattern with project delete
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -135,9 +140,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 03-02-PLAN.md (articles data layer)
+Stopped at: Completed 03-04-PLAN.md (article detail page)
 Resume file: None
-Next: Continue Phase 3 with 03-03 (Articles UI)
+Next: Phase 3 complete — ready for Phase 4 (AI Metadata)
 
 Config:
 {
