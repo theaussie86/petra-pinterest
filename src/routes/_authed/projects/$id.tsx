@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ExternalLink, FileText, Pin, ArrowLeft } from 'lucide-react'
+import { ExternalLink, FileText, Pin, ArrowLeft, Plus } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { ProjectDialog } from '@/components/projects/project-dialog'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
+import { ArticlesTable } from '@/components/articles/articles-table'
+import { ScrapeButton } from '@/components/articles/scrape-button'
+import { AddArticleDialog } from '@/components/articles/add-article-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 
@@ -20,6 +23,7 @@ function ProjectDetail() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [addArticleDialogOpen, setAddArticleDialogOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -141,46 +145,41 @@ function ProjectDetail() {
           </Button>
         </div>
 
-        {/* Content sections */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Articles placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-slate-400" />
-                Articles
-              </CardTitle>
-              <CardDescription>Blog posts from your RSS feed</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <FileText className="h-12 w-12 text-slate-300 mb-3" />
-                <p className="text-sm text-slate-500">
-                  Articles will appear here once blog scraping is set up
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Pins placeholder */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Pin className="h-5 w-5 text-slate-400" />
-                Pins
-              </CardTitle>
-              <CardDescription>Pinterest content for this blog</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <Pin className="h-12 w-12 text-slate-300 mb-3" />
-                <p className="text-sm text-slate-500">
-                  Pins will appear here once you start creating content
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Articles section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Articles
+            </h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setAddArticleDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-1" /> Add Article
+              </Button>
+              <ScrapeButton blogProjectId={id} blogUrl={project.blog_url} rssUrl={project.rss_url} />
+            </div>
+          </div>
+          <ArticlesTable projectId={id} />
         </div>
+
+        {/* Pins placeholder */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Pin className="h-5 w-5 text-slate-400" />
+              Pins
+            </CardTitle>
+            <CardDescription>Pinterest content for this blog</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <Pin className="h-12 w-12 text-slate-300 mb-3" />
+              <p className="text-sm text-slate-500">
+                Pins will appear here once you start creating content
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Dialogs */}
         <ProjectDialog
@@ -193,6 +192,11 @@ function ProjectDetail() {
           onOpenChange={setDeleteDialogOpen}
           project={project}
           onDeleted={() => navigate({ to: '/dashboard' })}
+        />
+        <AddArticleDialog
+          open={addArticleDialogOpen}
+          onOpenChange={setAddArticleDialogOpen}
+          projectId={id}
         />
       </main>
     </div>
