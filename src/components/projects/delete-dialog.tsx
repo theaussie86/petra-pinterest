@@ -14,9 +14,10 @@ interface DeleteDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   project: BlogProject | null
+  onDeleted?: () => void
 }
 
-export function DeleteDialog({ open, onOpenChange, project }: DeleteDialogProps) {
+export function DeleteDialog({ open, onOpenChange, project, onDeleted }: DeleteDialogProps) {
   const deleteMutation = useDeleteBlogProject()
 
   const handleDelete = async () => {
@@ -25,6 +26,7 @@ export function DeleteDialog({ open, onOpenChange, project }: DeleteDialogProps)
     try {
       await deleteMutation.mutateAsync(project.id)
       onOpenChange(false)
+      onDeleted?.()
     } catch (error) {
       // Error toast is handled by the mutation hook
       console.error('Failed to delete project:', error)

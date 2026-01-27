@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ExternalLink, FileText, Pin, ArrowLeft } from 'lucide-react'
 import { Header } from '@/components/layout/header'
@@ -16,6 +16,7 @@ function ProjectDetail() {
   const { user } = Route.useRouteContext()
   const { id } = Route.useParams()
   const { data: project, isLoading, error } = useBlogProject(id)
+  const navigate = useNavigate()
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -191,6 +192,7 @@ function ProjectDetail() {
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           project={project}
+          onDeleted={() => navigate({ to: '/dashboard' })}
         />
       </main>
     </div>
