@@ -9,9 +9,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign in with Google OAuth
-- [ ] **AUTH-02**: User session persists across browser refresh
-- [ ] **AUTH-03**: Each user's data is isolated via multi-tenant RLS policies
+- [x] **AUTH-01**: User can sign in with Google OAuth
+- [x] **AUTH-02**: User session persists across browser refresh
+- [x] **AUTH-03**: Each user's data is isolated via multi-tenant RLS policies
 
 ### Blog Projects
 
@@ -109,9 +109,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
 | BLOG-01 | Phase 2 | Pending |
 | BLOG-02 | Phase 2 | Pending |
 | BLOG-03 | Phase 2 | Pending |
