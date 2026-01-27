@@ -61,19 +61,23 @@ Plans:
 - [x] 02-06-PLAN.md — Fix post-delete navigation: redirect to dashboard after project deletion from detail page (gap closure)
 
 ### Phase 3: Blog Scraping & Articles
-**Goal**: Users can automatically scrape blog articles and view synchronized Pinterest boards
+**Goal**: Users can automatically scrape blog articles and manage them per blog project
 **Depends on**: Phase 2
-**Requirements**: ARTC-01, ARTC-02, ARTC-03, ARTC-04, ARTC-05, BRD-01, BRD-02
+**Requirements**: ARTC-01, ARTC-02, ARTC-03, ARTC-04, ARTC-05
 **Success Criteria** (what must be TRUE):
   1. User can view list of scraped articles per blog project with title, URL, date, and status
-  2. User can filter articles by blog project
+  2. User can filter articles by blog project (articles shown per project on detail page)
   3. User can trigger manual blog scrape from the UI and see scrape progress
   4. User can view article detail page with full scraped content
-  5. User can view Pinterest boards synced via n8n, grouped by blog project
-**Plans**: TBD
+  5. User can manually add an article by URL
+  6. User can archive and restore articles (soft delete)
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 03-01-PLAN.md — Database schema (blog_articles table + RLS) and scrape Edge Function
+- [ ] 03-02-PLAN.md — Articles data layer (types, API functions, TanStack Query hooks)
+- [ ] 03-03-PLAN.md — Articles list UI (sortable table, scrape button, manual add dialog)
+- [ ] 03-04-PLAN.md — Article detail page with content rendering
 
 ### Phase 4: Pin Management
 **Goal**: Users can create, edit, and manage pins with image upload and status workflow
@@ -144,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
-| 3. Blog Scraping & Articles | 0/? | Not started | - |
+| 3. Blog Scraping & Articles | 0/4 | Planned | - |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |
