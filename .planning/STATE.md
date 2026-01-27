@@ -68,7 +68,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1 pending todo(s):
+- **Cleanup AIRTABLE_PAT from ~/.zshrc** (tooling) — Remove after Airtable MCP no longer needed
 
 ### Blockers/Concerns
 
