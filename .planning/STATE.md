@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 3 of 7 (Blog Scraping & Articles) — IN PROGRESS
-Plan: 1 of 4 in current phase
-Status: In progress (plan 03-01 complete)
-Last activity: 2026-01-27 — Completed 03-01 (blog scraping foundation)
+Plan: 2 of 4 in current phase
+Status: In progress (plan 03-02 complete)
+Last activity: 2026-01-27 — Completed 03-02 (articles data layer)
 
-Progress: [████░░░░░░] 36%
+Progress: [████░░░░░░] 39%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
-- Average duration: ~4.2min
-- Total execution time: ~0.92 hours
+- Total plans completed: 14
+- Average duration: ~3.9min
+- Total execution time: ~0.95 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████░░░░░░] 36%
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
-| 3. Blog Scraping & Articles | 1 | ~2min | ~2min |
+| 3. Blog Scraping & Articles | 2 | ~3.5min | ~1.8min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (2min), 02-06 (1min), 02-05 (2min), 02-04 (2min), 02-03 (5min)
-- Trend: Maintaining exceptional velocity (sub-3min average)
+- Last 5 plans: 03-02 (1.5min), 03-01 (2min), 02-06 (1min), 02-05 (2min), 02-04 (2min)
+- Trend: Exceptional velocity maintained (sub-2min average for last 5)
 
 *Updated after each plan completion*
 
@@ -110,6 +110,12 @@ Recent decisions affecting current work:
 - Exclude supabase/functions from TypeScript compilation — Deno runtime conflicts with Node TypeScript compiler
 - Upsert behavior via unique constraint on (blog_project_id, url) — Enables re-scraping without duplicates
 
+**From 03-02 (Articles Data Layer):**
+- Query key structure ['articles', projectId] for lists, ['articles', 'detail', id] for singles — Enables targeted cache invalidation
+- No ensureProfile() in article read operations — Articles are read-only from client (writes happen server-side via Edge Function)
+- Broad invalidation ['articles'] for archive/restore — Covers both active and archived lists with single invalidation
+- Scrape response feedback with exact counts — Toast shows found/created/updated to give users visibility into results
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -129,9 +135,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 03-01-PLAN.md (blog scraping foundation)
+Stopped at: Completed 03-02-PLAN.md (articles data layer)
 Resume file: None
-Next: Continue Phase 3 with 03-02 (Articles data layer)
+Next: Continue Phase 3 with 03-03 (Articles UI)
 
 Config:
 {
