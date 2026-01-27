@@ -10,28 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 2 of 7 (Blog Project Management)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-01-27 — Phase 1 complete (5/5 plans, gap closure verified)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-01-27 — Completed 02-01-PLAN.md
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [██░░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: ~8min
-- Total execution time: ~0.6 hours
+- Total plans completed: 6
+- Average duration: ~7min
+- Total execution time: ~0.7 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
+| 2. Blog Project Management | 1 | ~3.5min | ~3.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-05 (1min), 01-04 (10min), 01-03 (20min), 01-02 (2min), 01-01 (4min)
-- Trend: High velocity on focused bug fix plans
+- Last 5 plans: 02-01 (3.5min), 01-05 (1min), 01-04 (10min), 01-03 (20min), 01-02 (2min)
+- Trend: Very high velocity on foundation setup plans
 
 *Updated after each plan completion*
 
@@ -72,6 +73,11 @@ Recent decisions affecting current work:
 - Auth guard makes 2 calls (auth check + profile query) — Correctness over optimization
 - Graceful fallback pattern for race conditions with database triggers — display_name derived from email when profile doesn't exist yet
 
+**From 02-01 (Database & Foundation Setup):**
+- Remove foreign key from blog_projects.tenant_id to profiles(tenant_id) — profiles.tenant_id lacks unique constraint; RLS policies enforce tenant relationship
+- Install Supabase CLI for migrations instead of MCP/JS client — Standard tool for migration management
+- Use 30-second staleTime for TanStack Query default — Balance between fresh data and reducing redundant requests
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -91,9 +97,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Phase 1 complete (5/5 plans, gap closure verified). Ready for Phase 2 planning.
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
-Next: /gsd:discuss-phase 2 or /gsd:plan-phase 2
+Next: Execute 02-02-PLAN.md (TypeScript types & API layer)
 
 Config:
 {
