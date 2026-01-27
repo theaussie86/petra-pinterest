@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 2 of 7 (Blog Project Management)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-27 — Completed 02-01-PLAN.md
+Last activity: 2026-01-27 — Completed 02-02-PLAN.md
 
-Progress: [██░░░░░░░░] 17%
+Progress: [██░░░░░░░░] 23%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: ~7min
-- Total execution time: ~0.7 hours
+- Total plans completed: 7
+- Average duration: ~6min
+- Total execution time: ~0.75 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
-| 2. Blog Project Management | 1 | ~3.5min | ~3.5min |
+| 2. Blog Project Management | 2 | ~5.5min | ~2.75min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (3.5min), 01-05 (1min), 01-04 (10min), 01-03 (20min), 01-02 (2min)
-- Trend: Very high velocity on foundation setup plans
+- Last 5 plans: 02-02 (2min), 02-01 (3.5min), 01-05 (1min), 01-04 (10min), 01-03 (20min)
+- Trend: Exceptional velocity on Phase 2 data layer setup
 
 *Updated after each plan completion*
 
@@ -78,6 +78,11 @@ Recent decisions affecting current work:
 - Install Supabase CLI for migrations instead of MCP/JS client — Standard tool for migration management
 - Use 30-second staleTime for TanStack Query default — Balance between fresh data and reducing redundant requests
 
+**From 02-02 (Blog Projects Data Layer):**
+- Remove BlogProjectUpdate from hooks import — Type only used in API layer, satisfies TypeScript unused import check
+- Optimistic update only on create mutation — Update/delete don't benefit as much from optimistic UX, keeps code simpler
+- Graceful degradation in checkProjectRelatedData — blog_articles and pins tables don't exist yet, returns {0,0} when tables missing
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -97,9 +102,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 02-01-PLAN.md
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
-Next: Execute 02-02-PLAN.md (TypeScript types & API layer)
+Next: Execute 02-03-PLAN.md (Blog Projects UI components)
 
 Config:
 {
