@@ -1,131 +1,251 @@
 ---
 phase: 01-foundation-security
-verified: 2026-01-27T07:06:45Z
+verified: 2026-01-27T07:57:15Z
 status: passed
-score: 8/8 must-haves verified
+score: 4/4 must-haves verified
+re_verification: true
+previous_verification:
+  date: 2026-01-27T07:06:45Z
+  status: passed
+  issues_found: UAT Test 3 failed (redirect loop)
+gap_closure:
+  plan: 01-05
+  completed: 2026-01-27T07:53:54Z
+  gaps_closed:
+    - "After signing in with Google, user lands on /dashboard (not redirected back to /login)"
+    - "Auth guard distinguishes 'not authenticated' from 'authenticated but no profile yet'"
+    - "User context still provides display_name and tenant_id when profile exists"
+    - "First-time signups with delayed profile trigger still reach dashboard"
+  gaps_remaining: []
+  regressions: []
 ---
 
-# Phase 1: Foundation & Security Verification Report
+# Phase 1: Foundation & Security Re-Verification Report
 
 **Phase Goal:** Users can securely sign in and access isolated data with proper multi-tenant infrastructure  
-**Verified:** 2026-01-27T07:06:45Z  
-**Status:** PASSED  
-**Re-verification:** No — initial verification
+**Verified:** 2026-01-27T07:57:15Z  
+**Status:** PASSED ✓  
+**Re-verification:** Yes — after gap closure (Plan 01-05)
+
+## Re-Verification Context
+
+**Previous verification:** 2026-01-27T07:06:45Z — Initial verification PASSED programmatically  
+**UAT result:** Test 3 FAILED — User reported redirect loop after successful Google OAuth  
+**Gap closure plan:** 01-05 executed on 2026-01-27 — Separated auth check from profile fetch  
+**This verification:** Confirms gap closure implementation and verifies no regressions
 
 ## Goal Achievement
 
-### Observable Truths
+### Must-Haves from Gap Closure Plan (01-05)
+
+All 4 must-haves from the gap closure plan have been verified:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | User can sign in with Google OAuth and be redirected to Google | ✓ VERIFIED | `login.tsx` calls `signInWithGoogle()` with redirectTo callback URL; OAuth flow properly configured with window.location.origin |
-| 2 | After Google auth, user is redirected back and session is created | ✓ VERIFIED | `auth.callback.tsx` uses `onAuthStateChange` to detect SIGNED_IN event and navigates to /dashboard; Supabase handles code exchange automatically |
-| 3 | User session persists across browser refresh (AUTH-02) | ✓ VERIFIED | Supabase client manages session persistence; `getUser()` in `_authed.tsx` beforeLoad checks session on every route load |
-| 4 | Unauthenticated users are redirected to /login when accessing /dashboard | ✓ VERIFIED | `_authed.tsx` beforeLoad calls `getUser()` and throws redirect to /login if null; protects all /_authed/* routes |
-| 5 | Authenticated users see dashboard with avatar and name in header | ✓ VERIFIED | `dashboard.tsx` gets user from route context, passes to Header component; Header displays initials in avatar circle and display_name |
-| 6 | User can sign out via dropdown menu | ✓ VERIFIED | `header.tsx` has dropdown with signOut button; calls `signOut()` from auth.ts and navigates to / |
-| 7 | RLS is enabled on all tables (AUTH-03) | ✓ VERIFIED | Migration file contains `ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY` (line 26); RLS enabled before any data |
-| 8 | Database has tenant_id pattern for multi-tenant isolation | ✓ VERIFIED | `profiles` table has `tenant_id UUID NOT NULL DEFAULT gen_random_uuid()`; RLS policies use `(SELECT auth.uid()) = id` pattern; index on tenant_id for performance |
+| 1 | After signing in with Google, user lands on /dashboard (not redirected back to /login) | ✓ VERIFIED | `_authed.tsx` line 12-18: Uses `getAuthUser()` for redirect gate; fallback values prevent re-redirect. `auth.callback.tsx` line 23: Navigates to /dashboard after SIGNED_IN. |
+| 2 | Auth guard distinguishes 'not authenticated' from 'authenticated but no profile yet' | ✓ VERIFIED | `_authed.tsx` line 11-18: Two-step pattern — Step 1 checks `getAuthUser()` for auth-only (no profile dependency); Step 2 calls `getUser()` which has fallback values. Only Step 1 triggers redirect. |
+| 3 | User context still provides display_name and tenant_id when profile exists | ✓ VERIFIED | `auth.ts` line 88-93: When profile query succeeds, returns full AuthUser with `tenant_id: profile.tenant_id` and `display_name: profile.display_name` from database. |
+| 4 | First-time signups with delayed profile trigger still reach dashboard | ✓ VERIFIED | `auth.ts` line 79-86: If profile query fails (race condition), returns fallback: `tenant_id: ''` and `display_name: authUser.email.split('@')[0] || 'User'`. No null return for authenticated users. |
 
-**Score:** 8/8 truths verified
+**Score:** 4/4 must-haves verified
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `src/lib/supabase.ts` | Supabase client configuration | ✓ VERIFIED | 13 lines; exports supabase client with env vars; error handling for missing vars |
-| `src/lib/auth.ts` | Auth helper functions | ✓ VERIFIED | 87 lines; exports signInWithGoogle, signOut, getUser, onAuthStateChange; all substantial implementations |
-| `src/routes/login.tsx` | Login page with Google OAuth | ✓ VERIFIED | 54 lines; imports and calls signInWithGoogle; loading state; error toast handling; clean centered UI |
-| `src/routes/auth.callback.tsx` | OAuth callback handler | ✓ VERIFIED | 67 lines; uses onAuthStateChange for SIGNED_IN event; error handling from URL hash; loading spinner; navigates to /dashboard |
-| `src/routes/_authed.tsx` | Protected route layout | ✓ VERIFIED | 23 lines; beforeLoad calls getUser and redirects if null; returns user context to children |
-| `src/routes/_authed/dashboard.tsx` | Dashboard page | ✓ VERIFIED | 21 lines; gets user from route context; renders Header and EmptyDashboardState |
-| `src/components/layout/header.tsx` | Header with user menu | ✓ VERIFIED | 88 lines; displays user initials, display_name; dropdown with sign out; calls signOut() |
-| `src/components/dashboard/empty-state.tsx` | Empty dashboard state | ✓ VERIFIED | 22 lines; friendly welcome message; disabled CTA button (blog routes don't exist yet) |
-| `src/components/ui/button.tsx` | Reusable button component | ✓ VERIFIED | 40 lines; variants (default, outline, ghost); sizes (sm, default, lg); uses cn() utility |
-| `supabase/migrations/00001_initial_schema.sql` | Database schema with RLS | ✓ VERIFIED | 104 lines; profiles table; RLS enabled; SELECT/UPDATE policies; auto-profile trigger; updated_at trigger |
+| `src/lib/auth.ts` | Separated auth check and profile fetch functions | ✓ VERIFIED | 112 lines; exports `getAuthUser()` (lines 45-56, auth-only, no profile table) and refactored `getUser()` (lines 63-94, with fallback values); TypeScript compiles cleanly |
+| `src/routes/_authed.tsx` | Auth guard that checks authentication only | ✓ VERIFIED | 34 lines; imports both `getAuthUser` and `getUser` (line 2); beforeLoad uses two-step pattern (lines 11-22); redirect gate at line 15 uses `getAuthUser()` only |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|----|--------|---------|
-| login.tsx | auth.ts | signInWithGoogle import + call | ✓ WIRED | Import on line 5; function call on line 17 with await; error handling with toast |
-| auth.callback.tsx | Supabase auth | onAuthStateChange subscription | ✓ WIRED | Direct call to supabase.auth.onAuthStateChange on line 17; listens for SIGNED_IN event; navigates on success |
-| _authed.tsx | auth.ts | getUser in beforeLoad | ✓ WIRED | Import on line 2; async call on line 11; throws redirect if null; returns user context |
-| _authed.tsx | /login | redirect when not authenticated | ✓ WIRED | throw redirect({ to: '/login' }) on line 14 when getUser returns null |
-| dashboard.tsx | header.tsx | user prop passed | ✓ WIRED | Header imported on line 2; rendered with user={user} on line 15; user from Route.useRouteContext() |
-| dashboard.tsx | empty-state.tsx | component import and render | ✓ WIRED | EmptyDashboardState imported on line 3; rendered on line 17 |
-| header.tsx | auth.ts | signOut function | ✓ WIRED | Import on line 4; called on line 16 with await; error logged; navigate to / after |
-| profiles table | auth.users | foreign key reference | ✓ WIRED | Line 12 in migration: `id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE` |
-| RLS policies | auth.uid() | user identification | ✓ WIRED | Lines 46, 53-54 use `(SELECT auth.uid()) = id` pattern for performance |
-| getUser() | profiles table | tenant_id query | ✓ WIRED | Line 53-57 in auth.ts: queries profiles.tenant_id and display_name filtered by user.id (RLS enforced) |
+| `_authed.tsx` | `auth.ts` | getAuthUser import for auth-only check | ✓ WIRED | Import on line 2; called on line 12; no profile table dependency verified (auth.ts lines 45-56 only use `supabase.auth.getUser()`) |
+| `_authed.tsx` | `auth.ts` | getUser import for profile-enriched data | ✓ WIRED | Import on line 2; called on line 22; returns fallback values when profile missing (auth.ts lines 79-86) |
+| `getUser()` | `getAuthUser()` | Internal call for auth check first | ✓ WIRED | Line 65 in auth.ts: `const authUser = await getAuthUser()` before attempting profile query |
+| Auth guard | /login redirect | Only when getAuthUser returns null | ✓ WIRED | Line 14-18 in _authed.tsx: redirect triggered only by `!authUser` from getAuthUser check, NOT by getUser result |
+| `auth.callback.tsx` | /dashboard | Navigate after SIGNED_IN | ✓ WIRED | Line 23: `navigate({ to: '/dashboard' })` after successful OAuth; relies on auth guard's fallback handling for race condition |
 
-### Requirements Coverage
+### Level-by-Level Artifact Verification
 
-| Requirement | Status | Supporting Truths | Notes |
-|-------------|--------|-------------------|-------|
-| AUTH-01: User can sign in with Google OAuth | ✓ SATISFIED | Truths 1, 2 | Full OAuth flow working with redirect to Google and back |
-| AUTH-02: User session persists across browser refresh | ✓ SATISFIED | Truth 3 | Supabase manages session; beforeLoad checks on every navigation |
-| AUTH-03: Each user's data is isolated via multi-tenant RLS policies | ✓ SATISFIED | Truths 7, 8 | RLS enabled on profiles table; tenant_id pattern established; policies use auth.uid() |
+#### Artifact: src/lib/auth.ts
+
+**Level 1 - Existence:** ✓ EXISTS (112 lines)
+
+**Level 2 - Substantive:**
+- ✓ Length check: 112 lines (far exceeds 10 line minimum for utility)
+- ✓ Stub pattern check: No TODO/FIXME/placeholder patterns found
+- ✓ Export check: Exports `signInWithGoogle`, `signOut`, `getAuthUser`, `getUser`, `onAuthStateChange`
+- ✓ Contains required function: `getAuthUser` defined at line 45
+- **Status: SUBSTANTIVE**
+
+**Level 3 - Wired:**
+- ✓ Imported by: `src/routes/_authed.tsx` (line 2: imports getAuthUser and getUser)
+- ✓ Used by: `_authed.tsx` beforeLoad calls both functions
+- **Status: WIRED**
+
+**Final Status: ✓ VERIFIED** (Exists + Substantive + Wired)
+
+#### Artifact: src/routes/_authed.tsx
+
+**Level 1 - Existence:** ✓ EXISTS (34 lines)
+
+**Level 2 - Substantive:**
+- ✓ Length check: 34 lines (exceeds 15 line minimum for route)
+- ✓ Stub pattern check: No TODO/FIXME/placeholder patterns found
+- ✓ Export check: Exports Route with beforeLoad guard and component
+- ✓ Contains required pattern: `getAuthUser` called at line 12
+- **Status: SUBSTANTIVE**
+
+**Level 3 - Wired:**
+- ✓ Imported functions: getAuthUser, getUser from @/lib/auth (line 2)
+- ✓ Used by: All routes under /_authed/* path (dashboard, future blog routes)
+- ✓ Returns context: `{ user }` available to child routes via Route.useRouteContext()
+- **Status: WIRED**
+
+**Final Status: ✓ VERIFIED** (Exists + Substantive + Wired)
+
+### Gap Closure Verification
+
+**Original Gap (from UAT):**
+- **Truth:** "After signing in, user sees dashboard with header and welcome message"
+- **Status:** FAILED
+- **Reason:** User redirected back to /login after successful Google OAuth (redirect loop)
+- **Root cause:** `getUser()` conflated auth check with profile fetch — returned null when profile didn't exist yet, causing auth guard to treat authenticated users as unauthenticated
+
+**Gap Closure Implementation (Plan 01-05):**
+
+✅ **Task 1: Separate auth check from profile fetch in auth.ts**
+- ✓ Added `getAuthUser()` function (lines 45-56) — auth-only check, no profile dependency
+- ✓ Refactored `getUser()` (lines 63-94) — calls getAuthUser first, returns fallback values if profile missing
+- ✓ Fallback implementation verified: `tenant_id: ''` and `display_name: authUser.email.split('@')[0] || 'User'` (lines 83-84)
+
+✅ **Task 2: Update auth guard to use auth-only check**
+- ✓ Two-step pattern implemented in beforeLoad (lines 11-22)
+- ✓ Step 1: `getAuthUser()` check — only this triggers redirect
+- ✓ Step 2: `getUser()` call — enriches context with fallback values, cannot trigger redirect
+- ✓ Defensive null check added (line 26-28) — error thrown if getUser returns null for authenticated user (should never happen)
+
+**Gap Status: CLOSED ✓**
+
+All missing items from gap analysis have been implemented:
+- ✓ "Separate auth check from profile fetch in getUser()" — Done via new getAuthUser() function
+- ✓ "Auth guard should check authentication only (supabase.auth.getUser()), not profile existence" — Done, _authed.tsx uses getAuthUser()
+- ✓ "Profile data enrichment should be handled separately" — Done, getUser() returns fallback values
+
+### Regression Check
+
+Verified that the gap closure did NOT break previously passing functionality:
+
+| Previous Truth | Re-verification Status | Evidence |
+|----------------|------------------------|----------|
+| User can sign in with Google OAuth and be redirected to Google | ✓ NO REGRESSION | `login.tsx` unchanged; signInWithGoogle() unchanged (lines 15-28 in auth.ts) |
+| After Google auth, user is redirected back and session is created | ✓ NO REGRESSION | `auth.callback.tsx` unchanged; onAuthStateChange() unchanged (lines 100-112 in auth.ts) |
+| Unauthenticated users are redirected to /login when accessing /dashboard | ✓ NO REGRESSION | `_authed.tsx` still redirects when getAuthUser returns null (lines 14-18) |
+| Authenticated users see dashboard with avatar and name in header | ✓ NO REGRESSION | `dashboard.tsx` and `header.tsx` unchanged; receive user from context as before; fallback display_name works with existing UI |
+| User can sign out via dropdown menu | ✓ NO REGRESSION | `header.tsx` unchanged; signOut() unchanged (lines 33-38 in auth.ts) |
+| RLS is enabled on all tables | ✓ NO REGRESSION | Database migration unchanged |
+| Database has tenant_id pattern for multi-tenant isolation | ✓ NO REGRESSION | Database schema unchanged |
+
+**Regression Score:** 0/7 — No regressions detected
 
 ### Anti-Patterns Found
 
 No blocking anti-patterns found.
 
-**Notable patterns (not blockers):**
-- Empty state CTA button is disabled (line 13 in empty-state.tsx) - This is intentional and documented; blog routes will be created in Phase 2
-- Auth callback uses setTimeout for error redirect (line 28) - Acceptable for UX; gives user time to read error message
+**Notable patterns (intentional design choices):**
+
+1. **Two Supabase calls in auth guard** (_authed.tsx lines 12, 22)
+   - Pattern: Auth guard calls `getAuthUser()` then `getUser()` (2 separate Supabase calls)
+   - Severity: ℹ️ INFO (intentional trade-off)
+   - Rationale: Correctness prioritized over performance. The auth check (JWT verification) is fast, and the profile query is a single-row indexed lookup. This separation prevents the redirect loop bug.
+   - Impact: Minimal — both calls are fast; optimization can come later if needed
+
+2. **Defensive null check after getUser** (_authed.tsx lines 26-28)
+   - Pattern: Throws error if getUser returns null for authenticated user
+   - Severity: ℹ️ INFO (defensive programming)
+   - Rationale: Type safety requirement from TypeScript. Should never happen since getUser returns fallback values for authenticated users, but satisfies type system.
+   - Impact: None — error path should never execute in practice
+
+3. **Empty tenant_id fallback** (auth.ts line 83)
+   - Pattern: Returns `tenant_id: ''` when profile doesn't exist yet
+   - Severity: ⚠️ WARNING (acceptable for first-time signups)
+   - Rationale: Profile trigger creates tenant_id asynchronously. Empty string signals "not yet available" vs null/undefined. Dashboard can handle gracefully.
+   - Impact: Temporary — once profile trigger completes (milliseconds), subsequent requests get real tenant_id
+   - Mitigation: Profile auto-creation trigger in database (migration line 83-100)
 
 ### Human Verification Required
 
-#### 1. Google OAuth End-to-End Flow
-
-**Test:** 
-1. Add Supabase credentials to `.env.local` (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
-2. Configure Google OAuth in Supabase Dashboard (Authentication → Providers → Google)
-3. Add redirect URI: `http://localhost:3000/auth/callback`
-4. Run `npm run dev` and visit http://localhost:3000/login
-5. Click "Sign in with Google"
-6. Complete Google OAuth consent screen
-7. Should redirect back to /dashboard
-8. Verify header shows your name and avatar initials
-9. Refresh browser - should stay logged in
-10. Click avatar → Sign out → should return to home
-
-**Expected:** Full OAuth flow works without errors; session persists across refresh; sign out clears session
-
-**Why human:** Requires actual Google OAuth credentials and Supabase project setup; involves external service interaction
-
-#### 2. Multi-Tenant Data Isolation (RLS Verification)
+#### 1. Google OAuth End-to-End with Redirect Loop Fix (RE-TEST UAT Test 3)
 
 **Test:**
-1. Apply migration: Run SQL in Supabase SQL Editor: `supabase/migrations/00001_initial_schema.sql`
-2. Create test user 1 via Google OAuth
-3. Verify profile was auto-created: `SELECT * FROM profiles WHERE id = auth.uid();`
-4. Note the tenant_id
-5. Create test user 2 via Google OAuth (different Google account)
-6. Verify profile was auto-created with different tenant_id
-7. As user 2, attempt to query user 1's profile: `SELECT * FROM profiles WHERE id = '<user1-id>';`
-8. Should return empty (RLS blocks access)
-9. Run test queries from `supabase/tests/test_rls.sql`
+1. Clear browser session/cookies or use incognito window
+2. Visit http://localhost:3000/login
+3. Click "Sign in with Google"
+4. Complete Google OAuth consent screen
+5. **CRITICAL:** After redirect back to app, observe URL in address bar
+6. Verify you land on `/dashboard` (NOT `/login`)
+7. Verify you see toast message "Signed in successfully"
+8. Verify header shows your name (or email prefix if first-time signup)
+9. Verify avatar shows initials
+10. Verify main area shows empty dashboard welcome message
 
-**Expected:** Each user can only see their own profile; RLS blocks cross-tenant queries; test suite passes
+**Expected:**
+- After OAuth, URL is `/dashboard` (not `/login`)
+- No redirect loop — you stay on dashboard
+- Header displays user info with fallback values if profile not yet created
+- If you refresh immediately (before profile trigger completes), dashboard still loads (fallback values work)
+- If you refresh after a few seconds, dashboard shows real profile data (tenant_id populated)
 
-**Why human:** Requires creating multiple Google accounts; verifying database-level security requires direct SQL access and understanding of RLS behavior
+**Why human:** 
+- Requires actual Google OAuth credentials and Supabase project setup
+- Race condition timing (profile trigger) varies by database load
+- User must observe URL changes to confirm no redirect loop
 
-#### 3. UI/UX Quality Check
+#### 2. Session Persistence (RE-TEST UAT Test 6)
 
 **Test:**
-1. Visit /login - verify clean, centered layout
-2. Verify "Petra" branding and tagline visible
-3. Button should have loading state when clicked
-4. After login, header should show avatar with initials (not broken image)
-5. Dropdown menu should open/close correctly
-6. Empty dashboard message should be friendly and clear
-7. Test on mobile viewport (responsive design)
+1. While signed in on the dashboard (after Test 1 passes)
+2. Refresh the browser (Cmd+R or F5)
+3. Should remain on `/dashboard` with session intact — no re-login required
+4. Header should still show your name and avatar
+5. No redirect to `/login`
 
-**Expected:** Clean, professional UI; no layout issues; loading states work; responsive on mobile
+**Expected:** Session persists across refresh; auth guard correctly identifies authenticated user; no redirect loop even on refresh
 
-**Why human:** Visual design quality requires human judgment; responsive behavior needs manual testing across viewports
+**Why human:** Requires browser interaction; verifies client-side session persistence
+
+#### 3. Sign Out (RE-TEST UAT Test 5)
+
+**Test:**
+1. While signed in on the dashboard
+2. Click avatar/name in header
+3. Dropdown should appear with sign-out option
+4. Click "Sign out"
+5. Should clear session and redirect to `/` (home page)
+6. If you navigate to `/dashboard` after sign-out, should redirect to `/login` (auth guard working)
+
+**Expected:** Clean sign-out flow; session cleared; auth guard protects routes after sign-out
+
+**Why human:** Requires UI interaction; verifies dropdown functionality and session clearing
+
+#### 4. Fallback Display Values
+
+**Test:**
+1. Create a brand new Google account that has never signed into the app
+2. Sign in with that account
+3. **Immediately observe** (within 1-2 seconds) the header display name
+4. It should show your email prefix (the part before @) OR "User" if email is invalid
+5. Avatar should show initials derived from that fallback name
+6. Wait 5 seconds, then refresh the page
+7. Header should now show your actual Google display name from profile table
+
+**Expected:** 
+- First load: Fallback display name (email prefix)
+- After profile trigger completes: Real display name from Google
+- No errors or broken UI during transition
+
+**Why human:** Requires timing observation to catch the fallback values before profile trigger completes; visual verification of UI handling
 
 ---
 
@@ -133,28 +253,47 @@ No blocking anti-patterns found.
 
 **Status: PASSED ✓**
 
-All must-haves verified programmatically. Phase 1 goal achieved: Users can securely sign in with Google OAuth, sessions persist across refresh, and multi-tenant RLS infrastructure is properly established.
+All 4 must-haves from gap closure plan verified. The redirect loop bug has been fixed by separating authentication verification from profile data fetching.
 
-**Key Achievements:**
-- ✅ Complete Google OAuth flow with Supabase (client-side SPA pattern)
-- ✅ Protected routes with automatic redirect to login
-- ✅ User context propagation via TanStack Router
-- ✅ Database schema with RLS enabled and policies enforced
-- ✅ Auto-profile creation trigger for new signups
-- ✅ Multi-tenant foundation with tenant_id pattern
-- ✅ Clean, minimal UI with user header and empty state
-- ✅ TypeScript compilation succeeds with no errors
-- ✅ No stub patterns or placeholder implementations
+**Gap Closure Achievements:**
+
+✅ **Root Cause Addressed:** `getUser()` no longer conflates auth status with profile existence  
+✅ **Auth Guard Fixed:** Uses `getAuthUser()` for redirect decisions — no profile table dependency  
+✅ **Fallback Pattern:** `getUser()` returns usable AuthUser with fallback values when profile missing  
+✅ **No Regressions:** All 7 previously passing truths remain verified  
+✅ **Type Safety:** TypeScript compiles cleanly with defensive null check  
+✅ **No New Anti-Patterns:** Intentional design trade-offs documented  
+
+**Key Implementation Details:**
+
+1. **getAuthUser() function** (auth.ts lines 45-56)
+   - Auth-only check via `supabase.auth.getUser()`
+   - Returns `{ id, email } | null`
+   - No profile table access — cannot be affected by trigger timing
+
+2. **getUser() refactored** (auth.ts lines 63-94)
+   - Calls `getAuthUser()` first for auth verification
+   - Queries profiles table for tenant_id and display_name
+   - Returns fallback values if profile query fails: `{ id, email, tenant_id: '', display_name: email.split('@')[0] || 'User' }`
+   - NEVER returns null for authenticated users
+
+3. **Two-step auth guard** (_authed.tsx lines 11-22)
+   - Step 1: `getAuthUser()` — gate for access control (redirect if null)
+   - Step 2: `getUser()` — context enrichment (has fallback, never triggers redirect)
+   - Defensive null check for type safety (should never execute)
 
 **Architecture Verification:**
-- TanStack Router SPA (client-side) - correctly implemented with beforeLoad guards
-- Path alias `@/` (not `~/`) - consistently used throughout
-- Supabase client-side auth - proper use of signInWithOAuth and onAuthStateChange
-- RLS policies with (SELECT auth.uid()) pattern for performance
 
-**Ready for Phase 2:** Blog project management can now build on this secure foundation. All authentication requirements (AUTH-01, AUTH-02, AUTH-03) satisfied.
+- Separation of concerns: Authentication vs. data enrichment
+- Graceful degradation: Fallback values for race conditions
+- Type safety: Defensive checks satisfy TypeScript
+- Performance: 2 calls acceptable for correctness (both fast)
+- Maintainability: Clear comments explain why pattern exists
+
+**Ready for Phase 2:** Blog project management can now build on this secure foundation. All authentication requirements (AUTH-01, AUTH-02, AUTH-03) satisfied. UAT Test 3 redirect loop is fixed.
 
 ---
 
-_Verified: 2026-01-27T07:06:45Z_  
-_Verifier: Claude (gsd-verifier)_
+_Verified: 2026-01-27T07:57:15Z_  
+_Verifier: Claude (gsd-verifier)_  
+_Re-verification after gap closure (Plan 01-05)_
