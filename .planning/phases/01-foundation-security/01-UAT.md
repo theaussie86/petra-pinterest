@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 01-foundation-security
 source: 01-01-SUMMARY.md, 01-02-SUMMARY.md, 01-03-SUMMARY.md, 01-04-SUMMARY.md
 started: 2026-01-27T12:00:00Z
@@ -55,7 +55,16 @@ skipped: 2
   reason: "User reported: it tries to redirect to dashboard, but then I land on /login again. I do see a toast message that I successfully logged in though."
   severity: major
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "getUser() in src/lib/auth.ts conflates auth check with profile fetch — returns null when profile row doesn't exist yet (new signup or trigger timing), causing _authed.tsx beforeLoad guard to redirect authenticated users back to /login"
+  artifacts:
+    - path: "src/lib/auth.ts"
+      issue: "Lines 53-61: profile query failure returns null, same as auth failure"
+    - path: "src/routes/_authed.tsx"
+      issue: "Lines 10-17: auth guard treats any null from getUser() as unauthenticated"
+    - path: "src/routes/auth.callback.tsx"
+      issue: "Line 23: navigates to /dashboard immediately after SIGNED_IN, no time for profile trigger"
+  missing:
+    - "Separate auth check from profile fetch in getUser()"
+    - "Auth guard should check authentication only (supabase.auth.getUser()), not profile existence"
+    - "Profile data enrichment should be handled separately"
+  debug_session: ".planning/debug/auth-guard-rejects-session.md"
