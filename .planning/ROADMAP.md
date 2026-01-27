@@ -50,10 +50,13 @@ Plans:
   3. User can edit blog project details (name, URL, RSS URL, scraping frequency)
   4. User can delete blog projects
   5. Dashboard displays overview statistics (scheduled count, published count, pending count)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 02-01-PLAN.md — Database migration, form libraries, shadcn/ui components, QueryClient + Toaster setup
+- [ ] 02-02-PLAN.md — TypeScript types, Supabase API layer, TanStack Query hooks with optimistic updates
+- [ ] 02-03-PLAN.md — Dashboard UI with project grid, stats bar, create/edit/delete dialogs
+- [ ] 02-04-PLAN.md — Project detail page with metadata, actions, and future-phase placeholders
 
 ### Phase 3: Blog Scraping & Articles
 **Goal**: Users can automatically scrape blog articles and view synchronized Pinterest boards
@@ -138,7 +141,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
-| 2. Blog Project Management | 0/? | Not started | - |
+| 2. Blog Project Management | 0/4 | Planned | - |
 | 3. Blog Scraping & Articles | 0/? | Not started | - |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
