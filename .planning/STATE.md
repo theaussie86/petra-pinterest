@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 2 of 7 (Blog Project Management)
-Plan: 4 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-01-27 — Completed 02-04-PLAN.md
+Last activity: 2026-01-27 — Completed 02-03-PLAN.md
 
-Progress: [███░░░░░░░] 27%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: ~5.5min
+- Total plans completed: 9
+- Average duration: ~5.3min
 - Total execution time: ~0.8 hours
 
 **By Phase:**
@@ -28,11 +28,11 @@ Progress: [███░░░░░░░] 27%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
-| 2. Blog Project Management | 3 | ~7.5min | ~2.5min |
+| 2. Blog Project Management | 4 | ~12.5min | ~3.1min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (2min), 02-02 (2min), 02-01 (3.5min), 01-05 (1min), 01-04 (10min)
-- Trend: Exceptional velocity continues on Phase 2 UI layer
+- Last 5 plans: 02-03 (5min), 02-04 (2min), 02-02 (2min), 02-01 (3.5min), 01-05 (1min)
+- Trend: Exceptional velocity on Phase 2 UI layer (sub-5min average)
 
 *Updated after each plan completion*
 
@@ -83,6 +83,12 @@ Recent decisions affecting current work:
 - Optimistic update only on create mutation — Update/delete don't benefit as much from optimistic UX, keeps code simpler
 - Graceful degradation in checkProjectRelatedData — blog_articles and pins tables don't exist yet, returns {0,0} when tables missing
 
+**From 02-03 (Blog Projects UI):**
+- Create and edit share same ProjectDialog component with mode detection via project prop — Reduces duplication, single validation schema, consistent UX
+- Create mode shows only name + blog_url; edit mode shows all 4 fields — Minimal creation per CONTEXT.md, progressive disclosure
+- Manual RSS URL validation in onSubmit instead of Zod schema complexity — Zod's .optional().or(z.literal('')) creates TypeScript inference issues with react-hook-form
+- Phase 2 stats hard-coded to 0 with structure ready for future data — Articles and pins don't exist yet, UI demonstrates final design
+
 **From 02-04 (Project Detail Page):**
 - Use TanStack Router file-based routing for dynamic project ID parameter — Consistent with existing route patterns, type-safe params access
 - Handle delete navigation override with onSuccess callback — Need to navigate to dashboard after delete, override default mutation behavior
@@ -107,9 +113,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 02-04-PLAN.md
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
-Next: Phase 2 complete (02-03 parallel execution may still be in progress)
+Next: Execute 02-04-PLAN.md (Project Detail Page)
 
 Config:
 {
