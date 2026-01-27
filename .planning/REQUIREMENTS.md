@@ -23,11 +23,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Blog Articles
 
-- [ ] **ARTC-01**: User can view list of scraped articles per blog project
-- [ ] **ARTC-02**: User can filter articles by blog project
-- [ ] **ARTC-03**: User can trigger manual blog scrape from the UI
-- [ ] **ARTC-04**: User can view article detail page with full scraped content
-- [ ] **ARTC-05**: Articles display title, URL, modification date, and scrape status
+- [x] **ARTC-01**: User can view list of scraped articles per blog project
+- [x] **ARTC-02**: User can filter articles by blog project
+- [x] **ARTC-03**: User can trigger manual blog scrape from the UI
+- [x] **ARTC-04**: User can view article detail page with full scraped content
+- [x] **ARTC-05**: Articles display title, URL, modification date, and scrape status
 
 ### Pins
 
@@ -118,11 +118,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BLOG-04 | Phase 2 | Complete |
 | BLOG-05 | Phase 2 | Complete |
 | DASH-01 | Phase 2 | Complete |
-| ARTC-01 | Phase 3 | Pending |
-| ARTC-02 | Phase 3 | Pending |
-| ARTC-03 | Phase 3 | Pending |
-| ARTC-04 | Phase 3 | Pending |
-| ARTC-05 | Phase 3 | Pending |
+| ARTC-01 | Phase 3 | Complete |
+| ARTC-02 | Phase 3 | Complete |
+| ARTC-03 | Phase 3 | Complete |
+| ARTC-04 | Phase 3 | Complete |
+| ARTC-05 | Phase 3 | Complete |
 | BRD-01 | Phase 3 | Pending |
 | BRD-02 | Phase 3 | Pending |
 | PIN-01 | Phase 4 | Pending |
@@ -147,4 +147,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-27 after Phase 2 completion*
+*Last updated: 2026-01-27 after Phase 3 completion*
