@@ -38,14 +38,33 @@ export async function signOut() {
 }
 
 /**
- * Gets the current authenticated user with profile data
- * Returns null if not authenticated or profile doesn't exist
+ * Gets the current authenticated user (auth check only, no profile data)
+ * Returns basic user info if authenticated, null if not
+ * Use this for auth guards - it doesn't depend on profile table
  */
-export async function getUser(): Promise<AuthUser | null> {
-  // Get authenticated user
+export async function getAuthUser(): Promise<{ id: string; email: string } | null> {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
 
   if (authError || !user) {
+    return null
+  }
+
+  return {
+    id: user.id,
+    email: user.email || '',
+  }
+}
+
+/**
+ * Gets the current authenticated user with profile data
+ * Returns AuthUser with fallback values if profile doesn't exist yet
+ * Only returns null if user is not authenticated
+ */
+export async function getUser(): Promise<AuthUser | null> {
+  // First check authentication
+  const authUser = await getAuthUser()
+
+  if (!authUser) {
     return null
   }
 
@@ -53,16 +72,22 @@ export async function getUser(): Promise<AuthUser | null> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('tenant_id, display_name')
-    .eq('id', user.id)
+    .eq('id', authUser.id)
     .single()
 
+  // If profile doesn't exist yet (race condition with trigger), return fallback values
   if (profileError || !profile) {
-    return null
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      tenant_id: '',
+      display_name: authUser.email.split('@')[0] || 'User',
+    }
   }
 
   return {
-    id: user.id,
-    email: user.email || '',
+    id: authUser.id,
+    email: authUser.email,
     tenant_id: profile.tenant_id,
     display_name: profile.display_name,
   }
