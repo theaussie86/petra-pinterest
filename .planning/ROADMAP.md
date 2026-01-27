@@ -13,7 +13,7 @@ This roadmap delivers a multi-tenant Pinterest scheduling dashboard that replace
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Security** - Multi-tenant auth and database setup with RLS
-- [x] **Phase 2: Blog Project Management** - CRUD for blog projects and dashboard
+- [ ] **Phase 2: Blog Project Management** - CRUD for blog projects and dashboard
 - [ ] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management
 - [ ] **Phase 4: Pin Management** - Complete pin CRUD with image upload and status workflow
 - [ ] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
@@ -50,13 +50,14 @@ Plans:
   3. User can edit blog project details (name, URL, RSS URL, scraping frequency)
   4. User can delete blog projects
   5. Dashboard displays overview statistics (scheduled count, published count, pending count)
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Database migration, form libraries, shadcn/ui components, QueryClient + Toaster setup
 - [x] 02-02-PLAN.md — TypeScript types, Supabase API layer, TanStack Query hooks with optimistic updates
 - [x] 02-03-PLAN.md — Dashboard UI with project grid, stats bar, create/edit/delete dialogs
 - [x] 02-04-PLAN.md — Project detail page with metadata, actions, and future-phase placeholders
+- [ ] 02-05-PLAN.md — Fix project creation failure: on-demand profile creation for pre-migration users (gap closure)
 
 ### Phase 3: Blog Scraping & Articles
 **Goal**: Users can automatically scrape blog articles and view synchronized Pinterest boards
@@ -81,7 +82,7 @@ Plans:
   1. User can upload pin images linked to blog article and board
   2. User can set pin title and description manually
   3. User can bulk upload multiple pins at once
-  4. Pins follow status workflow: Entwurf → Bereit für Generierung → Pin generieren → Pin wird generiert → Pin generiert → Metadaten generieren → Metadaten werden generiert → Metadaten erstellt → Bereit zum Planen/Veröffentlichen → Veröffentlicht (plus Fehler, Löschen states)
+  4. Pins follow status workflow: Entwurf -> Bereit fur Generierung -> Pin generieren -> Pin wird generiert -> Pin generiert -> Metadaten generieren -> Metadaten werden generiert -> Metadaten erstellt -> Bereit zum Planen/Veroffentlichen -> Veroffentlicht (plus Fehler, Loschen states)
   5. User can edit pin details (image, metadata, schedule, board)
   6. User can delete pins
 **Plans**: TBD
@@ -97,7 +98,7 @@ Plans:
   1. User can trigger AI metadata generation for pins (title and description from article content)
   2. AI-generated metadata is optimized for Pinterest SEO
   3. User can schedule pins to specific date and time
-  4. Pin status automatically progresses through workflow states (Metadaten erstellt → Bereit zum Planen/Veröffentlichen → Veröffentlicht)
+  4. Pin status automatically progresses through workflow states (Metadaten erstellt -> Bereit zum Planen/Veroffentlichen -> Veroffentlicht)
 **Plans**: TBD
 
 Plans:
@@ -136,12 +137,12 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
-| 2. Blog Project Management | 4/4 | Complete | 2026-01-27 |
+| 2. Blog Project Management | 4/5 | Gap closure | - |
 | 3. Blog Scraping & Articles | 0/? | Not started | - |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
