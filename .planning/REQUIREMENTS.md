@@ -15,11 +15,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Blog Projects
 
-- [ ] **BLOG-01**: User can create blog projects with name and URL
-- [ ] **BLOG-02**: User can view list of their blog projects
-- [ ] **BLOG-03**: User can edit blog project details
-- [ ] **BLOG-04**: User can delete blog projects
-- [ ] **BLOG-05**: User can configure blog scraping settings (frequency, RSS URL)
+- [x] **BLOG-01**: User can create blog projects with name and URL
+- [x] **BLOG-02**: User can view list of their blog projects
+- [x] **BLOG-03**: User can edit blog project details
+- [x] **BLOG-04**: User can delete blog projects
+- [x] **BLOG-05**: User can configure blog scraping settings (frequency, RSS URL)
 
 ### Blog Articles
 
@@ -54,7 +54,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Dashboard
 
-- [ ] **DASH-01**: User sees overview stats on dashboard (scheduled count, published count, pending count)
+- [x] **DASH-01**: User sees overview stats on dashboard (scheduled count, published count, pending count)
 
 ### Migration
 
@@ -112,12 +112,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
-| BLOG-01 | Phase 2 | Pending |
-| BLOG-02 | Phase 2 | Pending |
-| BLOG-03 | Phase 2 | Pending |
-| BLOG-04 | Phase 2 | Pending |
-| BLOG-05 | Phase 2 | Pending |
-| DASH-01 | Phase 2 | Pending |
+| BLOG-01 | Phase 2 | Complete |
+| BLOG-02 | Phase 2 | Complete |
+| BLOG-03 | Phase 2 | Complete |
+| BLOG-04 | Phase 2 | Complete |
+| BLOG-05 | Phase 2 | Complete |
+| DASH-01 | Phase 2 | Complete |
 | ARTC-01 | Phase 3 | Pending |
 | ARTC-02 | Phase 3 | Pending |
 | ARTC-03 | Phase 3 | Pending |
@@ -147,4 +147,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-26 after roadmap creation*
+*Last updated: 2026-01-27 after Phase 2 completion*
