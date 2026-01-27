@@ -12,7 +12,7 @@ This roadmap delivers a multi-tenant Pinterest scheduling dashboard that replace
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Foundation & Security** - Multi-tenant auth and database setup with RLS
+- [ ] **Phase 1: Foundation & Security** - Multi-tenant auth and database setup with RLS
 - [ ] **Phase 2: Blog Project Management** - CRUD for blog projects and dashboard
 - [ ] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management
 - [ ] **Phase 4: Pin Management** - Complete pin CRUD with image upload and status workflow
@@ -31,13 +31,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Each user sees only their own data (no data leakage between tenants)
   3. Database has RLS policies enabled on all tables before any production data
   4. User can view empty dashboard after successful authentication
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [x] 01-01-PLAN.md — Initialize TanStack Router project with dependencies
 - [x] 01-02-PLAN.md — Create database schema with multi-tenant RLS
 - [x] 01-03-PLAN.md — Implement Google OAuth authentication
 - [x] 01-04-PLAN.md — Create protected dashboard with empty state
+- [ ] 01-05-PLAN.md — Fix auth guard redirect loop (gap closure: separate auth check from profile fetch)
 
 ### Phase 2: Blog Project Management
 **Goal**: Users can create and manage multiple blog projects with dashboard overview
@@ -136,7 +137,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Security | 4/4 | Complete | 2026-01-27 |
+| 1. Foundation & Security | 4/5 | Gap closure needed | - |
 | 2. Blog Project Management | 0/? | Not started | - |
 | 3. Blog Scraping & Articles | 0/? | Not started | - |
 | 4. Pin Management | 0/? | Not started | - |
