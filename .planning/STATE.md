@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 2 of 7 (Blog Project Management) — COMPLETE
-Plan: 6 of 6 in current phase
-Status: Complete ✓ (all gaps closed)
-Last activity: 2026-01-27 — Completed 02-06 (post-delete navigation fix)
+Phase: 3 of 7 (Blog Scraping & Articles) — IN PROGRESS
+Plan: 1 of 4 in current phase
+Status: In progress (plan 03-01 complete)
+Last activity: 2026-01-27 — Completed 03-01 (blog scraping foundation)
 
-Progress: [████░░░░░░] 33%
+Progress: [████░░░░░░] 36%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: ~4.5min
-- Total execution time: ~0.90 hours
+- Total plans completed: 13
+- Average duration: ~4.2min
+- Total execution time: ~0.92 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [████░░░░░░] 33%
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
+| 3. Blog Scraping & Articles | 1 | ~2min | ~2min |
 
 **Recent Trend:**
-- Last 5 plans: 02-06 (1min), 02-05 (2min), 02-04 (2min), 02-03 (5min), 02-02 (2min)
-- Trend: Exceptional velocity on Phase 2 (sub-3min average)
+- Last 5 plans: 03-01 (2min), 02-06 (1min), 02-05 (2min), 02-04 (2min), 02-03 (5min)
+- Trend: Maintaining exceptional velocity (sub-3min average)
 
 *Updated after each plan completion*
 
@@ -103,6 +104,12 @@ Recent decisions affecting current work:
 - Navigation is a UI concern, not a data layer concern — Optional callback added to DeleteDialog component, not mutation hook
 - onDeleted callback is optional and backward-compatible — Dashboard doesn't need it (stays on dashboard), detail page uses it (navigates to dashboard)
 
+**From 03-01 (Blog Scraping Foundation):**
+- Two operating modes in Edge Function: single_url for manual add, full scrape for blog index — Supports both automated and user-controlled workflows
+- RSS auto-discovery with common path fallbacks — Maximizes RSS success without requiring user configuration
+- Exclude supabase/functions from TypeScript compilation — Deno runtime conflicts with Node TypeScript compiler
+- Upsert behavior via unique constraint on (blog_project_id, url) — Enables re-scraping without duplicates
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -122,9 +129,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 02-06-PLAN.md (post-delete navigation fix)
+Stopped at: Completed 03-01-PLAN.md (blog scraping foundation)
 Resume file: None
-Next: Phase 2 fully complete — ready for Phase 3 (Blog Scraping & Articles)
+Next: Continue Phase 3 with 03-02 (Articles data layer)
 
 Config:
 {

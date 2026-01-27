@@ -74,7 +74,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Database schema (blog_articles table + RLS) and scrape Edge Function
+- [x] 03-01-PLAN.md — Database schema (blog_articles table + RLS) and scrape Edge Function
 - [ ] 03-02-PLAN.md — Articles data layer (types, API functions, TanStack Query hooks)
 - [ ] 03-03-PLAN.md — Articles list UI (sortable table, scrape button, manual add dialog)
 - [ ] 03-04-PLAN.md — Article detail page with content rendering
@@ -148,7 +148,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
-| 3. Blog Scraping & Articles | 0/4 | Planned | - |
+| 3. Blog Scraping & Articles | 1/4 | In progress | - |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |
