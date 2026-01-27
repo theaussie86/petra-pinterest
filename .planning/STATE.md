@@ -9,30 +9,30 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 2 of 7 (Blog Project Management) — COMPLETE
-Plan: 4 of 4 in current phase
-Status: Verified ✓
-Last activity: 2026-01-27 — Phase 2 verified and complete
+Phase: 2 of 7 (Blog Project Management) — GAP CLOSURE COMPLETE
+Plan: 5 of 5 in current phase
+Status: Ready for Phase 3
+Last activity: 2026-01-27 — Completed 02-05-PLAN.md (gap closure)
 
-Progress: [████░░░░░░] 29%
+Progress: [████░░░░░░] 31%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: ~5min
-- Total execution time: ~0.85 hours
+- Total plans completed: 11
+- Average duration: ~4.8min
+- Total execution time: ~0.88 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
-| 2. Blog Project Management | 4 | ~12.5min | ~3.1min |
+| 2. Blog Project Management | 5 | ~14.5min | ~2.9min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (2min), 02-03 (5min), 02-02 (2min), 02-01 (3.5min), 01-05 (1min)
-- Trend: Exceptional velocity on Phase 2 (sub-5min average)
+- Last 5 plans: 02-05 (2min), 02-04 (2min), 02-03 (5min), 02-02 (2min), 02-01 (3.5min)
+- Trend: Exceptional velocity on Phase 2 (sub-3min average)
 
 *Updated after each plan completion*
 
@@ -94,6 +94,11 @@ Recent decisions affecting current work:
 - Handle delete navigation override with onSuccess callback — Need to navigate to dashboard after delete, override default mutation behavior
 - Include placeholder sections for Articles and Pins — Communicate future functionality, set user expectations
 
+**From 02-05 (Profile Creation Gap Closure):**
+- Use SECURITY DEFINER RPC instead of client-side insert for privileged operations — RLS policies on profiles don't include INSERT policy, consistent with auto-profile trigger pattern
+- Apply ensureProfile() in both getUser() and createBlogProject() — Comprehensive coverage eliminates race conditions, proactive profile creation
+- Handle race conditions with ON CONFLICT DO NOTHING + re-select — Allows graceful handling of concurrent profile creation attempts
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -113,7 +118,7 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Phase 2 complete and verified
+Stopped at: Completed 02-05-PLAN.md (profile creation gap closure)
 Resume file: None
 Next: Plan Phase 3 (Blog Scraping & Articles)
 
