@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { ensureProfile } from '@/lib/auth'
 import type { BlogProject, BlogProjectInsert, BlogProjectUpdate } from '@/types/blog-projects'
 
 export async function getBlogProjects(): Promise<BlogProject[]> {
@@ -28,22 +29,15 @@ export async function createBlogProject(project: BlogProjectInsert): Promise<Blo
   if (authError) throw authError
   if (!user) throw new Error('Not authenticated')
 
-  // Get user's profile to retrieve tenant_id
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('tenant_id')
-    .eq('id', user.id)
-    .single()
-
-  if (profileError) throw profileError
-  if (!profile) throw new Error('User profile not found')
+  // Ensure profile exists and get tenant_id (handles missing profile from pre-migration signups)
+  const { tenant_id } = await ensureProfile()
 
   // Insert project with tenant_id
   const { data, error } = await supabase
     .from('blog_projects')
     .insert({
       ...project,
-      tenant_id: profile.tenant_id
+      tenant_id
     })
     .select()
     .single()

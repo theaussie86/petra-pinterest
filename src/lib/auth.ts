@@ -38,6 +38,18 @@ export async function signOut() {
 }
 
 /**
+ * Ensures a profile exists for the current user, creating one if missing
+ * Uses SECURITY DEFINER RPC to bypass RLS for profile creation
+ * Returns the user's tenant_id
+ */
+export async function ensureProfile(): Promise<{ tenant_id: string }> {
+  const { data, error } = await supabase.rpc('ensure_profile_exists')
+  if (error) throw new Error(`Unable to resolve user profile: ${error.message}`)
+  if (!data || data.length === 0) throw new Error('Unable to resolve user profile')
+  return { tenant_id: data[0].tenant_id }
+}
+
+/**
  * Gets the current authenticated user (auth check only, no profile data)
  * Returns basic user info if authenticated, null if not
  * Use this for auth guards - it doesn't depend on profile table
@@ -57,7 +69,7 @@ export async function getAuthUser(): Promise<{ id: string; email: string } | nul
 
 /**
  * Gets the current authenticated user with profile data
- * Returns AuthUser with fallback values if profile doesn't exist yet
+ * Ensures profile exists (creates on-demand if missing)
  * Only returns null if user is not authenticated
  */
 export async function getUser(): Promise<AuthUser | null> {
@@ -68,28 +80,29 @@ export async function getUser(): Promise<AuthUser | null> {
     return null
   }
 
-  // Get profile data with tenant_id and display_name
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('tenant_id, display_name')
-    .eq('id', authUser.id)
-    .single()
+  // Ensure profile exists (creates on-demand if missing) and get data
+  try {
+    const { tenant_id } = await ensureProfile()
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', authUser.id)
+      .single()
 
-  // If profile doesn't exist yet (race condition with trigger), return fallback values
-  if (profileError || !profile) {
+    return {
+      id: authUser.id,
+      email: authUser.email,
+      tenant_id,
+      display_name: profile?.display_name || authUser.email.split('@')[0] || 'User',
+    }
+  } catch {
+    // If ensureProfile fails entirely, fall back to empty tenant_id
     return {
       id: authUser.id,
       email: authUser.email,
       tenant_id: '',
       display_name: authUser.email.split('@')[0] || 'User',
     }
-  }
-
-  return {
-    id: authUser.id,
-    email: authUser.email,
-    tenant_id: profile.tenant_id,
-    display_name: profile.display_name,
   }
 }
 
