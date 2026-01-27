@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 1 of 7 (Foundation & Security)
-Plan: 3 of 4 in current phase
-Status: In progress (Wave 2 in progress)
-Last activity: 2026-01-27 — Completed 01-03-PLAN.md (Google OAuth implementation)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-01-27 — Completed 01-04-PLAN.md (Protected dashboard with auth guard)
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
+- Total plans completed: 4
 - Average duration: ~9min
-- Total execution time: ~0.4 hours
+- Total execution time: ~0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Security | 3 | ~26min | ~9min |
+| 1. Foundation & Security | 4 | ~36min | ~9min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (20min), 01-02 (2min), 01-01 (4min)
-- Trend: Increasing (01-03 more complex with auth flow)
+- Last 5 plans: 01-04 (10min), 01-03 (20min), 01-02 (2min), 01-01 (4min)
+- Trend: Consistent velocity around 9min average
 
 *Updated after each plan completion*
 
@@ -60,6 +60,12 @@ Recent decisions affecting current work:
 - Navigate to / instead of /dashboard after OAuth — Dashboard route created in 01-04
 - Auto-generated route tree with TanStack Router CLI — Required for type-safe navigation
 
+**From 01-04 (Protected Dashboard):**
+- Use TanStack Router beforeLoad for auth guard — Pattern matches SPA architecture
+- Pass user context via route context — beforeLoad returns user data, child routes access via useRouteContext
+- _authed layout pattern — All protected routes go under /_authed/* with automatic redirect
+- Simple dropdown with state toggle — Avoided headless UI library for simple menu
+
 ### Pending Todos
 
 None yet.
@@ -78,8 +84,9 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Completed 01-03-PLAN.md (Google OAuth), ready for 01-04
+Stopped at: Completed 01-04-PLAN.md (Protected dashboard) — Phase 1 complete
 Resume file: None
+Next: Phase 2 (Blog Management)
 
 Config:
 {
