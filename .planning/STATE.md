@@ -9,29 +9,29 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 2 of 7 (Blog Project Management)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-01-27 — Phase 1 complete (4/4 plans, verified)
+Phase: 1 of 7 (Foundation & Security)
+Plan: 5 of 5 in current phase
+Status: Phase complete - all plans executed and verified
+Last activity: 2026-01-27 — Completed 01-05-PLAN.md (auth guard redirect fix)
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [█░░░░░░░░░] 18%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: ~9min
+- Total plans completed: 5
+- Average duration: ~8min
 - Total execution time: ~0.6 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Security | 4 | ~36min | ~9min |
+| 1. Foundation & Security | 5 | ~37min | ~7min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (10min), 01-03 (20min), 01-02 (2min), 01-01 (4min)
-- Trend: Consistent velocity around 9min average
+- Last 5 plans: 01-05 (1min), 01-04 (10min), 01-03 (20min), 01-02 (2min), 01-01 (4min)
+- Trend: High velocity on focused bug fix plans
 
 *Updated after each plan completion*
 
@@ -66,6 +66,12 @@ Recent decisions affecting current work:
 - _authed layout pattern — All protected routes go under /_authed/* with automatic redirect
 - Simple dropdown with state toggle — Avoided headless UI library for simple menu
 
+**From 01-05 (Auth Guard Redirect Fix):**
+- Use getAuthUser() for auth guard gate — No profile table dependency
+- getUser() returns fallback values (not null) when profile missing — Handles race condition with profile trigger
+- Auth guard makes 2 calls (auth check + profile query) — Correctness over optimization
+- Graceful fallback pattern for race conditions with database triggers — display_name derived from email when profile doesn't exist yet
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -85,9 +91,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Phase 1 complete and verified. Ready for Phase 2 planning.
+Stopped at: Phase 1 fully complete (5/5 plans executed and verified). Auth guard redirect loop fixed.
 Resume file: None
-Next: /gsd:discuss-phase 2 or /gsd:plan-phase 2
+Next: Run UAT to verify redirect fix, then proceed to Phase 2 planning (/gsd:discuss-phase 2 or /gsd:plan-phase 2)
 
 Config:
 {
