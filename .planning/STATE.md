@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 1 of 7 (Foundation & Security)
-Plan: 2 of 4 in current phase
-Status: In progress (Wave 1 complete, executing Wave 2)
-Last activity: 2026-01-27 — Completed 01-01-PLAN.md (TanStack Router project init) and 01-02-PLAN.md (Database schema with RLS)
+Plan: 3 of 4 in current phase
+Status: In progress (Wave 2 in progress)
+Last activity: 2026-01-27 — Completed 01-03-PLAN.md (Google OAuth implementation)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: ~3min
-- Total execution time: ~0.1 hours
+- Total plans completed: 3
+- Average duration: ~9min
+- Total execution time: ~0.4 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Security | 2 | ~6min | ~3min |
+| 1. Foundation & Security | 3 | ~26min | ~9min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2min), 01-01 (4min)
-- Trend: N/A (need 3+ plans)
+- Last 5 plans: 01-03 (20min), 01-02 (2min), 01-01 (4min)
+- Trend: Increasing (01-03 more complex with auth flow)
 
 *Updated after each plan completion*
 
@@ -55,6 +55,11 @@ Recent decisions affecting current work:
 - Applied performance index on tenant_id — Multi-tenant query optimization
 - Created auto-profile trigger with SECURITY DEFINER — System-level profile creation bypasses RLS
 
+**From 01-03 (Google OAuth):**
+- Client-side authentication using Supabase JS client — Matches TanStack Router SPA architecture (not SSR)
+- Navigate to / instead of /dashboard after OAuth — Dashboard route created in 01-04
+- Auto-generated route tree with TanStack Router CLI — Required for type-safe navigation
+
 ### Pending Todos
 
 None yet.
@@ -73,7 +78,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-27
-Stopped at: Wave 1 complete (01-01 + 01-02), executing Wave 2 (01-03)
+Stopped at: Completed 01-03-PLAN.md (Google OAuth), ready for 01-04
 Resume file: None
 
 Config:
