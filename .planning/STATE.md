@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 7 (Pin Management)
-Plan: 1 of 5 in current phase
+Plan: 2 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-28 — Completed 04-01-PLAN.md (pins & boards database schema)
+Last activity: 2026-01-28 — Completed 04-02-PLAN.md (pin data layer: types, API, hooks)
 
-Progress: [██████░░░░] 50%
+Progress: [██████░░░░] 53%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: ~3.5min
+- Total plans completed: 19
+- Average duration: ~3.4min
 - Total execution time: ~1.0 hours
 
 **By Phase:**
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 50%
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
-| 4. Pin Management | 1 | ~2min | ~2min |
+| 4. Pin Management | 2 | ~4min | ~2min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (2min), 03-06 (3.5min), 03-04 (2min), 03-03 (3min), 03-02 (1.5min)
+- Last 5 plans: 04-02 (2min), 04-01 (2min), 03-06 (3.5min), 03-04 (2min), 03-03 (3min)
 - Trend: Strong velocity maintained
 
 *Updated after each plan completion*
@@ -158,6 +158,12 @@ Recent decisions affecting current work:
 - board_id ON DELETE SET NULL — Pins can exist without board assignment (assigned later in workflow)
 - Unique constraint on (blog_project_id, pinterest_board_id) — Enables board upsert from n8n sync
 
+**From 04-02 (Pin Data Layer):**
+- Image upload returns path string, not full URL — URL constructed on-demand via getPinImageUrl(); keeps DB portable
+- No optimistic updates on pin mutations — Consistent with update/delete pattern from Phase 2
+- Bulk operations use Supabase .in() filter — Efficient multi-row operations in single query
+- Storage cleanup before row deletion — deletePin/deletePins query image_path first, remove from Storage, then delete row
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -183,9 +189,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 04-01-PLAN.md (pins & boards database schema)
+Stopped at: Completed 04-02-PLAN.md (pin data layer: types, API, hooks)
 Resume file: None
-Next: 04-02 — TypeScript types, API layer, TanStack Query hooks for pins
+Next: 04-03 — Pin creation UI (upload image, select article/board, create pin)
 
 Config:
 {
