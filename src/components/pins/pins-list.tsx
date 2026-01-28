@@ -27,6 +27,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { PinCard } from '@/components/pins/pin-card'
 import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
@@ -50,6 +58,8 @@ export function PinsList({ projectId }: PinsListProps) {
   const [sortField, setSortField] = useState<PinSortField>('created_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<string | null>(null)
 
   const { data: pins, isLoading, error } = usePins(projectId)
   const { data: articles } = useArticles(projectId)
@@ -145,13 +155,14 @@ export function PinsList({ projectId }: PinsListProps) {
   }
 
   // Bulk actions
-  const handleBulkDelete = async () => {
-    const count = selectedIds.size
-    if (!window.confirm(`Delete ${count} pin${count > 1 ? 's' : ''}? This cannot be undone.`)) {
-      return
-    }
+  const handleBulkDelete = () => {
+    setBulkDeleteOpen(true)
+  }
+
+  const confirmBulkDelete = async () => {
     await bulkDeleteMutation.mutateAsync(Array.from(selectedIds))
     clearSelection()
+    setBulkDeleteOpen(false)
   }
 
   const handleBulkStatusChange = async (status: PinStatus) => {
@@ -163,14 +174,19 @@ export function PinsList({ projectId }: PinsListProps) {
   }
 
   // Single pin delete
-  const handleDeletePin = async (id: string) => {
-    if (!window.confirm('Delete this pin? This cannot be undone.')) return
-    await deletePinMutation.mutateAsync(id)
+  const handleDeletePin = (id: string) => {
+    setSingleDeleteTarget(id)
+  }
+
+  const confirmSingleDelete = async () => {
+    if (!singleDeleteTarget) return
+    await deletePinMutation.mutateAsync(singleDeleteTarget)
     setSelectedIds((prev) => {
       const next = new Set(prev)
-      next.delete(id)
+      next.delete(singleDeleteTarget)
       return next
     })
+    setSingleDeleteTarget(null)
   }
 
   // Tab change clears selection
@@ -437,6 +453,46 @@ export function PinsList({ projectId }: PinsListProps) {
           </TabsContent>
         ))}
       </Tabs>
+
+      {/* Bulk delete confirmation dialog */}
+      <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selectedIds.size} Pin{selectedIds.size > 1 ? 's' : ''}</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedIds.size} selected pin{selectedIds.size > 1 ? 's' : ''}? The associated images will also be removed from storage. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={bulkDeleteMutation.isPending}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmBulkDelete} disabled={bulkDeleteMutation.isPending}>
+              {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Single delete confirmation dialog */}
+      <Dialog open={singleDeleteTarget !== null} onOpenChange={(open) => { if (!open) setSingleDeleteTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Pin</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this pin? The associated image will also be removed from storage. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSingleDeleteTarget(null)} disabled={deletePinMutation.isPending}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmSingleDelete} disabled={deletePinMutation.isPending}>
+              {deletePinMutation.isPending ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
