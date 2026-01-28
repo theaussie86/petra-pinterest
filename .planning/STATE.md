@@ -5,22 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 3 gap closure — Inngest-based scraping to replace Edge Function
+**Current focus:** Phase 4 — Pin Management (database schema, data layer, UI)
 
 ## Current Position
 
-Phase: 3 of 7 (Blog Scraping & Articles) — COMPLETE
-Plan: 8 of 8 in current phase
-Status: Complete — all plans executed
-Last activity: 2026-01-28 — Completed 03-08 (sitemap-based scraping)
+Phase: 4 of 7 (Pin Management)
+Plan: 1 of 5 in current phase
+Status: In progress
+Last activity: 2026-01-28 — Completed 04-01-PLAN.md (pins & boards database schema)
 
-Progress: [█████░░░░░] 46%
+Progress: [██████░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
-- Average duration: ~3.6min
+- Total plans completed: 18
+- Average duration: ~3.5min
 - Total execution time: ~1.0 hours
 
 **By Phase:**
@@ -30,10 +30,11 @@ Progress: [█████░░░░░] 46%
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
+| 4. Pin Management | 1 | ~2min | ~2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-06 (3.5min), 03-04 (2min), 03-03 (3min), 03-02 (1.5min), 03-01 (2min)
-- Trend: Strong velocity maintained (Phase 3 at 2.3min avg)
+- Last 5 plans: 04-01 (2min), 03-06 (3.5min), 03-04 (2min), 03-03 (3min), 03-02 (1.5min)
+- Trend: Strong velocity maintained
 
 *Updated after each plan completion*
 
@@ -150,6 +151,13 @@ Recent decisions affecting current work:
 - Service role key bypasses RLS; server enforces tenant isolation via auth token verification
 - Helper functions exported from Inngest functions for reuse in REST endpoints
 
+**From 04-01 (Pins & Boards Database Schema):**
+- Pin status enum uses German workflow names matching existing Airtable system — Consistency for migration
+- Storage bucket public for reads, tenant-isolated for writes — Pin images displayed in calendar/shared contexts
+- Folder-based storage RLS using `{tenant_id}/{pin_id}.{ext}` path with `storage.foldername()` — Tenant isolation without metadata
+- board_id ON DELETE SET NULL — Pins can exist without board assignment (assigned later in workflow)
+- Unique constraint on (blog_project_id, pinterest_board_id) — Enables board upsert from n8n sync
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -175,9 +183,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Phase 3 complete — all 8 plans executed
+Stopped at: Completed 04-01-PLAN.md (pins & boards database schema)
 Resume file: None
-Next: Phase 4 — Pin Management
+Next: 04-02 — TypeScript types, API layer, TanStack Query hooks for pins
 
 Config:
 {
