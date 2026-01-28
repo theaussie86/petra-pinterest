@@ -13,6 +13,12 @@
   --color-accent-foreground: #0a0a0a;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #ffffff;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #0a0a0a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0a0a0a;
+  --color-input: #e5e5e5;
+  --color-ring: #e60023;
   --radius-default: 0.5rem;
 }
 
