@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 7 (Pin Management)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-28 — Completed 04-02-PLAN.md (pin data layer: types, API, hooks)
+Last activity: 2026-01-28 — Completed 04-03-PLAN.md (pin creation UI: upload zone, dialog, project page)
 
-Progress: [██████░░░░] 53%
+Progress: [██████░░░░] 56%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
-- Average duration: ~3.4min
-- Total execution time: ~1.0 hours
+- Total plans completed: 20
+- Average duration: ~3.3min
+- Total execution time: ~1.1 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 53%
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
-| 4. Pin Management | 2 | ~4min | ~2min |
+| 4. Pin Management | 3 | ~6.5min | ~2.2min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (2min), 04-01 (2min), 03-06 (3.5min), 03-04 (2min), 03-03 (3min)
+- Last 5 plans: 04-03 (2.5min), 04-02 (2min), 04-01 (2min), 03-06 (3.5min), 03-04 (2min)
 - Trend: Strong velocity maintained
 
 *Updated after each plan completion*
@@ -164,6 +164,11 @@ Recent decisions affecting current work:
 - Bulk operations use Supabase .in() filter — Efficient multi-row operations in single query
 - Storage cleanup before row deletion — deletePin/deletePins query image_path first, remove from Storage, then delete row
 
+**From 04-03 (Pin Creation UI):**
+- Controlled file state in parent dialog, not upload zone — ImageUploadZone is presentational; dialog owns state for submit flow
+- Sequential image upload before bulk row insert — Upload each file to Storage individually, then create all pin rows in one createPins call
+- Pins section uses section header pattern instead of Card placeholder — Matches Articles section design for consistency
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -189,9 +194,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 04-02-PLAN.md (pin data layer: types, API, hooks)
+Stopped at: Completed 04-03-PLAN.md (pin creation UI: upload zone, dialog, project page)
 Resume file: None
-Next: 04-03 — Pin creation UI (upload image, select article/board, create pin)
+Next: 04-04 — Pin list & table view
 
 Config:
 {
