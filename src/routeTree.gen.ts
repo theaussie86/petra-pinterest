@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedProjectsIdRouteImport } from './routes/_authed/projects/$id'
 import { Route as AuthedArticlesArticleIdRouteImport } from './routes/_authed/articles/$articleId'
@@ -36,6 +37,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInngestRoute = ApiInngestRouteImport.update({
+  id: '/api/inngest',
+  path: '/api/inngest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -56,6 +62,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/articles/$articleId': typeof AuthedArticlesArticleIdRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/articles/$articleId': typeof AuthedArticlesArticleIdRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/articles/$articleId': typeof AuthedArticlesArticleIdRoute
   '/_authed/projects/$id': typeof AuthedProjectsIdRoute
@@ -84,6 +93,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/api/inngest'
     | '/auth/callback'
     | '/articles/$articleId'
     | '/projects/$id'
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/api/inngest'
     | '/auth/callback'
     | '/articles/$articleId'
     | '/projects/$id'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/login'
     | '/_authed/dashboard'
+    | '/api/inngest'
     | '/auth/callback'
     | '/_authed/articles/$articleId'
     | '/_authed/projects/$id'
@@ -110,6 +122,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiInngestRoute: typeof ApiInngestRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/inngest': {
+      id: '/api/inngest'
+      path: '/api/inngest'
+      fullPath: '/api/inngest'
+      preLoaderRoute: typeof ApiInngestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/dashboard': {
@@ -186,6 +206,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiInngestRoute: ApiInngestRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport

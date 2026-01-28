@@ -103,7 +103,7 @@ Each task was committed atomically:
 
 3. **Separate Express server on port 3001** - Avoids conflict with Vite dev server (port 3000) and cleanly separates scraping backend from TanStack Start's server runtime.
 
-4. **Service role key with tenant enforcement** - Server uses `SUPABASE_SERVICE_ROLE_KEY` to bypass RLS for writes, but enforces tenant isolation by verifying user JWT and extracting `tenant_id` from profiles table.
+4. **Service role key with tenant enforcement** - Server uses `SUPABASE_SECRET_KEY` to bypass RLS for writes, but enforces tenant isolation by verifying user JWT and extracting `tenant_id` from profiles table.
 
 5. **Dual-mode scraping** - Inngest functions wrap scraping logic for future background/scheduled jobs, while REST endpoints call helpers directly for v1 synchronous responses.
 
@@ -138,7 +138,7 @@ None - plan executed smoothly with only one TypeScript type refinement needed.
 
 2. **Supabase Service Role:**
    - Add `SUPABASE_URL` to `.env.local` (same as VITE_SUPABASE_URL)
-   - Add `SUPABASE_SERVICE_ROLE_KEY` from Supabase Dashboard -> Settings -> API
+   - Add `SUPABASE_SECRET_KEY` from Supabase Dashboard -> Settings -> API
 
 3. **Development Workflow:**
    - Run `npm run dev` (Vite on port 3000)

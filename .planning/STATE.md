@@ -44,7 +44,7 @@ Progress: [█████░░░░░] 46%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Migrated from TanStack Router SPA to TanStack Start (SPA mode) — Vite 7 conflicts resolved; Start unlocks server functions and SSR capability while `spa: { enabled: true }` keeps all client-side code working unchanged
+- Migrated from TanStack Router SPA to TanStack Start — Vite 7 conflicts resolved; SPA mode later disabled (03-05) to activate server runtime for server functions and SSR
 - Path alias @/ instead of ~/ — Matches official template convention; now resolved by `vite-tsconfig-paths` instead of manual Vite alias
 - Keep n8n for Pinterest API — Pinterest OAuth complexity, don't block v1
 - Keep granular pin statuses — Preserve existing workflow

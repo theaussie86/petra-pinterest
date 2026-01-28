@@ -3,12 +3,14 @@ import {
   Outlet,
   createRootRoute,
   HeadContent,
+  Link,
   Scripts,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
+import { fetchUser } from '@/lib/server/auth'
 import '@/styles.css'
 
 const queryClient = new QueryClient({
@@ -29,7 +31,12 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: 'icon', href: '/favicon.ico' }],
   }),
+  beforeLoad: async () => {
+    const user = await fetchUser()
+    return { user }
+  },
   component: RootComponent,
+  notFoundComponent: NotFound,
 })
 
 function RootComponent() {
@@ -47,6 +54,18 @@ function RootComponent() {
         ]}
       />
     </RootDocument>
+  )
+}
+
+function NotFound() {
+  return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+      <h1 className="text-4xl font-bold">404</h1>
+      <p className="text-muted-foreground">Page not found</p>
+      <Link to="/" className="text-primary underline underline-offset-4">
+        Go home
+      </Link>
+    </div>
   )
 }
 

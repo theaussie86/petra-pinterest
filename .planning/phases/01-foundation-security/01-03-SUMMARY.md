@@ -149,7 +149,7 @@ npx tsc --noEmit
 **Prerequisites for testing:**
 1. Add Supabase environment variables to `.env.local`:
    - VITE_SUPABASE_URL
-   - VITE_SUPABASE_ANON_KEY
+   - VITE_SUPABASE_PUBLISHABLE_KEY
 2. Configure Google OAuth provider in Supabase dashboard
 3. Add authorized redirect URI: `http://localhost:3000/auth/callback`
 

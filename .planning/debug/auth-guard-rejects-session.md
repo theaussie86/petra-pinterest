@@ -23,7 +23,7 @@ started: Appears to be a design-time bug (never worked correctly)
 ## Eliminated
 
 - hypothesis: Supabase client misconfigured (missing env vars, wrong keys)
-  evidence: supabase.ts properly reads VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY with validation; createClient call is standard
+  evidence: supabase.ts properly reads VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY with validation; createClient call is standard
   timestamp: 2026-01-27
 
 - hypothesis: Route tree incorrectly wired (dashboard not under _authed)
