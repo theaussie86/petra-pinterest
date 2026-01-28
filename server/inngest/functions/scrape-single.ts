@@ -1,6 +1,6 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
-import { scrapeSingleUrl } from './scrape-blog'
+import { scrapeSingleUrl } from '../../lib/scraping'
 
 export const scrapeSingle = inngest.createFunction(
   { id: 'scrape-single-article' },
@@ -10,7 +10,7 @@ export const scrapeSingle = inngest.createFunction(
 
     const supabase = createClient(
       process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      process.env.SUPABASE_SECRET_KEY!
     )
 
     const result = await step.run('scrape-and-upsert', async () => {

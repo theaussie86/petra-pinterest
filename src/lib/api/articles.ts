@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { scrapeBlogFn, scrapeSingleFn } from '@/lib/server/scraping'
 import type { Article, ScrapeRequest, ScrapeResponse } from '@/types/articles'
 
 export async function getArticlesByProject(projectId: string): Promise<Article[]> {
@@ -60,53 +61,10 @@ export async function getArchivedArticles(projectId: string): Promise<Article[]>
   return data
 }
 
-export async function scrapeBlog(request: ScrapeRequest): Promise<ScrapeResponse> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    throw new Error('Not authenticated')
-  }
-
-  const response = await fetch('/api/scrape', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify(request),
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.errors?.[0] || 'Failed to scrape blog')
-  }
-
-  return data as ScrapeResponse
+export async function scrapeBlog(request: ScrapeRequest) {
+  return await scrapeBlogFn({ data: request })
 }
 
 export async function addArticleManually(projectId: string, url: string): Promise<ScrapeResponse> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    throw new Error('Not authenticated')
-  }
-
-  const response = await fetch('/api/scrape/single', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({
-      blog_project_id: projectId,
-      url,
-    }),
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.errors?.[0] || 'Failed to add article')
-  }
-
-  return data as ScrapeResponse
+  return await scrapeSingleFn({ data: { blog_project_id: projectId, url } })
 }

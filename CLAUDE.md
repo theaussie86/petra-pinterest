@@ -20,7 +20,7 @@ npm test           # Run tests (vitest)
 
 ## Tech Stack
 
-- **Framework:** TanStack Start (SPA mode) + TanStack Router (file-based routing) + Vite 7
+- **Framework:** TanStack Start + TanStack Router (file-based routing) + Vite 7
 - **Language:** TypeScript (strict mode)
 - **Styling:** Tailwind CSS v4 + shadcn/ui ("new-york" style)
 - **Server state:** TanStack Query v5 (30s default staleTime)
@@ -46,7 +46,7 @@ Components → TanStack Query hooks (`src/lib/hooks/`) → API functions (`src/l
 - `src/server.ts` — Server entry, creates the Start handler with stream support
 - `src/routes/__root.tsx` — Full HTML document shell (`<html>`, `<head>`, `<body>`), hosts `QueryClientProvider`, `HeadContent`, and `Scripts`
 
-SPA mode is enabled (`spa: { enabled: true }` in vite.config.ts). All routing and rendering happens client-side. SSR can be enabled per-route later.
+SPA mode is disabled. The app runs with a full Node.js server runtime, enabling SSR and server functions (`createServerFn`).
 
 ### Routing
 
@@ -80,6 +80,20 @@ RLS is enabled on all tables. Application-level checks provide defense-in-depth.
 - `src/components/projects/` — Project dialogs (create/edit share one component, mode detected via `project` prop)
 - `src/components/layout/` — Header, navigation
 
+### Server Functions (Scraping)
+
+Scraping operations use `createServerFn` from TanStack Start (`src/lib/server/scraping.ts`). These run server-side with cookie-based auth — no Bearer tokens or manual `fetch()` needed. The client calls them like regular async functions:
+- `scrapeBlogFn` — dispatches to Inngest for async background processing
+- `scrapeSingleFn` — synchronous single-URL scrape with immediate DB upsert
+
+Shared scraping logic (RSS/HTML parsing) lives in `server/lib/scraping.ts`.
+
+### Background Jobs (Inngest)
+
+Inngest webhook endpoint is a TanStack Start file-based server route at `src/routes/api/inngest.ts`, using the `inngest/edge` adapter. Functions are defined in `server/inngest/functions/` and registered in `server/inngest/index.ts`.
+
+Event-to-function mapping: each function declares the event name it listens to via `{ event: 'blog/scrape.requested' }` in `createFunction()`. When an event is sent (`inngest.send({ name: '...', data: {...} })`), Inngest matches the event name to registered functions and calls back into `/api/inngest` to execute them. Multiple functions can listen to the same event (fan-out).
+
 ### Database Migrations
 
 Migrations live in `supabase/migrations/` and are applied via Supabase CLI or MCP. Use `apply_migration` for DDL changes, `execute_sql` for data queries.
@@ -97,7 +111,7 @@ Migrations live in `supabase/migrations/` and are applied via Supabase CLI or MC
 Copy `.env.example` to `.env.local`:
 ```
 VITE_SUPABASE_URL=<your-project-url>
-VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
 ```
 
 ## MCP Servers

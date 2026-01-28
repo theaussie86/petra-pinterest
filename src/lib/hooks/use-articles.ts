@@ -40,8 +40,8 @@ export function useScrapeBlog() {
 
   return useMutation({
     mutationFn: scrapeBlog,
-    onSuccess: (data, variables) => {
-      toast.success(`Scrape complete: ${data.articles_found} found, ${data.articles_created} new, ${data.articles_updated} updated`)
+    onSuccess: (_data, variables) => {
+      toast.success('Blog scrape started. Articles will appear shortly.')
       queryClient.invalidateQueries({ queryKey: ['articles', variables.blog_project_id] })
     },
     onError: () => {

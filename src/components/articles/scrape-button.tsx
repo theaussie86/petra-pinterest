@@ -47,8 +47,7 @@ export function ScrapeButton({ blogProjectId, blogUrl, rssUrl }: ScrapeButtonPro
 
   const getResultSummary = () => {
     if (!scrapeMutation.data) return ''
-    const { articles_created, articles_updated } = scrapeMutation.data
-    return `${articles_created} new, ${articles_updated} updated`
+    return 'Scrape started'
   }
 
   return (
