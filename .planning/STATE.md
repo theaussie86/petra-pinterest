@@ -9,18 +9,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 3 of 7 (Blog Scraping & Articles) — BLOCKED
-Plan: 5 of 5 in current phase (gap closure attempt)
-Status: Gap closure — Inngest approach chosen for scraping
-Last activity: 2026-01-28 — User chose Inngest for scraping (replaces Edge Function and server functions)
+Phase: 3 of 7 (Blog Scraping & Articles)
+Plan: 6 of 7 in current phase
+Status: In progress — Inngest server operational, client integration pending
+Last activity: 2026-01-28 — Completed 03-06-PLAN.md (Inngest-powered blog scraping)
 
-Progress: [█████░░░░░] 43%
+Progress: [█████░░░░░] 46%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: ~3.7min
+- Total plans completed: 17
+- Average duration: ~3.6min
 - Total execution time: ~1.0 hours
 
 **By Phase:**
@@ -29,11 +29,11 @@ Progress: [█████░░░░░] 43%
 |-------|-------|-------|----------|
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
-| 3. Blog Scraping & Articles | 4 | ~10.5min | ~2.6min |
+| 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (3min), 03-04 (2min), 03-02 (1.5min), 03-01 (2min), 02-06 (1min)
-- Trend: Exceptional velocity maintained (Phase 3 completed in 10.5min total)
+- Last 5 plans: 03-06 (3.5min), 03-04 (2min), 03-03 (3min), 03-02 (1.5min), 03-01 (2min)
+- Trend: Strong velocity maintained (Phase 3 at 2.3min avg)
 
 *Updated after each plan completion*
 
@@ -143,6 +143,13 @@ Recent decisions affecting current work:
 - CORS errors from Edge Function remain unresolved - blog scraping still broken
 - **Architectural decision required:** Alternative approach needed to resolve CORS (see 03-05-SUMMARY.md for options)
 
+**From 03-06 (Inngest-Powered Blog Scraping):**
+- Standalone Express server on port 3001 for blog scraping - separate from Vite dev server
+- Inngest functions wrap scraping logic for durable execution - REST endpoints call helpers directly for v1
+- Port Deno Edge Function to Node.js using node-html-parser and fast-xml-parser
+- Service role key bypasses RLS; server enforces tenant isolation via auth token verification
+- Helper functions exported from Inngest functions for reuse in REST endpoints
+
 ### Pending Todos
 
 1 pending todo(s):
@@ -150,10 +157,10 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-**RESOLVED (03-05 → 03-06):**
-- ✅ **Decision made:** Use Inngest for blog scraping — replaces both Edge Function and failed server functions approach
-- Inngest provides durable execution, retries, and background processing
-- Plan 03-06 needed to implement Inngest integration
+**RESOLVED (03-06):**
+- ✅ **Inngest server operational:** Express server running on port 3001 with REST scraping endpoints
+- ✅ **CORS gap closed:** Express server replaces Edge Function, avoids CORS issues
+- Client integration (03-07) needed to complete scraping flow
 
 **From Research:**
 - ✅ Phase 1: Multi-tenant RLS is CRITICAL — ADDRESSED in 01-02 (RLS enabled on profiles table)
@@ -167,9 +174,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: 03-05 partial (SPA disabled), user chose Inngest for scraping
+Stopped at: Completed 03-06-PLAN.md (Inngest-powered blog scraping)
 Resume file: None
-Next: Plan 03-06 — Inngest-based scraping to close CORS gap
+Next: Plan 03-07 — Client integration to call Express server endpoints
 
 Config:
 {
