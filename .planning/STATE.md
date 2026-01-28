@@ -152,8 +152,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-1 pending todo(s):
+2 pending todo(s):
 - **Cleanup AIRTABLE_PAT from ~/.zshrc** (tooling) — Remove after Airtable MCP no longer needed
+- **Use sitemap instead of RSS for blog scraping** (api) — Parse sitemap.xml for article discovery instead of RSS feeds
 
 ### Blockers/Concerns
 
