@@ -18,7 +18,10 @@ export default defineConfig(({ mode }) => {
       tsConfigPaths(),
       devtools(),
       tanstackStart(),
-      nitro({ preset: 'vercel' }),
+      nitro({
+        preset: 'vercel',
+        plugins: ['./src/polyfill.ts'],
+      }),
       tailwindcss(),
     ],
   }
