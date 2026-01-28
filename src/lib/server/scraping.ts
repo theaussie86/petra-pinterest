@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
-import { scrapeSingleUrl } from '../../../server/lib/scraping'
+import { getSupabaseServerClient } from './supabase'
+
 import { inngest } from '../../../server/inngest/client'
 import type { ScrapeResponse } from '@/types/articles'
 
@@ -64,39 +64,19 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
       .single()
     if (!profile) throw new Error('Profile not found')
 
-    const article = await scrapeSingleUrl(data.url)
-
-    const serviceClient = getSupabaseServiceClient()
-    const { error: upsertError } = await serviceClient
-      .from('blog_articles')
-      .upsert(
-        {
-          tenant_id: profile.tenant_id,
-          blog_project_id: data.blog_project_id,
-          title: article.title,
-          url: article.url,
-          content: article.content,
-          published_at: article.published_at,
-          scraped_at: new Date().toISOString(),
-        },
-        { onConflict: 'blog_project_id,url' },
-      )
-
-    if (upsertError) {
-      return {
-        success: false,
-        articles_found: 1,
-        articles_created: 0,
-        articles_updated: 0,
-        method: 'single',
-        errors: [upsertError.message],
-      }
-    }
+    await inngest.send({
+      name: 'blog/scrape-single.requested',
+      data: {
+        blog_project_id: data.blog_project_id,
+        url: data.url,
+        tenant_id: profile.tenant_id,
+      },
+    })
 
     return {
       success: true,
       articles_found: 1,
-      articles_created: 1,
+      articles_created: 0,
       articles_updated: 0,
       method: 'single',
       errors: [],
