@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 3 of 7 (Blog Scraping & Articles)
-Plan: 6 of 7 in current phase
-Status: In progress — Inngest server operational, client integration pending
-Last activity: 2026-01-28 — Completed 03-06-PLAN.md (Inngest-powered blog scraping)
+Plan: 8 of 8 in current phase
+Status: In progress — executing 03-08 (sitemap-based scraping)
+Last activity: 2026-01-28 — 03-06 complete, 03-07 superseded by server functions migration
 
 Progress: [█████░░░░░] 46%
 
@@ -152,9 +152,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-2 pending todo(s):
+1 pending todo(s):
 - **Cleanup AIRTABLE_PAT from ~/.zshrc** (tooling) — Remove after Airtable MCP no longer needed
-- **Use sitemap instead of RSS for blog scraping** (api) — Parse sitemap.xml for article discovery instead of RSS feeds
 
 ### Blockers/Concerns
 
@@ -175,9 +174,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 03-06-PLAN.md (Inngest-powered blog scraping)
+Stopped at: Executing 03-08-PLAN.md (sitemap-based scraping)
 Resume file: None
-Next: Plan 03-07 — Client integration to call Express server endpoints
+Next: Execute 03-08 — Sitemap scraping to replace RSS-based discovery
 
 Config:
 {
