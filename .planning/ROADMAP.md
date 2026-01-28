@@ -71,13 +71,14 @@ Plans:
   4. User can view article detail page with full scraped content
   5. User can manually add an article by URL
   6. User can archive and restore articles (soft delete)
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [x] 03-01-PLAN.md — Database schema (blog_articles table + RLS) and scrape Edge Function
 - [x] 03-02-PLAN.md — Articles data layer (types, API functions, TanStack Query hooks)
 - [x] 03-03-PLAN.md — Articles list UI (sortable table, scrape button, manual add dialog)
 - [x] 03-04-PLAN.md — Article detail page with content rendering
+- [ ] 03-05-PLAN.md — Replace Edge Function with TanStack Start server functions (gap closure: CORS fix)
 
 ### Phase 4: Pin Management
 **Goal**: Users can create, edit, and manage pins with image upload and status workflow
@@ -148,7 +149,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
-| 3. Blog Scraping & Articles | 4/4 | Complete ✓ | 2026-01-27 |
+| 3. Blog Scraping & Articles | 4/5 | Gap closure | 2026-01-27 |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |
