@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 3 complete (verified) — ready for Phase 4
+**Current focus:** Phase 3 gap closure — Inngest-based scraping to replace Edge Function
 
 ## Current Position
 
 Phase: 3 of 7 (Blog Scraping & Articles) — BLOCKED
 Plan: 5 of 5 in current phase (gap closure attempt)
-Status: Blocked ⚠ — Server functions incompatible with current tooling
-Last activity: 2026-01-28 — 03-05 blocked by Vite bundling issue
+Status: Gap closure — Inngest approach chosen for scraping
+Last activity: 2026-01-28 — User chose Inngest for scraping (replaces Edge Function and server functions)
 
 Progress: [█████░░░░░] 43%
 
@@ -150,15 +150,10 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-**ACTIVE BLOCKER (03-05):**
-- 🚨 **CORS errors blocking blog scraping** — Edge Function fails with CORS when called from SPA
-- 🚨 **TanStack Start server functions incompatible** — Vite 7 bundling error with `node:stream` imports
-- **Decision required:** Choose alternative approach to resolve CORS (see 03-05-SUMMARY.md)
-  - Option A: Fix CORS headers on Edge Function (simplest)
-  - Option B: Vite dev proxy (dev-only workaround)
-  - Option C: Wait for TanStack Start compatibility fix
-  - Option D: Separate Node.js API service
-  - Option E: Client-side scraping via backend proxy
+**RESOLVED (03-05 → 03-06):**
+- ✅ **Decision made:** Use Inngest for blog scraping — replaces both Edge Function and failed server functions approach
+- Inngest provides durable execution, retries, and background processing
+- Plan 03-06 needed to implement Inngest integration
 
 **From Research:**
 - ✅ Phase 1: Multi-tenant RLS is CRITICAL — ADDRESSED in 01-02 (RLS enabled on profiles table)
@@ -172,9 +167,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: 03-05-PLAN.md blocked - architectural decision required
+Stopped at: 03-05 partial (SPA disabled), user chose Inngest for scraping
 Resume file: None
-Next: BLOCKED - resolve CORS approach decision before Phase 4
+Next: Plan 03-06 — Inngest-based scraping to close CORS gap
 
 Config:
 {
