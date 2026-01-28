@@ -3,6 +3,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import { devtools } from '@tanstack/devtools-vite'
 import tailwindcss from '@tailwindcss/vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
+import { nitro } from 'nitro/vite'
 
 export default defineConfig(({ mode }) => {
   // Load all env vars from .env.local (not just VITE_ prefixed)
@@ -17,6 +18,7 @@ export default defineConfig(({ mode }) => {
       tsConfigPaths(),
       devtools(),
       tanstackStart(),
+      nitro({ preset: 'vercel' }),
       tailwindcss(),
     ],
   }
