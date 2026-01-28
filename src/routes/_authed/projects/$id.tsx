@@ -8,8 +8,8 @@ import { DeleteDialog } from '@/components/projects/delete-dialog'
 import { ArticlesTable } from '@/components/articles/articles-table'
 import { ScrapeButton } from '@/components/articles/scrape-button'
 import { AddArticleDialog } from '@/components/articles/add-article-dialog'
+import { CreatePinDialog } from '@/components/pins/create-pin-dialog'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card'
 
 export const Route = createFileRoute('/_authed/projects/$id')({
   component: ProjectDetail,
@@ -24,6 +24,7 @@ function ProjectDetail() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [addArticleDialogOpen, setAddArticleDialogOpen] = useState(false)
+  const [createPinDialogOpen, setCreatePinDialogOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -162,24 +163,24 @@ function ProjectDetail() {
           <ArticlesTable projectId={id} />
         </div>
 
-        {/* Pins placeholder */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Pin className="h-5 w-5 text-slate-400" />
+        {/* Pins section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Pin className="h-5 w-5" />
               Pins
-            </CardTitle>
-            <CardDescription>Pinterest content for this blog</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Pin className="h-12 w-12 text-slate-300 mb-3" />
-              <p className="text-sm text-slate-500">
-                Pins will appear here once you start creating content
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </h2>
+            <Button variant="outline" size="sm" onClick={() => setCreatePinDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Create Pin
+            </Button>
+          </div>
+          <div className="flex flex-col items-center justify-center py-8 text-center rounded-lg border border-dashed border-slate-200">
+            <Pin className="h-12 w-12 text-slate-300 mb-3" />
+            <p className="text-sm text-slate-500">
+              Pins will appear here once you start creating content
+            </p>
+          </div>
+        </div>
 
         {/* Dialogs */}
         <ProjectDialog
@@ -196,6 +197,11 @@ function ProjectDetail() {
         <AddArticleDialog
           open={addArticleDialogOpen}
           onOpenChange={setAddArticleDialogOpen}
+          projectId={id}
+        />
+        <CreatePinDialog
+          open={createPinDialogOpen}
+          onOpenChange={setCreatePinDialogOpen}
           projectId={id}
         />
       </main>
