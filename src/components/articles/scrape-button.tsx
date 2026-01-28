@@ -6,10 +6,10 @@ import { useScrapeBlog } from '@/lib/hooks/use-articles'
 interface ScrapeButtonProps {
   blogProjectId: string
   blogUrl: string
-  rssUrl: string | null
+  sitemapUrl: string | null
 }
 
-export function ScrapeButton({ blogProjectId, blogUrl, rssUrl }: ScrapeButtonProps) {
+export function ScrapeButton({ blogProjectId, blogUrl, sitemapUrl }: ScrapeButtonProps) {
   const scrapeMutation = useScrapeBlog()
   const [showSuccess, setShowSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -41,7 +41,7 @@ export function ScrapeButton({ blogProjectId, blogUrl, rssUrl }: ScrapeButtonPro
     scrapeMutation.mutate({
       blog_project_id: blogProjectId,
       blog_url: blogUrl,
-      rss_url: rssUrl,
+      sitemap_url: sitemapUrl,
     })
   }
 

@@ -111,21 +111,21 @@ function ProjectDetail() {
               <span>•</span>
               <span>Scraping: {getFrequencyBadge(project.scraping_frequency)}</span>
             </div>
-            {project.rss_url && (
+            {project.sitemap_url && (
               <div className="text-sm">
-                <span className="text-slate-500">RSS:</span>{' '}
+                <span className="text-slate-500">Sitemap:</span>{' '}
                 <a
-                  href={project.rss_url}
+                  href={project.sitemap_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:text-blue-700 hover:underline"
                 >
-                  {project.rss_url}
+                  {project.sitemap_url}
                 </a>
               </div>
             )}
-            {!project.rss_url && (
-              <div className="text-sm text-slate-500">RSS: Not configured</div>
+            {!project.sitemap_url && (
+              <div className="text-sm text-slate-500">Sitemap: Not configured</div>
             )}
             {project.description && (
               <p className="text-sm mt-2">{project.description}</p>
@@ -156,7 +156,7 @@ function ProjectDetail() {
               <Button variant="outline" size="sm" onClick={() => setAddArticleDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-1" /> Add Article
               </Button>
-              <ScrapeButton blogProjectId={id} blogUrl={project.blog_url} rssUrl={project.rss_url} />
+              <ScrapeButton blogProjectId={id} blogUrl={project.blog_url} sitemapUrl={project.sitemap_url} />
             </div>
           </div>
           <ArticlesTable projectId={id} />

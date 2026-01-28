@@ -25,14 +25,14 @@ import type { BlogProject } from '@/types/blog-projects'
 const projectSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
   blog_url: z.string().url('Must be a valid URL'),
-  rss_url: z.string().optional(),
+  sitemap_url: z.string().optional(),
   scraping_frequency: z.enum(['daily', 'weekly', 'manual']),
 })
 
 type ProjectFormData = {
   name: string
   blog_url: string
-  rss_url?: string
+  sitemap_url?: string
   scraping_frequency: 'daily' | 'weekly' | 'manual'
 }
 
@@ -52,7 +52,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     defaultValues: {
       name: '',
       blog_url: '',
-      rss_url: '',
+      sitemap_url: '',
       scraping_frequency: 'weekly',
     },
   })
@@ -74,26 +74,26 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
       reset({
         name: project.name,
         blog_url: project.blog_url,
-        rss_url: project.rss_url || '',
+        sitemap_url: project.sitemap_url || '',
         scraping_frequency: project.scraping_frequency,
       })
     } else if (!open) {
       reset({
         name: '',
         blog_url: '',
-        rss_url: '',
+        sitemap_url: '',
         scraping_frequency: 'weekly',
       })
     }
   }, [open, project, reset])
 
   const onSubmit = async (data: ProjectFormData) => {
-    // Validate RSS URL if provided
-    if (data.rss_url && data.rss_url.trim() !== '') {
+    // Validate sitemap URL if provided
+    if (data.sitemap_url && data.sitemap_url.trim() !== '') {
       try {
-        new URL(data.rss_url)
+        new URL(data.sitemap_url)
       } catch {
-        form.setError('rss_url', { message: 'Must be a valid URL' })
+        form.setError('sitemap_url', { message: 'Must be a valid URL' })
         return
       }
     }
@@ -104,7 +104,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
           id: project.id,
           name: data.name,
           blog_url: data.blog_url,
-          rss_url: data.rss_url && data.rss_url.trim() !== '' ? data.rss_url : null,
+          sitemap_url: data.sitemap_url && data.sitemap_url.trim() !== '' ? data.sitemap_url : null,
           scraping_frequency: data.scraping_frequency,
         })
       } else {
@@ -157,15 +157,15 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
           {isEditMode && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="rss_url">RSS URL</Label>
+                <Label htmlFor="sitemap_url">Sitemap URL</Label>
                 <Input
-                  id="rss_url"
-                  {...register('rss_url')}
-                  placeholder="https://myblog.com/feed"
+                  id="sitemap_url"
+                  {...register('sitemap_url')}
+                  placeholder="https://myblog.com/sitemap.xml"
                   disabled={isSubmitting}
                 />
-                {errors.rss_url && (
-                  <p className="text-sm text-red-600">{errors.rss_url.message}</p>
+                {errors.sitemap_url && (
+                  <p className="text-sm text-red-600">{errors.sitemap_url.message}</p>
                 )}
               </div>
 
