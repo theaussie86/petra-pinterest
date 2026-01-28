@@ -25,13 +25,13 @@ export interface ScrapeRequest {
   rss_url?: string | null
 }
 
-// Scrape response from Edge Function
+// Scrape response from server function
 export interface ScrapeResponse {
   success: boolean
   articles_found: number
   articles_created: number
   articles_updated: number
-  method: 'rss' | 'html'
+  method: 'rss' | 'html' | 'single'
   errors: string[]
 }
 
