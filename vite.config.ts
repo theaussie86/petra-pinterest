@@ -11,9 +11,7 @@ export default defineConfig({
   plugins: [
     tsConfigPaths(),
     devtools(),
-    tanstackStart({
-      spa: { enabled: true },
-    }),
+    tanstackStart(),
     tailwindcss(),
   ],
 })
