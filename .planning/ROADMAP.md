@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation & Security** - Multi-tenant auth and database setup with RLS
 - [x] **Phase 2: Blog Project Management** - CRUD for blog projects and dashboard
-- [x] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management
+- [x] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management (sitemap-first)
 - [ ] **Phase 4: Pin Management** - Complete pin CRUD with image upload and status workflow
 - [ ] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [ ] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
@@ -81,7 +81,7 @@ Plans:
 - [x] 03-05-PLAN.md — Replace Edge Function with TanStack Start server functions (gap closure: CORS fix — BLOCKED)
 - [x] 03-06-PLAN.md — Inngest + Express server for blog scraping (gap closure: replaces Edge Function)
 - [x] 03-07-PLAN.md — Wire client API to Express scraping endpoints (superseded by server functions migration)
-- [ ] 03-08-PLAN.md — Use sitemap.xml instead of RSS for blog article discovery
+- [x] 03-08-PLAN.md — Use sitemap.xml instead of RSS for blog article discovery
 
 ### Phase 4: Pin Management
 **Goal**: Users can create, edit, and manage pins with image upload and status workflow
@@ -152,7 +152,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 |-------|----------------|--------|-----------|
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
-| 3. Blog Scraping & Articles | 7/8 | In progress | 2026-01-28 |
+| 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
 | 4. Pin Management | 0/? | Not started | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |
