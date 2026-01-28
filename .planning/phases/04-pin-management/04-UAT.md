@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 04-pin-management
 source: [04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md, 04-04-SUMMARY.md, 04-05-SUMMARY.md]
 started: 2026-01-28T21:00:00Z
@@ -82,16 +82,27 @@ skipped: 0
   reason: "User reported: everything works. but the confirmation is a browser alert. That needs to become a proper confirmation dialog."
   severity: minor
   test: 7
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "pins-list.tsx uses window.confirm() at lines 150 and 167 for both bulk and single delete instead of shadcn AlertDialog. Existing DeletePinDialog component is not reused."
+  artifacts:
+    - path: "src/components/pins/pins-list.tsx"
+      issue: "window.confirm() at lines 150 (bulk delete) and 167 (single delete from dropdown)"
+    - path: "src/components/pins/delete-pin-dialog.tsx"
+      issue: "Existing proper AlertDialog component not used in pins list"
+  missing:
+    - "Replace window.confirm() with AlertDialog state management in pins-list.tsx"
+    - "Add confirmation dialog UI for both bulk and single delete in the list"
+  debug_session: ".planning/debug/bulk-delete-browser-alert.md"
 - truth: "All dropdown components should have a solid background (not transparent)"
   status: failed
   reason: "User reported: All dropdowns have transparent background. That needs to be fixed sometime."
   severity: cosmetic
   test: 13
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "CSS custom property --popover may not be defined or set to transparent. Select and DropdownMenu components correctly use bg-popover class but the underlying CSS variable needs a solid color value."
+  artifacts:
+    - path: "src/components/ui/select.tsx"
+      issue: "Uses bg-popover (correct) but CSS variable may be missing/transparent"
+    - path: "src/components/ui/dropdown-menu.tsx"
+      issue: "Uses bg-popover (correct) but CSS variable may be missing/transparent"
+  missing:
+    - "Define --popover CSS variable with solid background color in global CSS or Tailwind config"
+  debug_session: ".planning/debug/bulk-delete-browser-alert.md"
