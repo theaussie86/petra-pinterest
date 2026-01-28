@@ -9,6 +9,7 @@ import { ArticlesTable } from '@/components/articles/articles-table'
 import { ScrapeButton } from '@/components/articles/scrape-button'
 import { AddArticleDialog } from '@/components/articles/add-article-dialog'
 import { CreatePinDialog } from '@/components/pins/create-pin-dialog'
+import { PinsList } from '@/components/pins/pins-list'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_authed/projects/$id')({
@@ -174,12 +175,7 @@ function ProjectDetail() {
               <Plus className="h-4 w-4 mr-1" /> Create Pin
             </Button>
           </div>
-          <div className="flex flex-col items-center justify-center py-8 text-center rounded-lg border border-dashed border-slate-200">
-            <Pin className="h-12 w-12 text-slate-300 mb-3" />
-            <p className="text-sm text-slate-500">
-              Pins will appear here once you start creating content
-            </p>
-          </div>
+          <PinsList projectId={id} />
         </div>
 
         {/* Dialogs */}

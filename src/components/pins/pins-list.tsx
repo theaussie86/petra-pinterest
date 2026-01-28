@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   ArrowUp,
   ArrowDown,
@@ -371,14 +372,17 @@ export function PinsList({ projectId }: PinsListProps) {
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">
-                        {/* TODO: Replace with <Link to="/pins/$pinId"> when pin detail route exists */}
-                        <span className="text-blue-600 hover:text-blue-700 hover:underline max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap cursor-pointer">
+                        <Link
+                          to="/pins/$pinId"
+                          params={{ pinId: pin.id }}
+                          className="text-blue-600 hover:text-blue-700 hover:underline max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
+                        >
                           {pin.title ? (
                             pin.title
                           ) : (
                             <span className="italic text-slate-400">Untitled</span>
                           )}
-                        </span>
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
@@ -399,9 +403,10 @@ export function PinsList({ projectId }: PinsListProps) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            {/* TODO: Replace with Link to pin detail when route exists */}
-                            <DropdownMenuItem>
-                              Edit
+                            <DropdownMenuItem asChild>
+                              <Link to="/pins/$pinId" params={{ pinId: pin.id }}>
+                                View / Edit
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600 focus:text-red-600"

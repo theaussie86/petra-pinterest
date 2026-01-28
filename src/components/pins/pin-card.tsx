@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
@@ -13,8 +14,7 @@ interface PinCardProps {
 export function PinCard({ pin, selected, onToggleSelect, imageUrl }: PinCardProps) {
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md">
-      {/* TODO: Replace with <Link to="/pins/$pinId"> when pin detail route exists */}
-      <div className="block cursor-pointer">
+      <Link to="/pins/$pinId" params={{ pinId: pin.id }} className="block">
         <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-100">
           <img
             src={imageUrl}
@@ -36,7 +36,7 @@ export function PinCard({ pin, selected, onToggleSelect, imageUrl }: PinCardProp
             </div>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Checkbox overlay - visible on hover or when selected */}
       <div
