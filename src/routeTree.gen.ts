@@ -16,6 +16,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedProjectsIdRouteImport } from './routes/_authed/projects/$id'
+import { Route as AuthedPinsPinIdRouteImport } from './routes/_authed/pins/$pinId'
 import { Route as AuthedArticlesArticleIdRouteImport } from './routes/_authed/articles/$articleId'
 
 const LoginRoute = LoginRouteImport.update({
@@ -52,6 +53,11 @@ const AuthedProjectsIdRoute = AuthedProjectsIdRouteImport.update({
   path: '/projects/$id',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPinsPinIdRoute = AuthedPinsPinIdRouteImport.update({
+  id: '/pins/$pinId',
+  path: '/pins/$pinId',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedArticlesArticleIdRoute = AuthedArticlesArticleIdRouteImport.update({
   id: '/articles/$articleId',
   path: '/articles/$articleId',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/articles/$articleId': typeof AuthedArticlesArticleIdRoute
+  '/pins/$pinId': typeof AuthedPinsPinIdRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
 }
 export interface FileRoutesByTo {
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/articles/$articleId': typeof AuthedArticlesArticleIdRoute
+  '/pins/$pinId': typeof AuthedPinsPinIdRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
 }
 export interface FileRoutesById {
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/articles/$articleId': typeof AuthedArticlesArticleIdRoute
+  '/_authed/pins/$pinId': typeof AuthedPinsPinIdRoute
   '/_authed/projects/$id': typeof AuthedProjectsIdRoute
 }
 export interface FileRouteTypes {
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/api/inngest'
     | '/auth/callback'
     | '/articles/$articleId'
+    | '/pins/$pinId'
     | '/projects/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -105,6 +115,7 @@ export interface FileRouteTypes {
     | '/api/inngest'
     | '/auth/callback'
     | '/articles/$articleId'
+    | '/pins/$pinId'
     | '/projects/$id'
   id:
     | '__root__'
@@ -115,6 +126,7 @@ export interface FileRouteTypes {
     | '/api/inngest'
     | '/auth/callback'
     | '/_authed/articles/$articleId'
+    | '/_authed/pins/$pinId'
     | '/_authed/projects/$id'
   fileRoutesById: FileRoutesById
 }
@@ -177,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/pins/$pinId': {
+      id: '/_authed/pins/$pinId'
+      path: '/pins/$pinId'
+      fullPath: '/pins/$pinId'
+      preLoaderRoute: typeof AuthedPinsPinIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/articles/$articleId': {
       id: '/_authed/articles/$articleId'
       path: '/articles/$articleId'
@@ -190,12 +209,14 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedArticlesArticleIdRoute: typeof AuthedArticlesArticleIdRoute
+  AuthedPinsPinIdRoute: typeof AuthedPinsPinIdRoute
   AuthedProjectsIdRoute: typeof AuthedProjectsIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedArticlesArticleIdRoute: AuthedArticlesArticleIdRoute,
+  AuthedPinsPinIdRoute: AuthedPinsPinIdRoute,
   AuthedProjectsIdRoute: AuthedProjectsIdRoute,
 }
 
