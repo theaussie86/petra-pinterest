@@ -152,8 +152,9 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-1 pending todo(s):
+2 pending todo(s):
 - **Cleanup AIRTABLE_PAT from ~/.zshrc** (tooling) — Remove after Airtable MCP no longer needed
+- **Show scrape result summary for async Inngest jobs** (UX) — Scrape Blog runs async via Inngest so no result summary (e.g. "5 new, 2 updated") is shown to the user. Consider polling, websocket, or Inngest callback to display results.
 
 ### Blockers/Concerns
 
