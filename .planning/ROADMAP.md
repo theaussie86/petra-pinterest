@@ -94,7 +94,7 @@ Plans:
   4. Pins follow status workflow: Entwurf -> Bereit fur Generierung -> Pin generieren -> Pin wird generiert -> Pin generiert -> Metadaten generieren -> Metadaten werden generiert -> Metadaten erstellt -> Bereit zum Planen/Veroffentlichen -> Veroffentlicht (plus Fehler, Loschen states)
   5. User can edit pin details (image, metadata, schedule, board)
   6. User can delete pins
-**Plans**: 5 plans
+**Plans**: 6 plans
 
 Plans:
 - [x] 04-01-PLAN.md — Database schema (pins table, boards table, Supabase Storage bucket, RLS policies)
@@ -102,6 +102,7 @@ Plans:
 - [x] 04-03-PLAN.md — Pin creation dialog with image upload (drag-drop, paste, file picker, bulk)
 - [x] 04-04-PLAN.md — Pins list UI (table/grid toggle, status filter tabs, bulk actions)
 - [x] 04-05-PLAN.md — Pin detail page, edit dialog, delete dialog, project page integration
+- [ ] 04-06-PLAN.md — Replace window.confirm() with Dialog confirmations, fix popover backgrounds (gap closure)
 
 ### Phase 5: AI Metadata & Publishing
 **Goal**: Users can generate AI metadata and schedule pins to specific dates/times
@@ -157,7 +158,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 1. Foundation & Security | 5/5 | Complete | 2026-01-27 |
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
 | 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
-| 4. Pin Management | 5/5 | Complete | 2026-01-28 |
+| 4. Pin Management | 5/6 | Gap closure | - |
 | 5. AI Metadata & Publishing | 0/? | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |
 | 7. Data Migration | 0/? | Not started | - |
