@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 4 — Pin Management (database schema, data layer, UI)
+**Current focus:** Phase 4 COMPLETE — Pin Management (database schema, data layer, UI). Ready for Phase 5.
 
 ## Current Position
 
-Phase: 4 of 7 (Pin Management)
-Plan: 4 of 5 in current phase
-Status: In progress
-Last activity: 2026-01-28 — Completed 04-04-PLAN.md (pins list, bulk actions, status badge)
+Phase: 4 of 7 (Pin Management) -- COMPLETE
+Plan: 5 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-01-28 — Completed 04-05-PLAN.md (pin detail, edit, delete, integration)
 
-Progress: [██████░░░░] 58%
+Progress: [██████░░░░] 61%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: ~3.3min
-- Total execution time: ~1.1 hours
+- Total execution time: ~1.15 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 58%
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
-| 4. Pin Management | 4 | ~10min | ~2.5min |
+| 4. Pin Management | 5 | ~13.3min | ~2.7min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (3.5min), 04-03 (2.5min), 04-02 (2min), 04-01 (2min), 03-06 (3.5min)
+- Last 5 plans: 04-05 (3.3min), 04-04 (3.5min), 04-03 (2.5min), 04-02 (2min), 04-01 (2min)
 - Trend: Strong velocity maintained
 
 *Updated after each plan completion*
@@ -175,6 +175,12 @@ Recent decisions affecting current work:
 - Dual view toggle pattern (table/grid) with shared toolbar and selection state
 - Status filter tabs using client-side array filter on pin status field
 
+**From 04-05 (Pin Detail, Edit, Delete & Integration):**
+- Extract PinArticleLink, PinBoardName, ErrorAlert as local sub-components — Keeps pin detail page clean
+- Reset Status button sets pin back to 'entwurf' and clears error_message — Safest recovery point
+- Status dropdown shows all statuses; Phase 4 active + fehler selectable, future greyed — Users see full workflow
+- Dropdown menu "View / Edit" label instead of "Edit" — Link goes to detail page, not inline edit
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -200,9 +206,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 04-04-PLAN.md (pins list, bulk actions, status badge)
+Stopped at: Completed 04-05-PLAN.md (pin detail, edit, delete, integration) — Phase 4 COMPLETE
 Resume file: None
-Next: 04-05 — Pin detail/edit page
+Next: Phase 5 — AI Metadata Generation
 
 Config:
 {
