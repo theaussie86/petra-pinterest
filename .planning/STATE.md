@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 4 of 7 (Pin Management)
-Plan: 3 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-01-28 — Completed 04-03-PLAN.md (pin creation UI: upload zone, dialog, project page)
+Last activity: 2026-01-28 — Completed 04-04-PLAN.md (pins list, bulk actions, status badge)
 
-Progress: [██████░░░░] 56%
+Progress: [██████░░░░] 58%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: ~3.3min
 - Total execution time: ~1.1 hours
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 56%
 | 1. Foundation & Security | 5 | ~37min | ~7min |
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
-| 4. Pin Management | 3 | ~6.5min | ~2.2min |
+| 4. Pin Management | 4 | ~10min | ~2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (2.5min), 04-02 (2min), 04-01 (2min), 03-06 (3.5min), 03-04 (2min)
+- Last 5 plans: 04-04 (3.5min), 04-03 (2.5min), 04-02 (2min), 04-01 (2min), 03-06 (3.5min)
 - Trend: Strong velocity maintained
 
 *Updated after each plan completion*
@@ -169,6 +169,12 @@ Recent decisions affecting current work:
 - Sequential image upload before bulk row insert — Upload each file to Storage individually, then create all pin rows in one createPins call
 - Pins section uses section header pattern instead of Card placeholder — Matches Articles section design for consistency
 
+**From 04-04 (Pins List & Bulk Actions):**
+- Pin detail route links deferred to 04-05 — span placeholders with TODO comments avoid TypeScript errors from non-existent route
+- Article title lookup via useArticles hook and Map — avoids JOIN or new API endpoint, efficient for per-project small datasets
+- Dual view toggle pattern (table/grid) with shared toolbar and selection state
+- Status filter tabs using client-side array filter on pin status field
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -194,9 +200,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-28
-Stopped at: Completed 04-03-PLAN.md (pin creation UI: upload zone, dialog, project page)
+Stopped at: Completed 04-04-PLAN.md (pins list, bulk actions, status badge)
 Resume file: None
-Next: 04-04 — Pin list & table view
+Next: 04-05 — Pin detail/edit page
 
 Config:
 {
