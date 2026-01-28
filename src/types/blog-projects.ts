@@ -4,6 +4,7 @@ export interface BlogProject {
   name: string
   blog_url: string
   rss_url: string | null
+  sitemap_url: string | null
   scraping_frequency: 'daily' | 'weekly' | 'manual'
   description: string | null
   created_at: string
@@ -12,6 +13,7 @@ export interface BlogProject {
 
 export type BlogProjectInsert = Pick<BlogProject, 'name' | 'blog_url'> & {
   rss_url?: string | null
+  sitemap_url?: string | null
   scraping_frequency?: 'daily' | 'weekly' | 'manual'
   description?: string | null
 }
@@ -21,6 +23,7 @@ export type BlogProjectUpdate = {
   name?: string
   blog_url?: string
   rss_url?: string | null
+  sitemap_url?: string | null
   scraping_frequency?: 'daily' | 'weekly' | 'manual'
   description?: string | null
 }

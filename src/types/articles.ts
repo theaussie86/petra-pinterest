@@ -18,10 +18,11 @@ export interface ArticleInsert {
   url: string
 }
 
-// Scrape request payload sent to Edge Function
+// Scrape request payload sent to server function
 export interface ScrapeRequest {
   blog_project_id: string
   blog_url: string
+  sitemap_url?: string | null
   rss_url?: string | null
 }
 
@@ -31,7 +32,7 @@ export interface ScrapeResponse {
   articles_found: number
   articles_created: number
   articles_updated: number
-  method: 'rss' | 'html' | 'single'
+  method: 'sitemap' | 'rss' | 'html' | 'single'
   errors: string[]
 }
 
