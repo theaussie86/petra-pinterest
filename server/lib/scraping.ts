@@ -55,6 +55,81 @@ export async function discoverRssFeed(blogUrl: string): Promise<string | null> {
 }
 
 /**
+ * Scrape sitemap.xml for article URLs
+ */
+export async function scrapeSitemap(blogUrl: string, sitemapUrl?: string): Promise<ArticleData[]> {
+  const url = sitemapUrl || new URL('/sitemap.xml', blogUrl).toString()
+
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch sitemap: ${response.status}`)
+  }
+
+  const xml = await response.text()
+  const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' })
+  const parsed = parser.parse(xml)
+
+  // Handle sitemap index (contains references to other sitemaps)
+  if (parsed.sitemapindex?.sitemap) {
+    const sitemaps = Array.isArray(parsed.sitemapindex.sitemap)
+      ? parsed.sitemapindex.sitemap
+      : [parsed.sitemapindex.sitemap]
+
+    const allArticles: ArticleData[] = []
+    for (const sitemap of sitemaps) {
+      const loc = sitemap.loc?.toString().trim()
+      if (loc) {
+        try {
+          const childArticles = await scrapeSitemap(blogUrl, loc)
+          allArticles.push(...childArticles)
+        } catch {
+          // Continue with next sitemap
+        }
+      }
+    }
+    return allArticles
+  }
+
+  // Handle regular urlset
+  const rawUrls = parsed.urlset?.url
+  if (!rawUrls) {
+    throw new Error('No URLs found in sitemap')
+  }
+
+  const urls = Array.isArray(rawUrls) ? rawUrls : [rawUrls]
+
+  // Filter to likely blog post URLs (exclude homepage)
+  const blogBaseUrl = new URL(blogUrl).origin
+  const articleUrls = urls
+    .map(entry => ({
+      loc: entry.loc?.toString().trim() as string | undefined,
+      lastmod: entry.lastmod?.toString().trim() as string | undefined,
+    }))
+    .filter(entry => {
+      if (!entry.loc) return false
+      if (entry.loc === blogUrl || entry.loc === blogUrl + '/') return false
+      if (!entry.loc.startsWith(blogBaseUrl)) return false
+      return true
+    })
+
+  // Scrape each URL for article content
+  const articles: ArticleData[] = []
+  for (const entry of articleUrls) {
+    try {
+      const article = await scrapeSingleUrl(entry.loc!)
+      if (!article.published_at && entry.lastmod) {
+        article.published_at = entry.lastmod
+      }
+      articles.push(article)
+    } catch (error) {
+      console.error(`Failed to scrape ${entry.loc}: ${String(error)}`)
+    }
+  }
+
+  return articles
+}
+
+/**
  * Scrape RSS/Atom feed
  */
 export async function scrapeRss(blogUrl: string, rssUrl?: string): Promise<ArticleData[]> {

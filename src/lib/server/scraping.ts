@@ -10,7 +10,7 @@ import type { ScrapeResponse } from '@/types/articles'
  */
 export const scrapeBlogFn = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { blog_project_id: string; blog_url: string; rss_url?: string | null }) => data,
+    (data: { blog_project_id: string; blog_url: string; sitemap_url?: string | null; rss_url?: string | null }) => data,
   )
   .handler(async ({ data }) => {
     const supabase = getSupabaseServerClient()
@@ -32,6 +32,7 @@ export const scrapeBlogFn = createServerFn({ method: 'POST' })
       data: {
         blog_project_id: data.blog_project_id,
         blog_url: data.blog_url,
+        sitemap_url: data.sitemap_url,
         rss_url: data.rss_url,
         tenant_id: profile.tenant_id,
       },

@@ -1,13 +1,13 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
-import { scrapeRss, scrapeHtml } from '../../lib/scraping'
+import { scrapeSitemap, scrapeRss, scrapeHtml } from '../../lib/scraping'
 import type { ArticleData } from '../../lib/scraping'
 
 export const scrapeBlog = inngest.createFunction(
   { id: 'scrape-blog' },
   { event: 'blog/scrape.requested' },
   async ({ event, step }) => {
-    const { blog_project_id, blog_url, rss_url, tenant_id } = event.data
+    const { blog_project_id, blog_url, sitemap_url, rss_url, tenant_id } = event.data
 
     // Create Supabase client with service role
     const supabase = createClient(
@@ -15,23 +15,40 @@ export const scrapeBlog = inngest.createFunction(
       process.env.SUPABASE_SECRET_KEY!
     )
 
-    // Step 1: Try RSS scraping
-    const rssResult = await step.run('scrape-rss', async () => {
+    const errors: string[] = []
+
+    // Step 1: Try sitemap scraping
+    const sitemapResult = await step.run('scrape-sitemap', async () => {
       try {
-        const articles = await scrapeRss(blog_url, rss_url || undefined)
-        return { articles, method: 'rss' as const, error: null as string | null }
+        const articles = await scrapeSitemap(blog_url, sitemap_url || undefined)
+        return { articles, error: null as string | null }
       } catch (error) {
-        return { articles: [] as ArticleData[], method: 'rss' as const, error: String(error) as string | null }
+        return { articles: [] as ArticleData[], error: String(error) as string | null }
       }
     })
 
-    // Step 2: HTML fallback if RSS failed
-    let articles = rssResult.articles
-    let method: 'rss' | 'html' = rssResult.articles.length > 0 ? 'rss' : 'html'
-    const errors: string[] = []
+    let articles = sitemapResult.articles
+    let method: 'sitemap' | 'rss' | 'html' = sitemapResult.articles.length > 0 ? 'sitemap' : 'rss'
 
-    if (rssResult.error) errors.push(`RSS failed: ${rssResult.error}`)
+    if (sitemapResult.error) errors.push(`Sitemap failed: ${sitemapResult.error}`)
 
+    // Step 2: RSS fallback if sitemap found no articles
+    if (articles.length === 0) {
+      const rssResult = await step.run('scrape-rss', async () => {
+        try {
+          const articles = await scrapeRss(blog_url, rss_url || undefined)
+          return { articles, error: null as string | null }
+        } catch (error) {
+          return { articles: [] as ArticleData[], error: String(error) as string | null }
+        }
+      })
+
+      articles = rssResult.articles
+      method = rssResult.articles.length > 0 ? 'rss' : 'html'
+      if (rssResult.error) errors.push(`RSS failed: ${rssResult.error}`)
+    }
+
+    // Step 3: HTML fallback if RSS also failed
     if (articles.length === 0) {
       const htmlResult = await step.run('scrape-html', async () => {
         try {
