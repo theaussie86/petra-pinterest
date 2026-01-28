@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 3 of 7 (Blog Scraping & Articles) — COMPLETE
-Plan: 4 of 4 in current phase
-Status: Complete ✓ (verified — 6/6 must-haves passed)
-Last activity: 2026-01-27 — Phase 3 verified and complete
+Phase: 3 of 7 (Blog Scraping & Articles) — BLOCKED
+Plan: 5 of 5 in current phase (gap closure attempt)
+Status: Blocked ⚠ — Server functions incompatible with current tooling
+Last activity: 2026-01-28 — 03-05 blocked by Vite bundling issue
 
 Progress: [█████░░░░░] 43%
 
@@ -135,6 +135,13 @@ Recent decisions affecting current work:
 - Vite config: `tanstackStart()` replaces both `tanstackRouter()` and `viteReact()`; `tsConfigPaths()` replaces manual `resolve.alias`
 - Auth callback: must handle both `SIGNED_IN` and `INITIAL_SESSION` events — `hydrateRoot` timing means Supabase may process URL tokens before the `onAuthStateChange` listener is registered
 - Build output: `.output/` directory (added to `.gitignore`), production server via `node .output/server/index.mjs`
+- **SPA mode disabled** (03-05): Server runtime now active, but server functions blocked by Vite bundling incompatibility
+
+**From 03-05 (CORS Fix Attempt - BLOCKED):**
+- SPA mode successfully disabled - TanStack Start server runtime enabled
+- Server functions (`createServerFn`) INCOMPATIBLE with Vite 7 + TanStack Start 1.157.16 - `node:stream` bundling error
+- CORS errors from Edge Function remain unresolved - blog scraping still broken
+- **Architectural decision required:** Alternative approach needed to resolve CORS (see 03-05-SUMMARY.md for options)
 
 ### Pending Todos
 
@@ -142,6 +149,16 @@ Recent decisions affecting current work:
 - **Cleanup AIRTABLE_PAT from ~/.zshrc** (tooling) — Remove after Airtable MCP no longer needed
 
 ### Blockers/Concerns
+
+**ACTIVE BLOCKER (03-05):**
+- 🚨 **CORS errors blocking blog scraping** — Edge Function fails with CORS when called from SPA
+- 🚨 **TanStack Start server functions incompatible** — Vite 7 bundling error with `node:stream` imports
+- **Decision required:** Choose alternative approach to resolve CORS (see 03-05-SUMMARY.md)
+  - Option A: Fix CORS headers on Edge Function (simplest)
+  - Option B: Vite dev proxy (dev-only workaround)
+  - Option C: Wait for TanStack Start compatibility fix
+  - Option D: Separate Node.js API service
+  - Option E: Client-side scraping via backend proxy
 
 **From Research:**
 - ✅ Phase 1: Multi-tenant RLS is CRITICAL — ADDRESSED in 01-02 (RLS enabled on profiles table)
@@ -154,10 +171,10 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-01-27
-Stopped at: Completed 03-04-PLAN.md (article detail page)
+Last session: 2026-01-28
+Stopped at: 03-05-PLAN.md blocked - architectural decision required
 Resume file: None
-Next: Phase 3 complete (verified) — ready for Phase 4 (Pin Management)
+Next: BLOCKED - resolve CORS approach decision before Phase 4
 
 Config:
 {
