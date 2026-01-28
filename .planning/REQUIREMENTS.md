@@ -31,14 +31,14 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Pins
 
-- [ ] **PIN-01**: User can upload pin images linked to a blog article and board
-- [ ] **PIN-02**: User can set pin title and description manually
+- [x] **PIN-01**: User can upload pin images linked to a blog article and board
+- [x] **PIN-02**: User can set pin title and description manually
 - [ ] **PIN-03**: User can trigger AI metadata generation (title/description from article content)
-- [ ] **PIN-04**: User can bulk upload multiple pins at once
-- [ ] **PIN-05**: Pins follow status workflow: Entwurf → Bereit für Generierung → Pin generieren → Pin wird generiert → Pin generiert → Metadaten generieren → Metadaten werden generiert → Metadaten erstellt → Bereit zum Planen/Veröffentlichen → Veröffentlicht (+ Fehler, Löschen)
+- [x] **PIN-04**: User can bulk upload multiple pins at once
+- [x] **PIN-05**: Pins follow status workflow: Entwurf → Bereit für Generierung → Pin generieren → Pin wird generiert → Pin generiert → Metadaten generieren → Metadaten werden generiert → Metadaten erstellt → Bereit zum Planen/Veröffentlichen → Veröffentlicht (+ Fehler, Löschen)
 - [ ] **PIN-06**: User can schedule pins to specific date and time
-- [ ] **PIN-07**: User can edit pin details (image, metadata, schedule, board)
-- [ ] **PIN-08**: User can delete pins
+- [x] **PIN-07**: User can edit pin details (image, metadata, schedule, board)
+- [x] **PIN-08**: User can delete pins
 
 ### Calendar
 
@@ -125,12 +125,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARTC-05 | Phase 3 | Complete |
 | BRD-01 | Phase 3 | Pending |
 | BRD-02 | Phase 3 | Pending |
-| PIN-01 | Phase 4 | Pending |
-| PIN-02 | Phase 4 | Pending |
-| PIN-04 | Phase 4 | Pending |
-| PIN-05 | Phase 4 | Pending |
-| PIN-07 | Phase 4 | Pending |
-| PIN-08 | Phase 4 | Pending |
+| PIN-01 | Phase 4 | Complete |
+| PIN-02 | Phase 4 | Complete |
+| PIN-04 | Phase 4 | Complete |
+| PIN-05 | Phase 4 | Complete |
+| PIN-07 | Phase 4 | Complete |
+| PIN-08 | Phase 4 | Complete |
 | PIN-03 | Phase 5 | Pending |
 | PIN-06 | Phase 5 | Pending |
 | CAL-01 | Phase 6 | Pending |
@@ -147,4 +147,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-27 after Phase 3 completion*
+*Last updated: 2026-01-28 after Phase 4 completion*
