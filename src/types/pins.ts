@@ -40,8 +40,10 @@ export interface Pin {
   image_path: string
   title: string | null
   description: string | null
+  alt_text: string | null
   status: PinStatus
   error_message: string | null
+  previous_status: PinStatus | null
   scheduled_at: string | null
   published_at: string | null
   pinterest_pin_id: string | null
@@ -62,9 +64,11 @@ export interface PinUpdate {
   id: string
   title?: string | null
   description?: string | null
+  alt_text?: string | null
   board_id?: string | null
   status?: PinStatus
   error_message?: string | null
+  scheduled_at?: string | null
 }
 
 export interface Board {
@@ -76,6 +80,17 @@ export interface Board {
   cover_image_url: string | null
   created_at: string
   updated_at: string
+}
+
+export interface PinMetadataGeneration {
+  id: string
+  pin_id: string
+  tenant_id: string
+  title: string
+  description: string
+  alt_text: string
+  feedback: string | null
+  created_at: string
 }
 
 // Sort and view mode types for pin list UI
