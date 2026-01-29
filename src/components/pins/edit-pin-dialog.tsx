@@ -24,14 +24,15 @@ import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { useUpdatePin, useBoards } from '@/lib/hooks/use-pins'
 import {
   PIN_STATUS,
-  PHASE4_ACTIVE_STATUSES,
-  PHASE4_DISABLED_STATUSES,
+  ACTIVE_STATUSES,
+  SYSTEM_MANAGED_STATUSES,
 } from '@/types/pins'
 import type { Pin, PinStatus } from '@/types/pins'
 
 const editPinSchema = z.object({
   title: z.string().max(200, 'Title too long'),
   description: z.string().max(1000, 'Description too long'),
+  alt_text: z.string().max(500, 'Alt text too long'),
   board_id: z.string(),
   status: z.string(),
 })
@@ -54,6 +55,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
     defaultValues: {
       title: '',
       description: '',
+      alt_text: '',
       board_id: '',
       status: 'entwurf',
     },
@@ -77,6 +79,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
       reset({
         title: pin.title || '',
         description: pin.description || '',
+        alt_text: pin.alt_text || '',
         board_id: pin.board_id || '',
         status: pin.status,
       })
@@ -89,6 +92,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         id: pin.id,
         title: data.title.trim() || null,
         description: data.description.trim() || null,
+        alt_text: data.alt_text.trim() || null,
         board_id: data.board_id || null,
         status: data.status as PinStatus,
       })
@@ -101,7 +105,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
 
   // Determine which statuses are selectable
   const isStatusSelectable = (status: PinStatus): boolean => {
-    if (PHASE4_ACTIVE_STATUSES.includes(status)) return true
+    if (ACTIVE_STATUSES.includes(status)) return true
     if (status === 'fehler') return true
     return false
   }
@@ -142,6 +146,20 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="edit-alt-text">Alt Text</Label>
+            <Textarea
+              id="edit-alt-text"
+              {...register('alt_text')}
+              placeholder="Describe the image for accessibility"
+              disabled={isSubmitting}
+              rows={3}
+            />
+            {errors.alt_text && (
+              <p className="text-sm text-red-600">{errors.alt_text.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="edit-board">Board</Label>
             <Select
               value={currentBoardId}
@@ -175,7 +193,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
               <SelectContent>
                 {(Object.keys(PIN_STATUS) as PinStatus[]).map((status) => {
                   const selectable = isStatusSelectable(status)
-                  const isDisabledStatus = PHASE4_DISABLED_STATUSES.includes(status) || status === 'loeschen'
+                  const isDisabledStatus = SYSTEM_MANAGED_STATUSES.includes(status) || status === 'loeschen'
                   return (
                     <SelectItem
                       key={status}

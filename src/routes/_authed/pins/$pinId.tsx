@@ -11,6 +11,7 @@ import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { GenerateMetadataButton } from '@/components/pins/generate-metadata-button'
 import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
+import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -158,9 +159,12 @@ function PinDetail() {
               onRegenerateOpen={() => setFeedbackDialogOpen(true)}
             />
 
+            {/* Pin scheduling */}
+            <SchedulePinSection pin={pin} />
+
             {/* Error alert */}
             {pin.status === 'fehler' && (
-              <ErrorAlert pinId={pin.id} errorMessage={pin.error_message} />
+              <ErrorAlert pin={pin} />
             )}
 
             {/* Actions */}
@@ -247,13 +251,13 @@ function PinBoardName({ boardId, projectId }: { boardId: string | null; projectI
   )
 }
 
-function ErrorAlert({ pinId, errorMessage }: { pinId: string; errorMessage: string | null }) {
+function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; previous_status: string | null } }) {
   const updateMutation = useUpdatePin()
 
   const handleResetStatus = async () => {
     await updateMutation.mutateAsync({
-      id: pinId,
-      status: 'entwurf',
+      id: pin.id,
+      status: (pin.previous_status as any) || 'entwurf',
       error_message: null,
     })
   }
@@ -263,7 +267,7 @@ function ErrorAlert({ pinId, errorMessage }: { pinId: string; errorMessage: stri
       <AlertTriangle className="h-4 w-4" />
       <AlertTitle>Error</AlertTitle>
       <AlertDescription className="mt-1">
-        <p className="mb-3">{errorMessage || 'An unknown error occurred.'}</p>
+        <p className="mb-3">{pin.error_message || 'An unknown error occurred.'}</p>
         <Button
           size="sm"
           variant="outline"

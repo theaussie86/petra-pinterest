@@ -16,19 +16,29 @@ export const PIN_STATUS = {
 
 export type PinStatus = keyof typeof PIN_STATUS
 
-// Phase 4 active statuses (editable in UI)
-export const PHASE4_ACTIVE_STATUSES: PinStatus[] = ['entwurf', 'bereit_fuer_generierung']
+// Active statuses (editable in UI for Phase 5)
+export const ACTIVE_STATUSES: PinStatus[] = [
+  'entwurf',
+  'bereit_fuer_generierung',
+  'metadaten_generieren',
+  'metadaten_erstellt',
+  'bereit_zum_planen',
+]
 
-// Phase 4 disabled statuses (visible but not editable until later phases)
-export const PHASE4_DISABLED_STATUSES: PinStatus[] = [
+// System-managed statuses (visible but not user-selectable)
+export const SYSTEM_MANAGED_STATUSES: PinStatus[] = [
   'pin_generieren',
   'pin_wird_generiert',
   'pin_generiert',
-  'metadaten_generieren',
   'metadaten_werden_generiert',
-  'metadaten_erstellt',
-  'bereit_zum_planen',
   'veroeffentlicht',
+]
+
+// Hidden statuses (not shown in Phase 5 UI - future pin image generation)
+export const HIDDEN_STATUSES: PinStatus[] = [
+  'pin_generieren',
+  'pin_wird_generiert',
+  'pin_generiert',
 ]
 
 export interface Pin {
