@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "node --max-http-header-size=32768 node_modules/vite/bin/vite.js dev --port 3000",
     "dev:inngest": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
     "build": "vite build",
     "start": "node .output/server/index.mjs",
