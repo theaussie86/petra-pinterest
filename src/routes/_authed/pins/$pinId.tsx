@@ -8,6 +8,9 @@ import { getPinImageUrl } from '@/lib/api/pins'
 import { EditPinDialog } from '@/components/pins/edit-pin-dialog'
 import { DeletePinDialog } from '@/components/pins/delete-pin-dialog'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
+import { GenerateMetadataButton } from '@/components/pins/generate-metadata-button'
+import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
+import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -24,6 +27,8 @@ function PinDetail() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -104,6 +109,14 @@ function PinDetail() {
                   </p>
                 </div>
 
+                {/* Alt Text */}
+                <div>
+                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Alt Text</h3>
+                  <p className="text-sm text-slate-700">
+                    {pin.alt_text || <span className="text-slate-400">No alt text</span>}
+                  </p>
+                </div>
+
                 {/* Status */}
                 <div>
                   <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Status</h3>
@@ -127,8 +140,23 @@ function PinDetail() {
                     <p className="text-sm text-slate-700">{formatDate(pin.updated_at)}</p>
                   </div>
                 </div>
+
+                {/* Scheduled */}
+                {pin.scheduled_at && (
+                  <div className="pt-2 border-t">
+                    <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Scheduled</h3>
+                    <p className="text-sm text-slate-700">{formatDateTime(pin.scheduled_at)}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
+            {/* AI Metadata generation */}
+            <GenerateMetadataButton
+              pin={pin}
+              onHistoryOpen={() => setHistoryDialogOpen(true)}
+              onRegenerateOpen={() => setFeedbackDialogOpen(true)}
+            />
 
             {/* Error alert */}
             {pin.status === 'fehler' && (
@@ -165,6 +193,16 @@ function PinDetail() {
           onOpenChange={setDeleteDialogOpen}
           pin={pin}
           onDeleted={() => navigate({ to: '/projects/$id', params: { id: pin.blog_project_id } })}
+        />
+        <MetadataHistoryDialog
+          pinId={pinId}
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+        />
+        <RegenerateFeedbackDialog
+          pinId={pinId}
+          open={feedbackDialogOpen}
+          onOpenChange={setFeedbackDialogOpen}
         />
       </main>
     </div>
@@ -246,5 +284,15 @@ function formatDate(dateString: string) {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+  })
+}
+
+function formatDateTime(dateString: string) {
+  return new Date(dateString).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
 }
