@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 4 COMPLETE — Pin Management (database schema, data layer, UI). Ready for Phase 5.
+**Current focus:** Phase 5 IN PROGRESS — AI Metadata & Publishing.
 
 ## Current Position
 
 Phase: 5 of 7 (AI Metadata & Publishing) -- IN PROGRESS
-Plan: 1 of 6 in current phase
+Plan: 2 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-29 — Completed 05-01-PLAN.md (AI metadata generation foundation)
+Last activity: 2026-01-29 — Completed 05-02-PLAN.md (Metadata generation pipeline)
 
-Progress: [██████░░░░] 65%
+Progress: [██████░░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
-- Average duration: ~3.1min
-- Total execution time: ~1.25 hours
+- Total plans completed: 25
+- Average duration: ~3.0min
+- Total execution time: ~1.28 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [██████░░░░] 65%
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
-| 5. AI Metadata & Publishing | 1 | ~2.5min | ~2.5min |
+| 5. AI Metadata & Publishing | 2 | ~4.9min | ~2.4min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (2.5min), 04-06 (2min), 04-05 (3.3min), 04-04 (3.5min), 04-03 (2.5min)
-- Trend: Excellent velocity maintained, Phase 5 strong start
+- Last 5 plans: 05-02 (2.4min), 05-01 (2.5min), 04-06 (2min), 04-05 (3.3min), 04-04 (3.5min)
+- Trend: Exceptional velocity, Phase 5 maintaining sub-3min average
 
 *Updated after each plan completion*
 
@@ -193,6 +193,12 @@ Recent decisions affecting current work:
 - Track previous_status via database trigger — Error recovery "Reset to previous state" button needs status before error, trigger function automatically sets `NEW.previous_status = OLD.status` when status changes
 - Separate pin_metadata_generations table for history — Enables comparison and regeneration with feedback refinement loop, keep last 3 generations per pin (application layer)
 
+**From 05-02 (Metadata Generation Pipeline):**
+- Server function error handling pattern — Wrap entire handler in try/catch, on error update pin status to 'fehler', set error_message, re-throw
+- Feedback regeneration conversation structure — System prompt, user (article + image), assistant (previous generation), user (feedback)
+- Generation history pruning strategy — Keep last 3 generations per pin, prune after every insert using NOT IN clause on top 3 by created_at DESC
+- TanStack Query invalidation scope — Invalidate both ['pins'] and ['metadata-history'] on all mutations for comprehensive UI updates
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -218,9 +224,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 05-01-PLAN.md (AI metadata generation foundation) — Phase 5 in progress
+Stopped at: Completed 05-02-PLAN.md (Metadata generation pipeline) — Phase 5 in progress
 Resume file: None
-Next: 05-02-PLAN.md — Metadata generation UI and server functions
+Next: 05-03-PLAN.md — Single pin metadata generation UI
 
 Config:
 {
