@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 5 of 7 (AI Metadata & Publishing) -- IN PROGRESS
-Plan: 4 of 6 in current phase
-Status: In progress
-Last activity: 2026-01-29 — Completed 05-04-PLAN.md (Pin scheduling UI)
+Phase: 5 of 7 (AI Metadata & Publishing) -- COMPLETE
+Plan: 5 of 5 in phase (Phase 5 complete)
+Status: Phase complete - ready for Phase 6
+Last activity: 2026-01-29 — Completed 05-05-PLAN.md (Phase 5 integration)
 
-Progress: [████████░░] 72%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
-- Average duration: ~2.9min
-- Total execution time: ~1.35 hours
+- Total plans completed: 28
+- Average duration: ~2.8min
+- Total execution time: ~1.41 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [████████░░] 72%
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
-| 5. AI Metadata & Publishing | 4 | ~9.9min | ~2.5min |
+| 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 
 **Recent Trend:**
-- Last 5 plans: 05-04 (2min), 05-03 (3min), 05-02 (2.4min), 05-01 (2.5min), 04-06 (2min)
-- Trend: Exceptional velocity, Phase 5 maintaining sub-3min average with 2min plan
+- Last 5 plans: 05-05 (3.4min), 05-04 (2min), 05-03 (3min), 05-02 (2.4min), 05-01 (2.5min)
+- Trend: Phase 5 complete at 2.7min average, maintaining exceptional velocity
 
 *Updated after each plan completion*
 
@@ -211,6 +211,13 @@ Recent decisions affecting current work:
 - Asymmetric status handling on schedule operations — Scheduling auto-advances status to bereit_zum_planen, but clearing schedule does NOT auto-change status (user decides next state)
 - Date picker prevents past dates — UI-level validation disables past dates in Calendar component
 
+**From 05-05 (Phase 5 Integration):**
+- Status constant evolution pattern — PHASE4_ACTIVE_STATUSES renamed to ACTIVE_STATUSES for Phase 5, PHASE4_DISABLED_STATUSES renamed to SYSTEM_MANAGED_STATUSES for semantic clarity
+- Phase 5 active statuses — entwurf, bereit_fuer_generierung, metadaten_generieren, metadaten_erstellt, bereit_zum_planen (5 user-selectable statuses)
+- Error recovery uses previous_status — Reset Status button restores pin.previous_status || 'entwurf' instead of always 'entwurf', database trigger tracks this automatically
+- Bulk action selection handling — Generate Metadata clears selection after triggering, Schedule keeps selection open until dialog confirmed
+- Scheduled date visibility — Added "Scheduled" column to table view and scheduled date display in grid view card overlay
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -236,9 +243,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 05-04-PLAN.md (Pin scheduling UI) — Phase 5 in progress
+Stopped at: Completed 05-05-PLAN.md (Phase 5 integration) — Phase 5 COMPLETE
 Resume file: None
-Next: 05-05-PLAN.md — Scheduling and bulk metadata integration
+Next: Phase 6 — Publishing Calendar
 
 Config:
 {
