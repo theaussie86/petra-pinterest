@@ -205,6 +205,12 @@ Recent decisions affecting current work:
 - Feedback dialog clears text on close to prevent stale input — Prevents stale feedback text from previous sessions
 - Dialog state managed by parent component with controlled open/onOpenChange props — Consistent pattern for all metadata dialogs
 
+**From 05-04 (Pin Scheduling UI):**
+- Sequential bulk scheduling to avoid rate limits — Process pins one at a time instead of Promise.all for reliability with large batches
+- Preset time buttons for common scheduling times — Quick-select buttons (6:00, 9:00, 12:00, 15:00, 18:00, 21:00) with native HTML5 time input fallback
+- Asymmetric status handling on schedule operations — Scheduling auto-advances status to bereit_zum_planen, but clearing schedule does NOT auto-change status (user decides next state)
+- Date picker prevents past dates — UI-level validation disables past dates in Calendar component
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -230,9 +236,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 05-03-PLAN.md (Single pin metadata generation UI) — Phase 5 in progress
+Stopped at: Completed 05-04-PLAN.md (Pin scheduling UI) — Phase 5 in progress
 Resume file: None
-Next: 05-05-PLAN.md — Bulk metadata generation UI (05-04 completed in parallel)
+Next: 05-05-PLAN.md — Scheduling and bulk metadata integration
 
 Config:
 {
