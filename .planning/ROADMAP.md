@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Blog Project Management** - CRUD for blog projects and dashboard
 - [x] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management (sitemap-first)
 - [x] **Phase 4: Pin Management** - Complete pin CRUD with image upload and status workflow
-- [ ] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
+- [x] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [ ] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
 - [ ] **Phase 7: Data Migration** - Airtable data migration to Supabase
 
@@ -116,11 +116,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Database migration (alt_text, previous_status, pin_metadata_generations) + OpenAI client + prompts
-- [ ] 05-02-PLAN.md — Server functions (single/feedback/bulk metadata generation) + Inngest pipeline + client hooks
-- [ ] 05-03-PLAN.md — Metadata generation UI (generate button, history dialog, feedback dialog on pin detail page)
-- [ ] 05-04-PLAN.md — Scheduling UI (date/time picker with presets, bulk schedule dialog)
-- [ ] 05-05-PLAN.md — Integration (wire scheduling into detail page, bulk actions in pins list, status updates)
+- [x] 05-01-PLAN.md — Database migration (alt_text, previous_status, pin_metadata_generations) + OpenAI client + prompts
+- [x] 05-02-PLAN.md — Server functions (single/feedback/bulk metadata generation) + Inngest pipeline + client hooks
+- [x] 05-03-PLAN.md — Metadata generation UI (generate button, history dialog, feedback dialog on pin detail page)
+- [x] 05-04-PLAN.md — Scheduling UI (date/time picker with presets, bulk schedule dialog)
+- [x] 05-05-PLAN.md — Integration (wire scheduling into detail page, bulk actions in pins list, status updates)
 
 ### Phase 6: Visual Calendar
 **Goal**: Users can view and interact with scheduled pins on a visual calendar interface
@@ -163,6 +163,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
 | 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
 | 4. Pin Management | 6/6 | Complete | 2026-01-28 |
-| 5. AI Metadata & Publishing | 0/5 | Not started | - |
+| 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
 | 6. Visual Calendar | 0/? | Not started | - |
 | 7. Data Migration | 0/? | Not started | - |

@@ -33,10 +33,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **PIN-01**: User can upload pin images linked to a blog article and board
 - [x] **PIN-02**: User can set pin title and description manually
-- [ ] **PIN-03**: User can trigger AI metadata generation (title/description from article content)
+- [x] **PIN-03**: User can trigger AI metadata generation (title/description from article content)
 - [x] **PIN-04**: User can bulk upload multiple pins at once
 - [x] **PIN-05**: Pins follow status workflow: Entwurf → Bereit für Generierung → Pin generieren → Pin wird generiert → Pin generiert → Metadaten generieren → Metadaten werden generiert → Metadaten erstellt → Bereit zum Planen/Veröffentlichen → Veröffentlicht (+ Fehler, Löschen)
-- [ ] **PIN-06**: User can schedule pins to specific date and time
+- [x] **PIN-06**: User can schedule pins to specific date and time
 - [x] **PIN-07**: User can edit pin details (image, metadata, schedule, board)
 - [x] **PIN-08**: User can delete pins
 
@@ -131,8 +131,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PIN-05 | Phase 4 | Complete |
 | PIN-07 | Phase 4 | Complete |
 | PIN-08 | Phase 4 | Complete |
-| PIN-03 | Phase 5 | Pending |
-| PIN-06 | Phase 5 | Pending |
+| PIN-03 | Phase 5 | Complete |
+| PIN-06 | Phase 5 | Complete |
 | CAL-01 | Phase 6 | Pending |
 | CAL-02 | Phase 6 | Pending |
 | CAL-03 | Phase 6 | Pending |
@@ -147,4 +147,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-26*
-*Last updated: 2026-01-28 after Phase 4 completion*
+*Last updated: 2026-01-29 after Phase 5 completion*
