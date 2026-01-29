@@ -113,10 +113,14 @@ Plans:
   2. AI-generated metadata is optimized for Pinterest SEO
   3. User can schedule pins to specific date and time
   4. Pin status automatically progresses through workflow states (Metadaten erstellt -> Bereit zum Planen/Veroffentlichen -> Veroffentlicht)
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 05-01-PLAN.md — Database migration (alt_text, previous_status, pin_metadata_generations) + OpenAI client + prompts
+- [ ] 05-02-PLAN.md — Server functions (single/feedback/bulk metadata generation) + Inngest pipeline + client hooks
+- [ ] 05-03-PLAN.md — Metadata generation UI (generate button, history dialog, feedback dialog on pin detail page)
+- [ ] 05-04-PLAN.md — Scheduling UI (date/time picker with presets, bulk schedule dialog)
+- [ ] 05-05-PLAN.md — Integration (wire scheduling into detail page, bulk actions in pins list, status updates)
 
 ### Phase 6: Visual Calendar
 **Goal**: Users can view and interact with scheduled pins on a visual calendar interface
@@ -159,6 +163,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 2. Blog Project Management | 6/6 | Complete | 2026-01-27 |
 | 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
 | 4. Pin Management | 6/6 | Complete | 2026-01-28 |
-| 5. AI Metadata & Publishing | 0/? | Not started | - |
+| 5. AI Metadata & Publishing | 0/5 | Not started | - |
 | 6. Visual Calendar | 0/? | Not started | - |
 | 7. Data Migration | 0/? | Not started | - |
