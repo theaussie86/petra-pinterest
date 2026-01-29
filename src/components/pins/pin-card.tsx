@@ -31,8 +31,13 @@ export function PinCard({ pin, selected, onToggleSelect, imageUrl }: PinCardProp
             )}>
               {pin.title || 'Untitled'}
             </p>
-            <div className="mt-1">
+            <div className="mt-1 flex items-center gap-2">
               <PinStatusBadge status={pin.status} />
+              {pin.scheduled_at && (
+                <span className="text-xs text-white/80">
+                  {new Date(pin.scheduled_at).toLocaleDateString()}
+                </span>
+              )}
             </div>
           </div>
         </div>

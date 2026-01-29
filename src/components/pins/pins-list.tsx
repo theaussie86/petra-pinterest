@@ -9,6 +9,8 @@ import {
   LayoutList,
   Trash2,
   ImageIcon,
+  Sparkles,
+  CalendarIcon,
 } from 'lucide-react'
 import {
   Table,
@@ -37,10 +39,12 @@ import {
 } from '@/components/ui/dialog'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { PinCard } from '@/components/pins/pin-card'
+import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
 import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
+import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { getPinImageUrl } from '@/lib/api/pins'
-import { PIN_STATUS, PHASE4_ACTIVE_STATUSES } from '@/types/pins'
+import { PIN_STATUS, ACTIVE_STATUSES } from '@/types/pins'
 import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
 
 type SortDirection = 'asc' | 'desc'
@@ -59,6 +63,7 @@ export function PinsList({ projectId }: PinsListProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false)
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<string | null>(null)
 
   const { data: pins, isLoading, error } = usePins(projectId)
@@ -66,6 +71,7 @@ export function PinsList({ projectId }: PinsListProps) {
   const bulkDeleteMutation = useBulkDeletePins()
   const bulkStatusMutation = useBulkUpdatePinStatus()
   const deletePinMutation = useDeletePin()
+  const triggerBulkMetadata = useTriggerBulkMetadata()
 
   // Build article lookup map
   const articleMap = useMemo(() => {
@@ -171,6 +177,15 @@ export function PinsList({ projectId }: PinsListProps) {
       status,
     })
     clearSelection()
+  }
+
+  const handleBulkGenerateMetadata = () => {
+    triggerBulkMetadata.mutate({ pin_ids: Array.from(selectedIds) })
+    clearSelection()
+  }
+
+  const handleBulkSchedule = () => {
+    setBulkScheduleOpen(true)
   }
 
   // Single pin delete
@@ -281,6 +296,25 @@ export function PinsList({ projectId }: PinsListProps) {
             {/* Bulk actions */}
             {hasSelection && (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkGenerateMetadata}
+                  disabled={triggerBulkMetadata.isPending}
+                >
+                  <Sparkles className="mr-1 h-3.5 w-3.5" />
+                  Generate ({selectedIds.size})
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkSchedule}
+                >
+                  <CalendarIcon className="mr-1 h-3.5 w-3.5" />
+                  Schedule ({selectedIds.size})
+                </Button>
+
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
@@ -288,7 +322,7 @@ export function PinsList({ projectId }: PinsListProps) {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    {PHASE4_ACTIVE_STATUSES.map((status) => (
+                    {ACTIVE_STATUSES.map((status) => (
                       <DropdownMenuItem
                         key={status}
                         onClick={() => handleBulkStatusChange(status)}
@@ -361,6 +395,7 @@ export function PinsList({ projectId }: PinsListProps) {
                     <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
                       Status {getSortIcon('status')}
                     </TableHead>
+                    <TableHead className="w-[120px]">Scheduled</TableHead>
                     <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
                       Created {getSortIcon('created_at')}
                     </TableHead>
@@ -407,6 +442,9 @@ export function PinsList({ projectId }: PinsListProps) {
                       </TableCell>
                       <TableCell>
                         <PinStatusBadge status={pin.status} />
+                      </TableCell>
+                      <TableCell className="text-sm text-slate-500">
+                        {pin.scheduled_at ? formatDate(pin.scheduled_at) : '—'}
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">
                         {formatDate(pin.created_at)}
@@ -493,6 +531,13 @@ export function PinsList({ projectId }: PinsListProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk schedule dialog */}
+      <BulkScheduleDialog
+        pinIds={Array.from(selectedIds)}
+        open={bulkScheduleOpen}
+        onOpenChange={setBulkScheduleOpen}
+      />
     </div>
   )
 }
