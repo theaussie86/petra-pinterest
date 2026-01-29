@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 5 of 7 (AI Metadata & Publishing) -- IN PROGRESS
-Plan: 2 of 6 in current phase
+Plan: 4 of 6 in current phase
 Status: In progress
-Last activity: 2026-01-29 — Completed 05-02-PLAN.md (Metadata generation pipeline)
+Last activity: 2026-01-29 — Completed 05-04-PLAN.md (Pin scheduling UI)
 
-Progress: [██████░░░░] 67%
+Progress: [████████░░] 72%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
-- Average duration: ~3.0min
-- Total execution time: ~1.28 hours
+- Total plans completed: 27
+- Average duration: ~2.9min
+- Total execution time: ~1.35 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [██████░░░░] 67%
 | 2. Blog Project Management | 6 | ~15.5min | ~2.6min |
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
-| 5. AI Metadata & Publishing | 2 | ~4.9min | ~2.4min |
+| 5. AI Metadata & Publishing | 4 | ~9.9min | ~2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (2.4min), 05-01 (2.5min), 04-06 (2min), 04-05 (3.3min), 04-04 (3.5min)
-- Trend: Exceptional velocity, Phase 5 maintaining sub-3min average
+- Last 5 plans: 05-04 (2min), 05-03 (3min), 05-02 (2.4min), 05-01 (2.5min), 04-06 (2min)
+- Trend: Exceptional velocity, Phase 5 maintaining sub-3min average with 2min plan
 
 *Updated after each plan completion*
 
@@ -199,6 +199,12 @@ Recent decisions affecting current work:
 - Generation history pruning strategy — Keep last 3 generations per pin, prune after every insert using NOT IN clause on top 3 by created_at DESC
 - TanStack Query invalidation scope — Invalidate both ['pins'] and ['metadata-history'] on all mutations for comprehensive UI updates
 
+**From 05-03 (Single Pin Metadata Generation UI):**
+- Button visibility toggles between generate and regenerate modes based on presence of metadata — Minimizes UI clutter for new pins
+- Current generation distinguished with Badge in history dialog — Visual distinction prevents user confusion about which generation is active
+- Feedback dialog clears text on close to prevent stale input — Prevents stale feedback text from previous sessions
+- Dialog state managed by parent component with controlled open/onOpenChange props — Consistent pattern for all metadata dialogs
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -224,9 +230,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Completed 05-02-PLAN.md (Metadata generation pipeline) — Phase 5 in progress
+Stopped at: Completed 05-03-PLAN.md (Single pin metadata generation UI) — Phase 5 in progress
 Resume file: None
-Next: 05-03-PLAN.md — Single pin metadata generation UI
+Next: 05-05-PLAN.md — Bulk metadata generation UI (05-04 completed in parallel)
 
 Config:
 {
