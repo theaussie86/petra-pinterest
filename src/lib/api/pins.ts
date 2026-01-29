@@ -157,6 +157,32 @@ export function getPinImageUrl(path: string): string {
   return publicUrl
 }
 
+export async function schedulePinsBulk(
+  pinIds: string[],
+  startDate: Date,
+  intervalDays: number,
+  time: string
+): Promise<void> {
+  const [hours, minutes] = time.split(':').map(Number)
+
+  // Process sequentially to avoid rate limits
+  for (let i = 0; i < pinIds.length; i++) {
+    const scheduledDate = new Date(startDate)
+    scheduledDate.setDate(scheduledDate.getDate() + i * intervalDays)
+    scheduledDate.setHours(hours, minutes, 0, 0)
+
+    const { error } = await supabase
+      .from('pins')
+      .update({
+        scheduled_at: scheduledDate.toISOString(),
+        status: 'bereit_zum_planen' as PinStatus,
+      })
+      .eq('id', pinIds[i])
+
+    if (error) throw error
+  }
+}
+
 export async function getBoardsByProject(
   projectId: string
 ): Promise<Board[]> {
