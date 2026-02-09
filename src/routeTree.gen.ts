@@ -16,6 +16,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
+import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pinterest.callback'
 import { Route as AuthedProjectsIdRouteImport } from './routes/_authed/projects/$id'
 import { Route as AuthedPinsPinIdRouteImport } from './routes/_authed/pins/$pinId'
 import { Route as AuthedArticlesArticleIdRouteImport } from './routes/_authed/articles/$articleId'
@@ -54,6 +55,11 @@ const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
   path: '/calendar',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthPinterestCallbackRoute = AuthPinterestCallbackRouteImport.update({
+  id: '/auth/pinterest/callback',
+  path: '/auth/pinterest/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthedProjectsIdRoute = AuthedProjectsIdRouteImport.update({
   id: '/projects/$id',
   path: '/projects/$id',
@@ -80,6 +86,7 @@ export interface FileRoutesByFullPath {
   '/articles/$articleId': typeof AuthedArticlesArticleIdRoute
   '/pins/$pinId': typeof AuthedPinsPinIdRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
+  '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByTo {
   '/articles/$articleId': typeof AuthedArticlesArticleIdRoute
   '/pins/$pinId': typeof AuthedPinsPinIdRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
+  '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,6 +112,7 @@ export interface FileRoutesById {
   '/_authed/articles/$articleId': typeof AuthedArticlesArticleIdRoute
   '/_authed/pins/$pinId': typeof AuthedPinsPinIdRoute
   '/_authed/projects/$id': typeof AuthedProjectsIdRoute
+  '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +126,7 @@ export interface FileRouteTypes {
     | '/articles/$articleId'
     | '/pins/$pinId'
     | '/projects/$id'
+    | '/auth/pinterest/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/articles/$articleId'
     | '/pins/$pinId'
     | '/projects/$id'
+    | '/auth/pinterest/callback'
   id:
     | '__root__'
     | '/'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/_authed/articles/$articleId'
     | '/_authed/pins/$pinId'
     | '/_authed/projects/$id'
+    | '/auth/pinterest/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -148,6 +160,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ApiInngestRoute: typeof ApiInngestRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  AuthPinterestCallbackRoute: typeof AuthPinterestCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -201,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedCalendarRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/auth/pinterest/callback': {
+      id: '/auth/pinterest/callback'
+      path: '/auth/pinterest/callback'
+      fullPath: '/auth/pinterest/callback'
+      preLoaderRoute: typeof AuthPinterestCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/projects/$id': {
       id: '/_authed/projects/$id'
       path: '/projects/$id'
@@ -250,6 +270,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ApiInngestRoute: ApiInngestRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  AuthPinterestCallbackRoute: AuthPinterestCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
