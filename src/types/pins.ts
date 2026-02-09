@@ -46,6 +46,7 @@ export interface Pin {
   scheduled_at: string | null
   published_at: string | null
   pinterest_pin_id: string | null
+  pinterest_pin_url: string | null
   created_at: string
   updated_at: string
 }
