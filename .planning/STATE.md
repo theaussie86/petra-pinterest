@@ -266,6 +266,12 @@ Recent decisions affecting current work:
 - Unique constraint upsert strategy for article idempotency — Articles upserted via (blog_project_id, url) unique constraint instead of explicit ID mapping, simpler and matches schema design
 - All Airtable article statuses map to active — blog_articles uses archived_at for state (not status column), all migrated articles active (Fehler status logged but not blocking)
 - Full article content migration without truncation — TEXT column stores complete HTML content up to 33K+ chars for accurate migration
+
+**From 07-03 (Boards Migration):**
+- Temporary Airtable CDN URLs for board cover images — Deferred to Plan 05 (image migration), separates entity migration from asset migration for cleaner execution
+- Force-commit id-maps.json despite gitignore — Critical mapping file required for subsequent migrations, explicitly tracked in version control
+- Dual upsert strategy for boards — Unique constraint (blog_project_id, pinterest_board_id) for boards with Pinterest ID, name+project lookup for boards without
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
