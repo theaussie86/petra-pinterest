@@ -164,17 +164,21 @@ Plans:
 ### Phase 8: Pinterest OAuth Authentication for Multi-Account Publishing
 **Goal**: Users can connect any Pinterest account via OAuth and the app can publish pins on their behalf
 **Depends on**: Phase 7
-**Requirements**: TBD
+**Requirements**: PINT-01, PINT-02, PINT-03
 **Success Criteria** (what must be TRUE):
   1. Any Pinterest user can authorize the app via OAuth 2.0 flow
   2. Access tokens are securely stored per-user in Supabase
   3. Token refresh mechanism handles expired tokens automatically
   4. App can create pins on behalf of any authorized user
   5. Multi-account support verified with at least 2 different Pinterest accounts
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 08-01-PLAN.md — Database schema (pinterest_connections, oauth_state_mapping, Vault, pins columns) + Pinterest API v5 client
+- [ ] 08-02-PLAN.md — OAuth server functions (initiate, exchange, disconnect) + callback route
+- [ ] 08-03-PLAN.md — Connection UX in project settings (connect/disconnect/status) + board syncing from Pinterest API
+- [ ] 08-04-PLAN.md — Pin publishing server functions + Inngest crons (auto-publish every 15min, token refresh daily)
+- [ ] 08-05-PLAN.md — Publishing UI integration (publish button on detail/sidebar/list, bulk publish) + end-to-end verification
 
 ## Progress
 
@@ -190,4 +194,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
 | 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/5 | Not started | - |
-| 8. Pinterest OAuth | 0/? | Not started | - |
+| 8. Pinterest OAuth | 0/5 | Not started | - |
