@@ -15,7 +15,6 @@
 import { fetchAllRecords, TABLES } from './lib/airtable-client'
 import { supabaseAdmin } from './lib/supabase-admin'
 import {
-  logMigrationResult,
   getTenantId,
   downloadFile,
   uploadToStorage,
@@ -212,7 +211,6 @@ function mapPinRecord(
   const pinImages = fields['Pin Bilder']
   if (pinImages && Array.isArray(pinImages) && pinImages.length > 0) {
     const attachment = pinImages[0] // Take first image
-    const imageUrl = attachment.url
     const filename = attachment.filename
     const ext = getFileExtension(filename)
     imagePath = `${tenantId}/${pinId}.${ext}`
