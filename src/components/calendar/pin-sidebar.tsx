@@ -6,6 +6,7 @@ import { X, ExternalLink, Trash2, FileText } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { usePin, useUpdatePin, useBoards } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
+import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,6 +25,7 @@ import { GenerateMetadataButton } from '@/components/pins/generate-metadata-butt
 import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { DeletePinDialog } from '@/components/pins/delete-pin-dialog'
+import { PublishPinButton } from '@/components/pins/publish-pin-button'
 import {
   PIN_STATUS,
   ACTIVE_STATUSES,
@@ -50,6 +52,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
   const { data: pin, isLoading } = usePin(pinId || '')
   const { data: boards } = useBoards(pin?.blog_project_id || '')
   const { data: article } = useArticle(pin?.blog_article_id || '')
+  const { data: connectionData } = usePinterestConnection(pin?.blog_project_id || '')
   const updateMutation = useUpdatePin()
 
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
@@ -290,6 +293,28 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                   onHistoryOpen={() => setHistoryDialogOpen(true)}
                   onRegenerateOpen={() => setFeedbackDialogOpen(true)}
                 />
+              </div>
+
+              {/* Pinterest publishing */}
+              <div className="pt-4 border-t space-y-2">
+                <PublishPinButton
+                  pinId={pin.id}
+                  pinStatus={pin.status}
+                  hasPinterestConnection={connectionData?.connected ?? false}
+                  hasPinterestBoard={!!pin.board_id}
+                  pinterestPinUrl={pin.pinterest_pin_url}
+                />
+                {pin.pinterest_pin_url && (
+                  <a
+                    href={pin.pinterest_pin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    View on Pinterest
+                  </a>
+                )}
               </div>
 
               {/* Article link */}

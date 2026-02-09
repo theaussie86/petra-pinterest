@@ -1,9 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowLeft, Pencil, Trash2, FileText, AlertTriangle, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
 import { Header } from '@/components/layout/header'
 import { usePin, useUpdatePin, useBoards } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
+import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { EditPinDialog } from '@/components/pins/edit-pin-dialog'
 import { DeletePinDialog } from '@/components/pins/delete-pin-dialog'
@@ -12,6 +13,7 @@ import { GenerateMetadataButton } from '@/components/pins/generate-metadata-butt
 import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
+import { PublishPinButton } from '@/components/pins/publish-pin-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -30,6 +32,9 @@ function PinDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
+
+  // Fetch Pinterest connection status for the pin's project
+  const { data: connectionData } = usePinterestConnection(pin?.blog_project_id || '')
 
   if (isLoading) {
     return (
@@ -161,6 +166,28 @@ function PinDetail() {
 
             {/* Pin scheduling */}
             <SchedulePinSection pin={pin} />
+
+            {/* Pinterest publishing */}
+            <div className="space-y-2">
+              <PublishPinButton
+                pinId={pin.id}
+                pinStatus={pin.status}
+                hasPinterestConnection={connectionData?.connected ?? false}
+                hasPinterestBoard={!!pin.board_id}
+                pinterestPinUrl={pin.pinterest_pin_url}
+              />
+              {pin.pinterest_pin_url && (
+                <a
+                  href={pin.pinterest_pin_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  View on Pinterest
+                </a>
+              )}
+            </div>
 
             {/* Error alert */}
             {pin.status === 'error' && (

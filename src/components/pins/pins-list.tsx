@@ -11,6 +11,7 @@ import {
   ImageIcon,
   Sparkles,
   CalendarIcon,
+  Send,
 } from 'lucide-react'
 import {
   Table,
@@ -43,6 +44,7 @@ import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
 import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
+import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { PIN_STATUS, ACTIVE_STATUSES } from '@/types/pins'
 import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
@@ -72,6 +74,7 @@ export function PinsList({ projectId }: PinsListProps) {
   const bulkStatusMutation = useBulkUpdatePinStatus()
   const deletePinMutation = useDeletePin()
   const triggerBulkMetadata = useTriggerBulkMetadata()
+  const publishBulkMutation = usePublishPinsBulk()
 
   // Build article lookup map
   const articleMap = useMemo(() => {
@@ -186,6 +189,11 @@ export function PinsList({ projectId }: PinsListProps) {
 
   const handleBulkSchedule = () => {
     setBulkScheduleOpen(true)
+  }
+
+  const handleBulkPublish = async () => {
+    await publishBulkMutation.mutateAsync({ pin_ids: Array.from(selectedIds) })
+    clearSelection()
   }
 
   // Single pin delete
@@ -313,6 +321,16 @@ export function PinsList({ projectId }: PinsListProps) {
                 >
                   <CalendarIcon className="mr-1 h-3.5 w-3.5" />
                   Schedule ({selectedIds.size})
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleBulkPublish}
+                  disabled={publishBulkMutation.isPending}
+                >
+                  <Send className="mr-1 h-3.5 w-3.5" />
+                  Publish ({selectedIds.size})
                 </Button>
 
                 <DropdownMenu>
