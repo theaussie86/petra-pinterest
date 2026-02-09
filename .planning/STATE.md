@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 8 COMPLETE — Pinterest OAuth authentication integration delivered. All 8 phases complete.
+**Current focus:** Phase 9 in progress — Establishing consistent UI and dashboard layout patterns.
 
 ## Current Position
 
-Phase: 8 of 8 (Pinterest OAuth Authentication) -- COMPLETE
-Plan: 5 of 5 in phase
-Status: All phases complete - full Pinterest scheduling platform delivered
-Last activity: 2026-02-09 — Plan 08-05 complete (Publishing UI Integration)
+Phase: 9 of 9 (Consistent UI & Dashboard Layout)
+Plan: 2 of 4 in phase
+Status: In progress - Shared layout components foundation complete
+Last activity: 2026-02-09 — Plan 09-01 complete (Shared Layout Components Foundation)
 
-Progress: [██████████] 100%
+Progress: [██████████░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 41
+- Total plans completed: 42
 - Average duration: ~2.7min
-- Total execution time: ~2.38 hours
+- Total execution time: ~2.43 hours
 
 **By Phase:**
 
@@ -34,10 +34,11 @@ Progress: [██████████] 100%
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
 | 8. Pinterest OAuth | 5 | ~35min | ~2.5min |
+| 9. Consistent UI & Dashboard Layout | 1 | ~3min | ~3min |
 
 **Recent Trend:**
-- Last 5 plans: 08-05 (25min), 08-04 (2.7min), 08-03 (2.8min), 08-02 (2.5min), 08-01 (2.4min)
-- Trend: Phase 8 complete at 2.5min average per plan
+- Last 5 plans: 09-01 (3min), 08-05 (25min), 08-04 (2.7min), 08-03 (2.8min), 08-02 (2.5min)
+- Trend: Phase 9 started
 
 *Updated after each plan completion*
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
@@ -49,6 +50,7 @@ Progress: [██████████] 100%
 | Phase 08 P03 | 169 | 3 tasks | 4 files |
 | Phase 08 P04 | 163 | 2 tasks | 4 files |
 | Phase 08 P05 | 25 | 3 tasks | 10 files |
+| Phase 09 P01 | 3 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -304,6 +306,12 @@ Recent decisions affecting current work:
 - Bulk publish clears selection after completion — Consistent with bulk scheduling UX, pins move to different status filter
 - Tooltip for disabled states — shadcn/ui Tooltip component explains blocking conditions ("Connect Pinterest in project settings", "Assign a Pinterest board first")
 
+**From 09-01 (Shared Layout Components Foundation):**
+- Remove tw-animate-css import instead of installing package — shadcn CLI added @import but package not installed; Tailwind CSS v4 provides all needed animation utilities without external dependency
+- CVA container variants for PageLayout flexibility — Four maxWidth options (narrow/medium/wide/full) with cn() composition enables custom overrides (e.g. calendar page adds mr-[350px] for pin sidebar)
+- PageLayout conditional rendering for loading/error states — Centralized logic for LoadingSpinner and ErrorState display keeps route code clean
+- AppSidebar uses DropdownMenu for user menu — Consistent with existing shadcn/ui patterns, replaces custom dropdown state management from header.tsx
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -334,9 +342,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 08-05-PLAN.md (Publishing UI Integration)
+Stopped at: Completed 09-01-PLAN.md (Shared Layout Components Foundation)
 Resume file: None
-Next: All phases complete - project ready for deployment
+Next: Execute 09-02-PLAN.md (Dashboard & Project Routes Migration)
 
 Config:
 {
