@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Header } from '@/components/layout/header'
 import { useAllPins } from '@/lib/hooks/use-pins'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
+import { PinSidebar } from '@/components/calendar/pin-sidebar'
 
 // Search params validation schema
 type CalendarSearch = {
@@ -52,6 +53,9 @@ function CalendarPage() {
   const { data: projects, isLoading: projectsLoading } = useBlogProjects()
 
   const { project, statuses, tab, view } = searchParams
+
+  // Sidebar state
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
 
   // Client-side filtering
   const filteredPins = useMemo(() => {
@@ -128,9 +132,9 @@ function CalendarPage() {
     })
   }
 
-  // Handle pin click (placeholder for Plan 03 sidebar)
+  // Handle pin click - open sidebar
   const handlePinClick = (pinId: string) => {
-    console.log('Pin clicked:', pinId)
+    setSelectedPinId(pinId)
   }
 
   const isLoading = pinsLoading || projectsLoading
@@ -143,7 +147,10 @@ function CalendarPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Header user={user} />
-      <main className="container mx-auto px-4 py-6 max-w-7xl">
+      <main className={cn(
+        "container mx-auto px-4 py-6 max-w-7xl transition-all duration-200",
+        selectedPinId && "mr-[350px]"
+      )}>
         {/* Toolbar row */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-slate-900">Calendar</h1>
@@ -278,6 +285,12 @@ function CalendarPage() {
           </>
         )}
       </main>
+
+      {/* Pin Sidebar */}
+      <PinSidebar
+        pinId={selectedPinId}
+        onClose={() => setSelectedPinId(null)}
+      />
     </div>
   )
 }
