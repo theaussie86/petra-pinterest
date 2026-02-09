@@ -31,13 +31,35 @@ export function Header({ user }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Left: App name */}
-        <Link
-          to="/dashboard"
-          className="text-xl font-bold text-slate-900 hover:text-slate-700"
-        >
-          Petra
-        </Link>
+        {/* Left: App name and navigation */}
+        <div className="flex items-center gap-6">
+          <Link
+            to="/dashboard"
+            className="text-xl font-bold text-slate-900 hover:text-slate-700"
+          >
+            Petra
+          </Link>
+          <nav className="flex items-center gap-4">
+            <Link
+              to="/dashboard"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              activeProps={{
+                className: 'text-slate-900',
+              }}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/calendar"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              activeProps={{
+                className: 'text-slate-900',
+              }}
+            >
+              Calendar
+            </Link>
+          </nav>
+        </div>
 
         {/* Right: User menu */}
         <div className="relative">
