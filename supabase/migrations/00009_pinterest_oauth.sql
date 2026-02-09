@@ -246,21 +246,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_access_name TEXT := 'pinterest_access_token_' || p_connection_id::text;
+  v_refresh_name TEXT := 'pinterest_refresh_token_' || p_connection_id::text;
 BEGIN
   -- Delete any existing secrets for this connection
   DELETE FROM vault.secrets
-  WHERE name IN (
-    'pinterest_access_token_' || p_connection_id::text,
-    'pinterest_refresh_token_' || p_connection_id::text
-  );
+  WHERE name IN (v_access_name, v_refresh_name);
 
-  -- Insert new access token
-  INSERT INTO vault.secrets (name, secret)
-  VALUES ('pinterest_access_token_' || p_connection_id::text, p_access_token);
-
-  -- Insert new refresh token
-  INSERT INTO vault.secrets (name, secret)
-  VALUES ('pinterest_refresh_token_' || p_connection_id::text, p_refresh_token);
+  -- Use vault.create_secret() which has proper pgsodium permissions
+  -- (direct INSERT INTO vault.secrets fails with permission denied on _crypto_aead_det_noncegen)
+  PERFORM vault.create_secret(p_access_token, v_access_name);
+  PERFORM vault.create_secret(p_refresh_token, v_refresh_name);
 END;
 $$;
 

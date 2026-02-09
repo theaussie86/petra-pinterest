@@ -24,3 +24,6 @@ node_modules
 npm-debug.log*
 supabase/.temp/
 .vercel
+
+# Migration data (contains Airtable-to-Supabase ID mappings)
+scripts/migration/data/

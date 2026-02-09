@@ -92,7 +92,7 @@ export const initPinterestOAuthFn = createServerFn({ method: 'POST' })
         client_id: appId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'boards:read,boards:write,pins:read,pins:write',
+        scope: 'user_accounts:read,boards:read,boards:write,pins:read,pins:write',
         state,
         code_challenge: codeChallenge,
         code_challenge_method: 'S256',
