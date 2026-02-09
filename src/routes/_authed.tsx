@@ -1,4 +1,6 @@
 import { createFileRoute, redirect, Outlet } from '@tanstack/react-router'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/layout/app-sidebar'
 
 /**
  * Protected route layout
@@ -16,5 +18,17 @@ export const Route = createFileRoute('/_authed')({
 
     return { user: context.user }
   },
-  component: () => <Outlet />,
+  component: AuthedLayout,
 })
+
+function AuthedLayout() {
+  const { user } = Route.useRouteContext()
+  return (
+    <SidebarProvider>
+      <AppSidebar user={user} />
+      <SidebarInset>
+        <Outlet />
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}
