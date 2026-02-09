@@ -19,6 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [x] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
 - [ ] **Phase 7: Data Migration** - Airtable data migration to Supabase
+- [ ] **Phase 8: Pinterest OAuth** - Pinterest OAuth authentication for multi-account publishing
 
 ## Phase Details
 
@@ -132,13 +133,14 @@ Plans:
   3. User can filter calendar by pin status (unscheduled, unpublished, etc.)
   4. User can click a pin to view/edit details in sidebar panel
   5. Calendar performs smoothly with 1000+ scheduled pins
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 Plans:
 - [x] 06-01-PLAN.md — Data layer (cross-project pin fetch), calendar route with filters (project dropdown, status chips, URL params), tab toggle, header nav
 - [x] 06-02-PLAN.md — Calendar grid component (month/week views, pin thumbnails with status borders, navigation, overflow popovers)
 - [x] 06-03-PLAN.md — Pin sidebar (right panel with full editing, scheduling, metadata controls)
 - [x] 06-04-PLAN.md — Drag-and-drop rescheduling, unscheduled pins table with bulk scheduling
+- [ ] 06-05-PLAN.md — Fix board select value mismatch causing sidebar edit failures (gap closure)
 
 ### Phase 7: Data Migration
 **Goal**: Existing Airtable data is successfully migrated to Supabase
@@ -155,10 +157,25 @@ Plans:
 Plans:
 - [ ] TBD during planning
 
+### Phase 8: Pinterest OAuth Authentication for Multi-Account Publishing
+**Goal**: Users can connect any Pinterest account via OAuth and the app can publish pins on their behalf
+**Depends on**: Phase 7
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. Any Pinterest user can authorize the app via OAuth 2.0 flow
+  2. Access tokens are securely stored per-user in Supabase
+  3. Token refresh mechanism handles expired tokens automatically
+  4. App can create pins on behalf of any authorized user
+  5. Multi-account support verified with at least 2 different Pinterest accounts
+**Plans**: TBD
+
+Plans:
+- [ ] TBD during planning
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -167,5 +184,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
 | 4. Pin Management | 6/6 | Complete | 2026-01-28 |
 | 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
-| 6. Visual Calendar | 4/4 | Complete | 2026-02-09 |
+| 6. Visual Calendar | 4/5 | Gap closure | - |
 | 7. Data Migration | 0/? | Not started | - |
+| 8. Pinterest OAuth | 0/? | Not started | - |
