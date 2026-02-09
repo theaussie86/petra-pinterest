@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, RefreshCw, Unplug } from 'lucide-react'
+import { Link, Unplug } from 'lucide-react'
 import {
   usePinterestConnection,
   useConnectPinterest,
   useDisconnectPinterest,
-  useSyncBoards,
 } from '@/lib/hooks/use-pinterest-connection'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,7 +32,6 @@ export function PinterestConnection({
   const { data, isLoading } = usePinterestConnection(blogProjectId)
   const connectMutation = useConnectPinterest()
   const disconnectMutation = useDisconnectPinterest()
-  const syncBoardsMutation = useSyncBoards()
 
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false)
   const [hasShownSuccessToast, setHasShownSuccessToast] = useState(false)
@@ -66,10 +64,6 @@ export function PinterestConnection({
         },
       }
     )
-  }
-
-  const handleSyncBoards = () => {
-    syncBoardsMutation.mutate({ blog_project_id: blogProjectId })
   }
 
   const formatDate = (dateString: string) => {
@@ -190,23 +184,6 @@ export function PinterestConnection({
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleSyncBoards}
-                  disabled={syncBoardsMutation.isPending}
-                >
-                  {syncBoardsMutation.isPending ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-slate-900 border-t-transparent" />
-                      Syncing...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Sync Boards
-                    </>
-                  )}
-                </Button>
                 <Button
                   variant="outline"
                   onClick={() => setDisconnectDialogOpen(true)}

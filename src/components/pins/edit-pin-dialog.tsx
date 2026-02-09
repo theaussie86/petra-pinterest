@@ -21,7 +21,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
-import { useUpdatePin, useBoards } from '@/lib/hooks/use-pins'
+import { useUpdatePin } from '@/lib/hooks/use-pins'
+import { usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
 import {
   PIN_STATUS,
   ACTIVE_STATUSES,
@@ -33,7 +34,7 @@ const editPinSchema = z.object({
   title: z.string().max(200, 'Title too long'),
   description: z.string().max(1000, 'Description too long'),
   alt_text: z.string().max(500, 'Alt text too long'),
-  board_id: z.string(),
+  pinterest_board_id: z.string(),
   status: z.string(),
 })
 
@@ -48,7 +49,7 @@ interface EditPinDialogProps {
 
 export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDialogProps) {
   const updateMutation = useUpdatePin()
-  const { data: boards } = useBoards(projectId)
+  const { data: boards } = usePinterestBoards(projectId)
 
   const form = useForm<EditPinFormData>({
     resolver: zodResolver(editPinSchema),
@@ -56,7 +57,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
       title: '',
       description: '',
       alt_text: '',
-      board_id: '',
+      pinterest_board_id: '',
       status: 'draft',
     },
   })
@@ -71,7 +72,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
   } = form
 
   const currentStatus = watch('status')
-  const currentBoardId = watch('board_id')
+  const currentBoardId = watch('pinterest_board_id')
 
   // Reset form when dialog opens or pin changes
   useEffect(() => {
@@ -80,7 +81,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         title: pin.title || '',
         description: pin.description || '',
         alt_text: pin.alt_text || '',
-        board_id: pin.board_id || '__none__',
+        pinterest_board_id: pin.pinterest_board_id || '__none__',
         status: pin.status,
       })
     }
@@ -88,12 +89,16 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
 
   const onSubmit = async (data: EditPinFormData) => {
     try {
+      const selectedBoard = data.pinterest_board_id === '__none__'
+        ? null
+        : boards?.find((b) => b.pinterest_board_id === data.pinterest_board_id)
       await updateMutation.mutateAsync({
         id: pin.id,
         title: data.title.trim() || null,
         description: data.description.trim() || null,
         alt_text: data.alt_text.trim() || null,
-        board_id: data.board_id === '__none__' ? null : data.board_id,
+        pinterest_board_id: selectedBoard?.pinterest_board_id || null,
+        pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
       })
       onOpenChange(false)
@@ -163,7 +168,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
             <Label htmlFor="edit-board">Board</Label>
             <Select
               value={currentBoardId}
-              onValueChange={(value) => setValue('board_id', value)}
+              onValueChange={(value) => setValue('pinterest_board_id', value)}
               disabled={isSubmitting}
             >
               <SelectTrigger id="edit-board">
@@ -172,7 +177,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
               <SelectContent>
                 <SelectItem value="__none__">Not assigned</SelectItem>
                 {boards?.map((board) => (
-                  <SelectItem key={board.id} value={board.id}>
+                  <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
                     {board.name}
                   </SelectItem>
                 ))}

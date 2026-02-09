@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft, Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
 import { Header } from '@/components/layout/header'
-import { usePin, useUpdatePin, useBoards } from '@/lib/hooks/use-pins'
+import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { getPinImageUrl } from '@/lib/api/pins'
@@ -133,7 +133,12 @@ function PinDetail() {
                 <PinArticleLink articleId={pin.blog_article_id} />
 
                 {/* Board */}
-                <PinBoardName boardId={pin.board_id} projectId={pin.blog_project_id} />
+                <div>
+                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Board</h3>
+                  <p className="text-sm text-slate-700">
+                    {pin.pinterest_board_name || <span className="text-slate-400">Not assigned</span>}
+                  </p>
+                </div>
 
                 {/* Dates */}
                 <div className="grid grid-cols-2 gap-4 pt-2 border-t">
@@ -173,7 +178,7 @@ function PinDetail() {
                 pinId={pin.id}
                 pinStatus={pin.status}
                 hasPinterestConnection={connectionData?.connected ?? false}
-                hasPinterestBoard={!!pin.board_id}
+                hasPinterestBoard={!!pin.pinterest_board_id}
                 pinterestPinUrl={pin.pinterest_pin_url}
               />
               {pin.pinterest_pin_url && (
@@ -260,20 +265,6 @@ function PinArticleLink({ articleId }: { articleId: string }) {
       ) : (
         <span className="text-sm text-slate-400">Loading...</span>
       )}
-    </div>
-  )
-}
-
-function PinBoardName({ boardId, projectId }: { boardId: string | null; projectId: string }) {
-  const { data: boards } = useBoards(projectId)
-  const board = boards?.find((b) => b.id === boardId)
-
-  return (
-    <div>
-      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Board</h3>
-      <p className="text-sm text-slate-700">
-        {board ? board.name : <span className="text-slate-400">Not assigned</span>}
-      </p>
     </div>
   )
 }

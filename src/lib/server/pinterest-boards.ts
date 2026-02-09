@@ -3,10 +3,10 @@ import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { fetchPinterestBoards } from './pinterest-api'
 
 /**
- * Server function: Sync boards from Pinterest API
- * Replaces all existing boards for the blog project with fresh data from Pinterest
+ * Server function: Fetch boards directly from Pinterest API
+ * Returns boards as { pinterest_board_id, name }[] without storing them in DB
  */
-export const syncPinterestBoardsFn = createServerFn({ method: 'POST' })
+export const fetchPinterestBoardsFn = createServerFn({ method: 'GET' })
   .inputValidator((data: { blog_project_id: string }) => data)
   .handler(async ({ data: { blog_project_id } }) => {
     try {
@@ -20,7 +20,7 @@ export const syncPinterestBoardsFn = createServerFn({ method: 'POST' })
       } = await supabase.auth.getUser()
 
       if (authError || !user) {
-        return { success: false, error: 'Not authenticated' }
+        return { success: false as const, error: 'Not authenticated', boards: [] }
       }
 
       // Get tenant_id from profiles
@@ -31,7 +31,7 @@ export const syncPinterestBoardsFn = createServerFn({ method: 'POST' })
         .single()
 
       if (profileError || !profile) {
-        return { success: false, error: 'Profile not found' }
+        return { success: false as const, error: 'Profile not found', boards: [] }
       }
 
       // Fetch blog_project, verify tenant ownership, get pinterest_connection_id
@@ -44,13 +44,14 @@ export const syncPinterestBoardsFn = createServerFn({ method: 'POST' })
 
       if (projectError || !project) {
         return {
-          success: false,
+          success: false as const,
           error: 'Blog project not found or access denied',
+          boards: [],
         }
       }
 
       if (!project.pinterest_connection_id) {
-        return { success: false, error: 'No Pinterest account connected' }
+        return { success: false as const, error: 'No Pinterest account connected', boards: [] }
       }
 
       // Get access token from Vault using service client
@@ -60,47 +61,25 @@ export const syncPinterestBoardsFn = createServerFn({ method: 'POST' })
       )
 
       if (vaultError || !tokenData) {
-        return { success: false, error: 'Could not retrieve access token' }
+        return { success: false as const, error: 'Could not retrieve access token', boards: [] }
       }
 
       // Call Pinterest API to get all boards
       const pinterestBoards = await fetchPinterestBoards(tokenData)
 
-      // Replace boards: delete all existing boards for this project
-      const { error: deleteError } = await supabase
-        .from('pinterest_boards')
-        .delete()
-        .eq('blog_project_id', blog_project_id)
-
-      if (deleteError) {
-        return { success: false, error: 'Failed to clear existing boards' }
-      }
-
-      // Insert new boards from Pinterest
-      if (pinterestBoards.length > 0) {
-        const newBoards = pinterestBoards.map((board) => ({
-          tenant_id: profile.tenant_id,
-          blog_project_id,
-          name: board.name,
+      return {
+        success: true as const,
+        boards: pinterestBoards.map((board) => ({
           pinterest_board_id: board.id,
-          cover_image_url: board.media?.image_cover_url || null,
-        }))
-
-        const { error: insertError } = await supabase
-          .from('pinterest_boards')
-          .insert(newBoards)
-
-        if (insertError) {
-          return { success: false, error: 'Failed to insert boards' }
-        }
+          name: board.name,
+        })),
       }
-
-      return { success: true, synced_count: pinterestBoards.length }
     } catch (error) {
       return {
-        success: false,
+        success: false as const,
         error:
-          error instanceof Error ? error.message : 'Failed to sync boards',
+          error instanceof Error ? error.message : 'Failed to fetch boards',
+        boards: [],
       }
     }
   })

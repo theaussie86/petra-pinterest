@@ -35,7 +35,8 @@ export interface Pin {
   tenant_id: string
   blog_project_id: string
   blog_article_id: string
-  board_id: string | null
+  pinterest_board_id: string | null
+  pinterest_board_name: string | null
   image_path: string
   title: string | null
   description: string | null
@@ -55,7 +56,8 @@ export interface PinInsert {
   blog_project_id: string
   blog_article_id: string
   image_path: string
-  board_id?: string | null
+  pinterest_board_id?: string | null
+  pinterest_board_name?: string | null
   title?: string | null
   description?: string | null
 }
@@ -65,21 +67,11 @@ export interface PinUpdate {
   title?: string | null
   description?: string | null
   alt_text?: string | null
-  board_id?: string | null
+  pinterest_board_id?: string | null
+  pinterest_board_name?: string | null
   status?: PinStatus
   error_message?: string | null
   scheduled_at?: string | null
-}
-
-export interface Board {
-  id: string
-  tenant_id: string
-  blog_project_id: string
-  name: string
-  pinterest_board_id: string | null
-  cover_image_url: string | null
-  created_at: string
-  updated_at: string
 }
 
 export interface PinMetadataGeneration {

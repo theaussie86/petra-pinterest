@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, ExternalLink, Trash2, FileText } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { usePin, useUpdatePin, useBoards } from '@/lib/hooks/use-pins'
+import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
-import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
+import { usePinterestConnection, usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -42,7 +42,7 @@ const editPinSchema = z.object({
   title: z.string().max(200, 'Title too long'),
   description: z.string().max(1000, 'Description too long'),
   alt_text: z.string().max(500, 'Alt text too long'),
-  board_id: z.string(),
+  pinterest_board_id: z.string(),
   status: z.string(),
 })
 
@@ -50,7 +50,7 @@ type EditPinFormData = z.infer<typeof editPinSchema>
 
 export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
   const { data: pin, isLoading } = usePin(pinId || '')
-  const { data: boards } = useBoards(pin?.blog_project_id || '')
+  const { data: boards } = usePinterestBoards(pin?.blog_project_id || '')
   const { data: article } = useArticle(pin?.blog_article_id || '')
   const { data: connectionData } = usePinterestConnection(pin?.blog_project_id || '')
   const updateMutation = useUpdatePin()
@@ -65,7 +65,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
       title: '',
       description: '',
       alt_text: '',
-      board_id: '',
+      pinterest_board_id: '',
       status: 'draft',
     },
   })
@@ -80,7 +80,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
   } = form
 
   const currentStatus = watch('status')
-  const currentBoardId = watch('board_id')
+  const currentBoardId = watch('pinterest_board_id')
 
   // Reset form when pin changes
   useEffect(() => {
@@ -89,7 +89,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
         title: pin.title || '',
         description: pin.description || '',
         alt_text: pin.alt_text || '',
-        board_id: pin.board_id || '__none__',
+        pinterest_board_id: pin.pinterest_board_id || '__none__',
         status: pin.status,
       })
     }
@@ -113,12 +113,16 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
     if (!pin) return
 
     try {
+      const selectedBoard = data.pinterest_board_id === '__none__'
+        ? null
+        : boards?.find((b) => b.pinterest_board_id === data.pinterest_board_id)
       await updateMutation.mutateAsync({
         id: pin.id,
         title: data.title.trim() || null,
         description: data.description.trim() || null,
         alt_text: data.alt_text.trim() || null,
-        board_id: data.board_id === '__none__' ? null : data.board_id,
+        pinterest_board_id: selectedBoard?.pinterest_board_id || null,
+        pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
       })
       // Do NOT close sidebar after save - user stays to continue editing
@@ -229,7 +233,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                   <Label htmlFor="sidebar-board">Board</Label>
                   <Select
                     value={currentBoardId}
-                    onValueChange={(value) => setValue('board_id', value)}
+                    onValueChange={(value) => setValue('pinterest_board_id', value)}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger id="sidebar-board">
@@ -238,7 +242,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                     <SelectContent>
                       <SelectItem value="__none__">Not assigned</SelectItem>
                       {boards?.map((board) => (
-                        <SelectItem key={board.id} value={board.id}>
+                        <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
                           {board.name}
                         </SelectItem>
                       ))}
@@ -301,7 +305,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                   pinId={pin.id}
                   pinStatus={pin.status}
                   hasPinterestConnection={connectionData?.connected ?? false}
-                  hasPinterestBoard={!!pin.board_id}
+                  hasPinterestBoard={!!pin.pinterest_board_id}
                   pinterestPinUrl={pin.pinterest_pin_url}
                 />
                 {pin.pinterest_pin_url && (

@@ -22,7 +22,7 @@ export async function publishSinglePin(
     // Fetch pin with related data
     const { data: pin, error: fetchError } = await supabase
       .from('pins')
-      .select('*, blog_articles(url), boards(pinterest_board_id), blog_projects(pinterest_connection_id)')
+      .select('*, blog_articles(url), blog_projects(pinterest_connection_id)')
       .eq('id', pinId)
       .single()
 
@@ -31,7 +31,7 @@ export async function publishSinglePin(
     }
 
     // Validate pin is ready to publish
-    if (!pin.boards?.pinterest_board_id) {
+    if (!pin.pinterest_board_id) {
       throw new Error('Pin must have a Pinterest board assigned')
     }
 
@@ -66,7 +66,7 @@ export async function publishSinglePin(
 
     // Build Pinterest API payload
     const payload: PinterestCreatePinPayload = {
-      board_id: pin.boards.pinterest_board_id,
+      board_id: pin.pinterest_board_id,
       media_source: {
         source_type: 'image_url',
         url: imagePublicUrl,

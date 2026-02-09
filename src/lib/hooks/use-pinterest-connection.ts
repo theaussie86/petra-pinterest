@@ -5,7 +5,7 @@ import {
   disconnectPinterestFn,
   getPinterestConnectionFn,
 } from '@/lib/server/pinterest-oauth'
-import { syncPinterestBoardsFn } from '@/lib/server/pinterest-boards'
+import { fetchPinterestBoardsFn } from '@/lib/server/pinterest-boards'
 
 /**
  * Hook: Get Pinterest connection status for a blog project
@@ -64,7 +64,7 @@ export function useDisconnectPinterest() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pinterest-connection', variables.blog_project_id] })
-      queryClient.invalidateQueries({ queryKey: ['boards'] })
+      queryClient.invalidateQueries({ queryKey: ['pinterest-boards'] })
       toast.success('Pinterest disconnected')
     },
     onError: (error: Error) => {
@@ -74,26 +74,19 @@ export function useDisconnectPinterest() {
 }
 
 /**
- * Hook: Sync boards from Pinterest API
+ * Hook: Fetch boards from Pinterest API (cached for 5 minutes)
  */
-export function useSyncBoards() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: async ({ blog_project_id }: { blog_project_id: string }) => {
-      const result = await syncPinterestBoardsFn({ data: { blog_project_id } })
+export function usePinterestBoards(blogProjectId: string) {
+  return useQuery({
+    queryKey: ['pinterest-boards', blogProjectId],
+    queryFn: async () => {
+      const result = await fetchPinterestBoardsFn({ data: { blog_project_id: blogProjectId } })
       if (!result.success) {
-        throw new Error(result.error || 'Failed to sync boards')
+        throw new Error(result.error || 'Failed to fetch boards')
       }
-      return result
+      return result.boards
     },
-    onSuccess: (result, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['boards'] })
-      queryClient.invalidateQueries({ queryKey: ['pinterest-connection', variables.blog_project_id] })
-      toast.success(`Synced ${result.synced_count} boards`)
-    },
-    onError: (error: Error) => {
-      toast.error(error.message)
-    },
+    enabled: !!blogProjectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }

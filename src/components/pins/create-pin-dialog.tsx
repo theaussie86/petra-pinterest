@@ -18,7 +18,8 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { ImageUploadZone } from '@/components/pins/image-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
-import { useBoards, useCreatePins } from '@/lib/hooks/use-pins'
+import { useCreatePins } from '@/lib/hooks/use-pins'
+import { usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
 import { uploadPinImage } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
 import { toast } from 'sonner'
@@ -42,7 +43,7 @@ export function CreatePinDialog({
   const [isUploading, setIsUploading] = useState(false)
 
   const { data: articles = [] } = useArticles(projectId)
-  const { data: boards = [] } = useBoards(projectId)
+  const { data: boards = [] } = usePinterestBoards(projectId)
   const createPinsMutation = useCreatePins()
 
   // Reset form when dialog opens/closes
@@ -80,12 +81,14 @@ export function CreatePinDialog({
       }
 
       // Create pin rows (one per image)
+      const selectedBoard = boards.find((b) => b.pinterest_board_id === selectedBoardId)
       await createPinsMutation.mutateAsync(
         imagePaths.map((imagePath) => ({
           blog_project_id: projectId,
           blog_article_id: selectedArticleId,
           image_path: imagePath,
-          board_id: selectedBoardId || null,
+          pinterest_board_id: selectedBoardId || null,
+          pinterest_board_name: selectedBoard?.name || null,
         }))
       )
 
@@ -157,7 +160,7 @@ export function CreatePinDialog({
               </SelectTrigger>
               <SelectContent>
                 {boards.map((board) => (
-                  <SelectItem key={board.id} value={board.id}>
+                  <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
                     {board.name}
                   </SelectItem>
                 ))}

@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { ensureProfile } from '@/lib/auth'
-import type { Pin, PinInsert, PinUpdate, Board, PinStatus } from '@/types/pins'
+import type { Pin, PinInsert, PinUpdate, PinStatus } from '@/types/pins'
 
 export async function getPinsByProject(projectId: string): Promise<Pin[]> {
   const { data, error } = await supabase
@@ -194,15 +194,3 @@ export async function schedulePinsBulk(
   }
 }
 
-export async function getBoardsByProject(
-  projectId: string
-): Promise<Board[]> {
-  const { data, error } = await supabase
-    .from('boards')
-    .select('*')
-    .eq('blog_project_id', projectId)
-    .order('name')
-
-  if (error) throw error
-  return data
-}

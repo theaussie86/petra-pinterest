@@ -11,7 +11,6 @@ import {
   deletePins,
   updatePinsStatus,
   schedulePinsBulk,
-  getBoardsByProject,
 } from '@/lib/api/pins'
 import type { PinStatus } from '@/types/pins'
 
@@ -156,11 +155,3 @@ export function useBulkSchedulePins() {
   })
 }
 
-export function useBoards(projectId: string) {
-  return useQuery({
-    queryKey: ['boards', projectId],
-    queryFn: () => getBoardsByProject(projectId),
-    enabled: !!projectId,
-    staleTime: 30000,
-  })
-}

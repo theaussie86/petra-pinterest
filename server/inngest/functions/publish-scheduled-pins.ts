@@ -16,7 +16,7 @@ export const publishScheduledPins = inngest.createFunction(
     // Find pins due for publishing
     const { data: pins, error: fetchError } = await supabase
       .from('pins')
-      .select('*, blog_articles(url), boards(pinterest_board_id), blog_projects(pinterest_connection_id)')
+      .select('*, blog_articles(url), blog_projects(pinterest_connection_id)')
       .eq('status', 'ready_to_schedule')
       .not('scheduled_at', 'is', null)
       .lte('scheduled_at', new Date().toISOString())
@@ -91,7 +91,7 @@ export const publishScheduledPins = inngest.createFunction(
         const result = await step.run(`publish-pin-${pin.id}`, async () => {
           try {
             // Validate pin has required fields
-            if (!pin.boards?.pinterest_board_id) {
+            if (!pin.pinterest_board_id) {
               throw new Error('Pin must have a Pinterest board assigned')
             }
 
@@ -110,7 +110,7 @@ export const publishScheduledPins = inngest.createFunction(
 
             // Build Pinterest API payload
             const payload: PinterestCreatePinPayload = {
-              board_id: pin.boards.pinterest_board_id,
+              board_id: pin.pinterest_board_id,
               media_source: {
                 source_type: 'image_url',
                 url: imagePublicUrl,
