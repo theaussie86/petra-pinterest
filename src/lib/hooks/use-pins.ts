@@ -49,8 +49,8 @@ export function useCreatePin() {
       toast.success('Pin created')
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to create pin')
+    onError: (error: Error) => {
+      toast.error(`Failed to create pin: ${error.message}`)
     },
   })
 }
@@ -64,8 +64,8 @@ export function useCreatePins() {
       toast.success(`${data.length} pins created`)
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to create pins')
+    onError: (error: Error) => {
+      toast.error(`Failed to create pins: ${error.message}`)
     },
   })
 }
@@ -79,8 +79,8 @@ export function useUpdatePin() {
       toast.success('Pin updated')
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to update pin')
+    onError: (error: Error) => {
+      toast.error(`Failed to update pin: ${error.message}`)
     },
   })
 }
@@ -94,8 +94,8 @@ export function useDeletePin() {
       toast.success('Pin deleted')
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to delete pin')
+    onError: (error: Error) => {
+      toast.error(`Failed to delete pin: ${error.message}`)
     },
   })
 }
@@ -109,8 +109,8 @@ export function useBulkDeletePins() {
       toast.success(`${ids.length} pins deleted`)
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to delete pins')
+    onError: (error: Error) => {
+      toast.error(`Failed to delete pins: ${error.message}`)
     },
   })
 }
@@ -125,8 +125,8 @@ export function useBulkUpdatePinStatus() {
       toast.success(`Status updated for ${ids.length} pins`)
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to update pin status')
+    onError: (error: Error) => {
+      toast.error(`Failed to update pin status: ${error.message}`)
     },
   })
 }
@@ -150,8 +150,8 @@ export function useBulkSchedulePins() {
       toast.success(`${pin_ids.length} pins scheduled`)
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error('Failed to schedule pins')
+    onError: (error: Error) => {
+      toast.error(`Failed to schedule pins: ${error.message}`)
     },
   })
 }
