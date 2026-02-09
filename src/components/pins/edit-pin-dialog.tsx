@@ -80,7 +80,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         title: pin.title || '',
         description: pin.description || '',
         alt_text: pin.alt_text || '',
-        board_id: pin.board_id || '',
+        board_id: pin.board_id || '__none__',
         status: pin.status,
       })
     }
@@ -93,7 +93,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         title: data.title.trim() || null,
         description: data.description.trim() || null,
         alt_text: data.alt_text.trim() || null,
-        board_id: data.board_id || null,
+        board_id: data.board_id === '__none__' ? null : data.board_id,
         status: data.status as PinStatus,
       })
       onOpenChange(false)
@@ -163,7 +163,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
             <Label htmlFor="edit-board">Board</Label>
             <Select
               value={currentBoardId}
-              onValueChange={(value) => setValue('board_id', value === '__none__' ? '' : value)}
+              onValueChange={(value) => setValue('board_id', value)}
               disabled={isSubmitting}
             >
               <SelectTrigger id="edit-board">
