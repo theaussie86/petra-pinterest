@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 06-visual-calendar
 source: [06-01-SUMMARY.md, 06-02-SUMMARY.md, 06-03-SUMMARY.md, 06-04-SUMMARY.md]
 started: 2026-02-09T13:00:00Z
@@ -85,7 +85,13 @@ skipped: 1
   reason: "User reported: I get a failed to update message. when i edit in the sidebar."
   severity: major
   test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "Board Select value mismatch: form initializes board_id to '' when pin has no board, but Radix Select options use '__none__' sentinel. Empty string '' doesn't match any SelectItem value, potentially causing controlled component issues. Additionally, error toast shows generic message without actual Supabase error details."
+  artifacts:
+    - path: "src/components/calendar/pin-sidebar.tsx"
+      issue: "Line 89: board_id initialized to '' instead of '__none__'; Line 118: board_id conversion uses '' || null"
+    - path: "src/components/pins/edit-pin-dialog.tsx"
+      issue: "Line 83: same board_id '' initialization pattern (systemic issue)"
+  missing:
+    - "Use '__none__' sentinel consistently for null board_id in form state"
+    - "Surface actual Supabase error in toast for debugging"
   debug_session: ""
