@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 7 of 7 (Data Migration) -- IN PROGRESS
-Plan: 1 of 6 in phase
-Status: Foundation complete, entity migration next
-Last activity: 2026-02-09 — Plan 07-01 complete (migration foundation)
+Plan: 3 of 5 in phase
+Status: Boards migration complete, pins next
+Last activity: 2026-02-09 — Plan 07-03 complete (boards migration)
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34
-- Average duration: ~2.9min
-- Total execution time: ~1.69 hours
+- Total plans completed: 36
+- Average duration: ~2.8min
+- Total execution time: ~1.77 hours
 
 **By Phase:**
 
@@ -35,13 +35,14 @@ Progress: [█████████░] 88%
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (2.6min), 06-05 (2.0min), 06-04 (3.6min), 06-03 (2.5min), 06-02 (3.3min)
-- Trend: Phase 7 started strong, foundation layer setup efficient
+- Last 5 plans: 07-03 (2.0min), 07-02 (2.0min), 07-01 (2.6min), 06-05 (2.0min), 06-04 (3.6min)
+- Trend: Phase 7 maintaining strong velocity at 2.2min average, migration patterns established
 
 *Updated after each plan completion*
-| Phase 06 P04 | 3.6 | 2 tasks | 3 files |
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
 | Phase 07 P01 | 2.6 | 2 tasks | 6 files |
+| Phase 07 P02 | 2.0 | 2 tasks | 4 files |
+| Phase 07 P03 | 2 | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -260,6 +261,11 @@ Recent decisions affecting current work:
 - Field mapping with umlaut variants (ö/o, ä/a) — Handles German field name inconsistencies in Airtable data
 - Rate limiting (100ms) for Airtable API — Respects 5 req/sec limit, prevents throttling during large data transfers
 
+
+**From 07-02 (Blog Projects & Articles Migration):**
+- Unique constraint upsert strategy for article idempotency — Articles upserted via (blog_project_id, url) unique constraint instead of explicit ID mapping, simpler and matches schema design
+- All Airtable article statuses map to active — blog_articles uses archived_at for state (not status column), all migrated articles active (Fehler status logged but not blocking)
+- Full article content migration without truncation — TEXT column stores complete HTML content up to 33K+ chars for accurate migration
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -289,9 +295,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 07-01-PLAN.md (Migration Foundation) - PHASE 7 PLAN 1 COMPLETE
+Stopped at: Completed 07-02-PLAN.md (Blog Projects & Articles Migration) - PHASE 7 PLAN 2 COMPLETE
 Resume file: None
-Next: Phase 7 Plan 02 - Blog Projects Migration
+Next: Phase 7 Plan 03 or 04 - Boards/Pin Migration
 
 Config:
 {
