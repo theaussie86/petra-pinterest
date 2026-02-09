@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 5 IN PROGRESS — AI Metadata & Publishing.
+**Current focus:** Phase 6 IN PROGRESS — Visual Calendar.
 
 ## Current Position
 
-Phase: 5 of 7 (AI Metadata & Publishing) -- COMPLETE
-Plan: 5 of 5 in phase (Phase 5 complete)
-Status: Phase complete - ready for Phase 6
-Last activity: 2026-01-29 — Completed 05-05-PLAN.md (Phase 5 integration)
+Phase: 6 of 7 (Visual Calendar) -- IN PROGRESS
+Plan: 1 of 4 in phase
+Status: Phase 6 started - calendar foundation complete
+Last activity: 2026-02-09 — Completed 06-01-PLAN.md (Calendar Foundation)
 
-Progress: [████████░░] 75%
+Progress: [████████▓░] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
+- Total plans completed: 29
 - Average duration: ~2.8min
-- Total execution time: ~1.41 hours
+- Total execution time: ~1.48 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [████████░░] 75%
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
+| 6. Visual Calendar | 1 | ~3.1min | ~3.1min |
 
 **Recent Trend:**
-- Last 5 plans: 05-05 (3.4min), 05-04 (2min), 05-03 (3min), 05-02 (2.4min), 05-01 (2.5min)
-- Trend: Phase 5 complete at 2.7min average, maintaining exceptional velocity
+- Last 5 plans: 06-01 (3.1min), 05-05 (3.4min), 05-04 (2min), 05-03 (3min), 05-02 (2.4min)
+- Trend: Phase 6 started, maintaining strong velocity at ~3min average
 
 *Updated after each plan completion*
 
@@ -218,6 +219,12 @@ Recent decisions affecting current work:
 - Bulk action selection handling — Generate Metadata clears selection after triggering, Schedule keeps selection open until dialog confirmed
 - Scheduled date visibility — Added "Scheduled" column to table view and scheduled date display in grid view card overlay
 
+**From 06-01 (Calendar Foundation):**
+- Client-side filtering for calendar view — All pins fetched once via getAllPins(), filtered in memory by project and statuses; efficient for v1 scale (hundreds of pins), enables instant filter updates
+- URL param persistence for filter state — All filter state (project, statuses, tab) stored in TanStack Router search params, makes filtered views shareable and enables browser navigation through filter changes
+- Status chips exclude 'deleted' status — Not relevant for calendar workflow, chips show all other statuses with toggle behavior
+- Placeholder content areas for Calendar and Unscheduled views — Simple divs with pin counts, will be replaced with calendar grid (Plan 02) and unscheduled list (Plan 03)
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -242,10 +249,10 @@ Recent decisions affecting current work:
 
 ## Session Continuity
 
-Last session: 2026-01-29
-Stopped at: Completed 05-05-PLAN.md (Phase 5 integration) — Phase 5 COMPLETE
+Last session: 2026-02-09
+Stopped at: Completed 06-01-PLAN.md (Calendar Foundation)
 Resume file: None
-Next: Phase 6 — Publishing Calendar
+Next: 06-02-PLAN.md — Calendar Grid Implementation
 
 Config:
 {
