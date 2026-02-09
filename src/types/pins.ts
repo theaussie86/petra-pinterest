@@ -6,6 +6,7 @@ export const PIN_STATUS = {
   generating_metadata: { label: 'Metadaten werden generiert', color: 'violet' },
   metadata_created: { label: 'Metadaten erstellt', color: 'teal' },
   ready_to_schedule: { label: 'Bereit zum Planen', color: 'green' },
+  publishing: { label: 'Wird veroffentlicht', color: 'amber' },
   published: { label: 'Veroffentlicht', color: 'emerald' },
   error: { label: 'Fehler', color: 'red' },
   deleted: { label: 'Loschen', color: 'gray' },
@@ -25,6 +26,7 @@ export const ACTIVE_STATUSES: PinStatus[] = [
 // System-managed statuses (visible but not user-selectable)
 export const SYSTEM_MANAGED_STATUSES: PinStatus[] = [
   'generating_metadata',
+  'publishing',
   'published',
 ]
 
@@ -102,6 +104,7 @@ export function getStatusBadgeClasses(status: PinStatus): string {
     violet: 'bg-violet-100 text-violet-700',
     teal: 'bg-teal-100 text-teal-700',
     green: 'bg-green-100 text-green-700',
+    amber: 'bg-amber-100 text-amber-700',
     emerald: 'bg-emerald-100 text-emerald-700',
     red: 'bg-red-100 text-red-700',
     gray: 'bg-gray-100 text-gray-500',
