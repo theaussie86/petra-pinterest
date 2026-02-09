@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 8 IN PROGRESS — Pinterest OAuth. Foundation complete (Plan 01), OAuth flow next.
+**Current focus:** Phase 8 IN PROGRESS — Pinterest OAuth. OAuth flow complete (Plan 02), UI integration next.
 
 ## Current Position
 
 Phase: 8 of 8 (Pinterest OAuth Authentication) -- IN PROGRESS
-Plan: 1 of 5 in phase
-Status: OAuth foundation complete, OAuth flow next
-Last activity: 2026-02-09 — Plan 08-01 complete (Pinterest OAuth foundation)
+Plan: 2 of 5 in phase
+Status: OAuth flow complete, UI integration next
+Last activity: 2026-02-09 — Plan 08-02 complete (Pinterest OAuth flow implementation)
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
+- Total plans completed: 38
 - Average duration: ~2.7min
-- Total execution time: ~1.81 hours
+- Total execution time: ~1.86 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [█████████░] 91%
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
-| 8. Pinterest OAuth | 1 | ~2.4min | ~2.4min |
+| 8. Pinterest OAuth | 2 | ~4.9min | ~2.5min |
 
 **Recent Trend:**
-- Last 5 plans: 08-01 (2.4min), 07-03 (2.0min), 07-02 (2.0min), 07-01 (2.6min), 06-05 (2.0min)
-- Trend: Phase 8 started strong at 2.4min, continuing efficient execution pattern
+- Last 5 plans: 08-02 (2.5min), 08-01 (2.4min), 07-03 (2.0min), 07-02 (2.0min), 07-01 (2.6min)
+- Trend: Phase 8 maintaining efficient 2.4-2.5min pace per plan
 
 *Updated after each plan completion*
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
@@ -45,6 +45,7 @@ Progress: [█████████░] 91%
 | Phase 07 P02 | 2.0 | 2 tasks | 4 files |
 | Phase 07 P03 | 2 | 1 tasks | 3 files |
 | Phase 08 P01 | 144 | 2 tasks | 4 files |
+| Phase 08 P02 | 148 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -280,6 +281,12 @@ Recent decisions affecting current work:
 - PKCE OAuth flow over implicit grant — Pinterest API v5 requires authorization code flow with PKCE; implicit grant deprecated
 - 'publishing' status added as system-managed — Prevents manual status setting during async publish; system controls ready_to_schedule → publishing → published/error transition
 
+**From 08-02 (Pinterest OAuth Flow):**
+- Service role client for Vault operations — Authenticated client (getSupabaseServerClient) can't access vault.secrets directly; Vault RPC functions use SECURITY DEFINER, called via service role client (getSupabaseServiceClient)
+- OAuth state mapping with database storage — Stored with 10-minute expiration, enables CSRF protection + request context (blog_project_id) preservation for redirect after OAuth
+- Connection reuse across projects — Multiple blog projects can share one Pinterest connection; disconnect only removes FK, cleanup (tokens + connection) only when no other projects reference it
+- Exchange callback returns blog_project_id — Enables redirect back to specific project page after OAuth completion instead of generic dashboard landing
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -309,9 +316,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 08-01-PLAN.md (Pinterest OAuth Foundation)
+Stopped at: Completed 08-02-PLAN.md (Pinterest OAuth Flow Implementation)
 Resume file: None
-Next: Phase 8 Plan 02 - OAuth Flow Implementation
+Next: Phase 8 Plan 03 - UI Integration
 
 Config:
 {
