@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 6 of 7 (Visual Calendar) -- IN PROGRESS
-Plan: 3 of 4 in phase
-Status: Phase 6 in progress - pin detail sidebar implementation complete
-Last activity: 2026-02-09 — Completed 06-03-PLAN.md (Pin Detail Sidebar)
+Phase: 6 of 7 (Visual Calendar) -- COMPLETE
+Plan: 4 of 4 in phase
+Status: Phase 6 complete - drag-and-drop rescheduling and unscheduled pins table implemented
+Last activity: 2026-02-09 — Completed 06-04-PLAN.md (Drag-and-Drop & Unscheduled Pins)
 
-Progress: [████████▓░] 82%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 31
-- Average duration: ~2.8min
-- Total execution time: ~1.58 hours
+- Total plans completed: 32
+- Average duration: ~2.9min
+- Total execution time: ~1.64 hours
 
 **By Phase:**
 
@@ -32,14 +32,14 @@ Progress: [████████▓░] 82%
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
-| 6. Visual Calendar | 3 | ~8.9min | ~3.0min |
+| 6. Visual Calendar | 4 | ~12.5min | ~3.1min |
 
 **Recent Trend:**
-- Last 5 plans: 06-03 (2.5min), 06-02 (3.3min), 06-01 (3.1min), 05-05 (3.4min), 05-04 (2min)
-- Trend: Phase 6 progressing excellently, strong velocity maintained at ~3.0min average
+- Last 5 plans: 06-04 (3.6min), 06-03 (2.5min), 06-02 (3.3min), 06-01 (3.1min), 05-05 (3.4min)
+- Trend: Phase 6 complete, consistent ~3.1min average maintained
 
 *Updated after each plan completion*
-| Phase 06 P03 | 2.5 | 2 tasks | 2 files |
+| Phase 06 P04 | 3.6 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -242,6 +242,12 @@ Recent decisions affecting current work:
 - Fixed-position sidebar pattern — Right position, z-40, h-[calc(100vh-64px)], overflow-y-auto, transition-all duration-200 for smooth appearance
 - Escape key handling with cleanup — Add listener on mount when pinId present, cleanup on unmount to prevent memory leaks
 
+**From 06-04 (Drag-and-Drop & Unscheduled Pins):**
+- Use native HTML5 Drag and Drop API instead of external library — Simple drag-between-cells interaction doesn't warrant library overhead
+- Memoize CalendarDayCell with custom comparison function — Prevents unnecessary re-renders during drag operations by comparing only pin count and IDs, not full pin objects
+- Show project name instead of article title in unscheduled list — Unscheduled pins come from all projects, avoiding per-project useArticles queries keeps it efficient
+- Clear selection after bulk schedule dialog closes — Consistent with bulk scheduling UX, pins move out of unscheduled view so selection becomes stale
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -267,9 +273,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 06-03-PLAN.md (Pin Detail Sidebar)
+Stopped at: Completed 06-04-PLAN.md (Drag-and-Drop & Unscheduled Pins) - PHASE 6 COMPLETE
 Resume file: None
-Next: 06-04-PLAN.md — Unscheduled Pins Section
+Next: Phase 7 - Airtable Migration & Production Launch
 
 Config:
 {
