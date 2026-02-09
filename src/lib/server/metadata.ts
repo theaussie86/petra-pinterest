@@ -1,15 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient } from './supabase'
-import { generatePinMetadata } from '@/lib/openai/client'
+import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { inngest } from '../../../server/inngest/client'
-import { PINTEREST_SEO_SYSTEM_PROMPT } from '@/lib/openai/prompts'
-import { openai } from '@/lib/openai/client'
-import type { GeneratedMetadata } from '@/lib/openai/client'
 
 /**
  * Server function: Generate metadata for a single pin (synchronous).
- * Authenticates via cookies, calls OpenAI, stores history, updates pin.
+ * Authenticates via cookies, calls Gemini, stores history, updates pin.
  */
 export const generateMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_id: string }) => data)
@@ -47,7 +44,7 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       // Get pin image URL
       const imageUrl = getPinImageUrl(pin.image_path)
 
-      // Call OpenAI to generate metadata
+      // Call Gemini to generate metadata
       const metadata = await generatePinMetadata(
         pin.blog_articles.title,
         pin.blog_articles.content,
@@ -159,65 +156,18 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       // Get pin image URL
       const imageUrl = getPinImageUrl(pin.image_path)
 
-      // Truncate article content to ~1000 tokens (4000 chars) to manage costs
-      const truncatedContent = pin.blog_articles.content.slice(0, 4000)
-
-      // Build conversation messages array
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: PINTEREST_SEO_SYSTEM_PROMPT,
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Article Title: ${pin.blog_articles.title}\n\nArticle Content: ${truncatedContent}`,
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageUrl,
-                  detail: 'auto',
-                },
-              },
-            ],
-          },
-          {
-            role: 'assistant',
-            content: JSON.stringify({
-              title: previousGeneration.title,
-              description: previousGeneration.description,
-              alt_text: previousGeneration.alt_text,
-            }),
-          },
-          {
-            role: 'user',
-            content: `Please regenerate the metadata with this feedback: ${data.feedback}`,
-          },
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
-      })
-
-      const responseContent = completion.choices[0].message.content
-
-      if (!responseContent) {
-        throw new Error('OpenAI returned empty response')
-      }
-
-      // Parse JSON response
-      const metadata = JSON.parse(responseContent) as GeneratedMetadata
-
-      // Validate required fields
-      if (!metadata.title || !metadata.description || !metadata.alt_text) {
-        throw new Error(
-          'OpenAI response missing required fields (title, description, alt_text)'
-        )
-      }
+      // Call Gemini with feedback (multi-turn conversation)
+      const metadata = await generatePinMetadataWithFeedback(
+        pin.blog_articles.title,
+        pin.blog_articles.content,
+        imageUrl,
+        {
+          title: previousGeneration.title,
+          description: previousGeneration.description,
+          alt_text: previousGeneration.alt_text,
+        },
+        data.feedback
+      )
 
       // Store new generation in pin_metadata_generations WITH feedback text
       await supabase.from('pin_metadata_generations').insert({

@@ -1,6 +1,6 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
-import { generatePinMetadata } from '../../../src/lib/openai/client'
+import { generatePinMetadata } from '../../../src/lib/gemini/client'
 
 export const generateMetadataBulk = inngest.createFunction(
   { id: 'generate-metadata-bulk' },
