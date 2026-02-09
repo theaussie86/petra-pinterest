@@ -140,7 +140,7 @@ Plans:
 - [x] 06-02-PLAN.md — Calendar grid component (month/week views, pin thumbnails with status borders, navigation, overflow popovers)
 - [x] 06-03-PLAN.md — Pin sidebar (right panel with full editing, scheduling, metadata controls)
 - [x] 06-04-PLAN.md — Drag-and-drop rescheduling, unscheduled pins table with bulk scheduling
-- [ ] 06-05-PLAN.md — Fix board select value mismatch causing sidebar edit failures (gap closure)
+- [x] 06-05-PLAN.md — Fix board select value mismatch causing sidebar edit failures (gap closure)
 
 ### Phase 7: Data Migration
 **Goal**: Existing Airtable data is successfully migrated to Supabase
@@ -184,6 +184,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
 | 4. Pin Management | 6/6 | Complete | 2026-01-28 |
 | 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
-| 6. Visual Calendar | 4/5 | Gap closure | - |
+| 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/? | Not started | - |
 | 8. Pinterest OAuth | 0/? | Not started | - |
