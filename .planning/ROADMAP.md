@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Blog Scraping & Articles** - Automated blog scraping and article management (sitemap-first)
 - [x] **Phase 4: Pin Management** - Complete pin CRUD with image upload and status workflow
 - [x] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
-- [ ] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
+- [x] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
 - [ ] **Phase 7: Data Migration** - Airtable data migration to Supabase
 
 ## Phase Details
@@ -135,10 +135,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Data layer (cross-project pin fetch), calendar route with filters (project dropdown, status chips, URL params), tab toggle, header nav
-- [ ] 06-02-PLAN.md — Calendar grid component (month/week views, pin thumbnails with status borders, navigation, overflow popovers)
-- [ ] 06-03-PLAN.md — Pin sidebar (right panel with full editing, scheduling, metadata controls)
-- [ ] 06-04-PLAN.md — Drag-and-drop rescheduling, unscheduled pins table with bulk scheduling
+- [x] 06-01-PLAN.md — Data layer (cross-project pin fetch), calendar route with filters (project dropdown, status chips, URL params), tab toggle, header nav
+- [x] 06-02-PLAN.md — Calendar grid component (month/week views, pin thumbnails with status borders, navigation, overflow popovers)
+- [x] 06-03-PLAN.md — Pin sidebar (right panel with full editing, scheduling, metadata controls)
+- [x] 06-04-PLAN.md — Drag-and-drop rescheduling, unscheduled pins table with bulk scheduling
 
 ### Phase 7: Data Migration
 **Goal**: Existing Airtable data is successfully migrated to Supabase
@@ -167,5 +167,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Blog Scraping & Articles | 8/8 | Complete | 2026-01-28 |
 | 4. Pin Management | 6/6 | Complete | 2026-01-28 |
 | 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
-| 6. Visual Calendar | 0/? | Not started | - |
+| 6. Visual Calendar | 4/4 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/? | Not started | - |
