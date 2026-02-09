@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 6 COMPLETE — Visual Calendar. Ready for Phase 7.
+**Current focus:** Phase 7 IN PROGRESS — Data Migration. Foundation complete (Plan 01), entity migration next.
 
 ## Current Position
 
-Phase: 6 of 7 (Visual Calendar) -- COMPLETE (VERIFIED + GAP CLOSURE)
-Plan: 5 of 5 in phase (Phase 6 complete with gap closure)
-Status: Phase complete - ready for Phase 7
-Last activity: 2026-02-09 — Gap closure plan 06-05 complete (board select fix)
+Phase: 7 of 7 (Data Migration) -- IN PROGRESS
+Plan: 1 of 6 in phase
+Status: Foundation complete, entity migration next
+Last activity: 2026-02-09 — Plan 07-01 complete (migration foundation)
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 88%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
+- Total plans completed: 34
 - Average duration: ~2.9min
-- Total execution time: ~1.66 hours
+- Total execution time: ~1.69 hours
 
 **By Phase:**
 
@@ -35,12 +35,13 @@ Progress: [█████████░] 86%
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
 
 **Recent Trend:**
-- Last 5 plans: 06-05 (2.0min), 06-04 (3.6min), 06-03 (2.5min), 06-02 (3.3min), 06-01 (3.1min)
-- Trend: Phase 6 complete with gap closure, efficient 2min fix for board select issue
+- Last 5 plans: 07-01 (2.6min), 06-05 (2.0min), 06-04 (3.6min), 06-03 (2.5min), 06-02 (3.3min)
+- Trend: Phase 7 started strong, foundation layer setup efficient
 
 *Updated after each plan completion*
 | Phase 06 P04 | 3.6 | 2 tasks | 3 files |
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
+| Phase 07 P01 | 2.6 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -253,6 +254,12 @@ Recent decisions affecting current work:
 - Use __none__ sentinel consistently in form state for controlled Radix UI Select components — Prevents value mismatch with SelectItem options, conversion to null only at submission boundary
 - Surface actual error messages in all mutation hooks — All onError handlers accept Error parameter and display error.message, enables debugging of database constraints and RLS errors
 
+**From 07-01 (Migration Foundation):**
+- Individual TEXT columns for branding fields (not JSONB) — Enables direct SQL queries and column-level indexing, better query flexibility
+- Service role key for migration scripts bypasses RLS — Required for tenant-specific writes during migration, application-level validation provides defense-in-depth
+- Field mapping with umlaut variants (ö/o, ä/a) — Handles German field name inconsistencies in Airtable data
+- Rate limiting (100ms) for Airtable API — Respects 5 req/sec limit, prevents throttling during large data transfers
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -282,9 +289,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 06-05-PLAN.md (Board Select Fix - Gap Closure) - PHASE 6 COMPLETE
+Stopped at: Completed 07-01-PLAN.md (Migration Foundation) - PHASE 7 PLAN 1 COMPLETE
 Resume file: None
-Next: Phase 7 - Airtable Migration & Production Launch
+Next: Phase 7 Plan 02 - Blog Projects Migration
 
 Config:
 {
