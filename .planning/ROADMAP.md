@@ -132,10 +132,13 @@ Plans:
   3. User can filter calendar by pin status (unscheduled, unpublished, etc.)
   4. User can click a pin to view/edit details in sidebar panel
   5. Calendar performs smoothly with 1000+ scheduled pins
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 06-01-PLAN.md — Data layer (cross-project pin fetch), calendar route with filters (project dropdown, status chips, URL params), tab toggle, header nav
+- [ ] 06-02-PLAN.md — Calendar grid component (month/week views, pin thumbnails with status borders, navigation, overflow popovers)
+- [ ] 06-03-PLAN.md — Pin sidebar (right panel with full editing, scheduling, metadata controls)
+- [ ] 06-04-PLAN.md — Drag-and-drop rescheduling, unscheduled pins table with bulk scheduling
 
 ### Phase 7: Data Migration
 **Goal**: Existing Airtable data is successfully migrated to Supabase
