@@ -1,4 +1,5 @@
 import { format } from 'date-fns'
+import { useState, memo } from 'react'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
 import { getPinImageUrl } from '@/lib/api/pins'
@@ -17,6 +18,7 @@ interface CalendarDayCellProps {
   isToday: boolean
   view: 'month' | 'week'
   onPinClick: (pinId: string) => void
+  onPinDrop: (pinId: string, targetDate: Date) => void
 }
 
 // Map status colors to border classes
@@ -36,14 +38,15 @@ function getStatusBorderClass(status: Pin['status']): string {
   return STATUS_BORDER_CLASSES[color] || 'border-slate-300'
 }
 
-export function CalendarDayCell({
+const CalendarDayCellComponent = ({
   date,
   pins,
   isCurrentMonth,
   isToday,
   view,
   onPinClick,
-}: CalendarDayCellProps) {
+  onPinDrop,
+}: CalendarDayCellProps) => {
   // Determine thumbnail size and max visible count based on view
   const thumbnailSize = view === 'month' ? 32 : 48
   const maxVisible = view === 'month' ? 3 : 6
@@ -51,14 +54,62 @@ export function CalendarDayCell({
   const visiblePins = pins.slice(0, maxVisible)
   const overflowCount = pins.length - maxVisible
 
+  // Drag and drop state
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [draggingPinId, setDraggingPinId] = useState<string | null>(null)
+
+  // Drag handlers for pin thumbnails
+  const handleDragStart = (e: React.DragEvent, pin: Pin) => {
+    e.dataTransfer.setData('text/plain', pin.id)
+    e.dataTransfer.effectAllowed = 'move'
+    setDraggingPinId(pin.id)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingPinId(null)
+  }
+
+  // Drop target handlers for day cell
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only remove highlight if leaving the cell itself, not child elements
+    if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+
+    const pinId = e.dataTransfer.getData('text/plain')
+    if (pinId) {
+      onPinDrop(pinId, date)
+    }
+  }
+
   return (
     <div
       className={cn(
         'border-r border-b p-2 transition-colors',
         view === 'month' ? 'min-h-[100px]' : 'min-h-[160px]',
         isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50',
-        isToday && 'ring-2 ring-blue-400 ring-inset'
+        isToday && 'ring-2 ring-blue-400 ring-inset',
+        isDragOver && 'ring-2 ring-blue-400 bg-blue-50'
       )}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       {/* Day number */}
       <div
@@ -75,6 +126,9 @@ export function CalendarDayCell({
         {visiblePins.map((pin) => (
           <div
             key={pin.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, pin)}
+            onDragEnd={handleDragEnd}
             onClick={() => onPinClick(pin.id)}
             className="cursor-pointer"
             title={pin.title || 'Untitled Pin'}
@@ -84,8 +138,9 @@ export function CalendarDayCell({
               alt={pin.title || 'Pin'}
               loading="lazy"
               className={cn(
-                'rounded border-2 object-cover',
-                getStatusBorderClass(pin.status)
+                'rounded border-2 object-cover transition-opacity',
+                getStatusBorderClass(pin.status),
+                draggingPinId === pin.id && 'opacity-50'
               )}
               style={{
                 width: `${thumbnailSize}px`,
@@ -145,3 +200,20 @@ export function CalendarDayCell({
     </div>
   )
 }
+
+// Memoize with custom comparison to prevent unnecessary re-renders during drag
+export const CalendarDayCell = memo(CalendarDayCellComponent, (prev, next) => {
+  // Only re-render if date, view, or pin count/IDs change
+  if (prev.date.getTime() !== next.date.getTime()) return false
+  if (prev.view !== next.view) return false
+  if (prev.isCurrentMonth !== next.isCurrentMonth) return false
+  if (prev.isToday !== next.isToday) return false
+  if (prev.pins.length !== next.pins.length) return false
+
+  // Check if pin IDs changed (shallow comparison)
+  for (let i = 0; i < prev.pins.length; i++) {
+    if (prev.pins[i].id !== next.pins[i].id) return false
+  }
+
+  return true
+})

@@ -14,6 +14,7 @@ import {
 import type { Pin } from '@/types/pins'
 import { CalendarHeader } from './calendar-header'
 import { CalendarDayCell } from './calendar-day-cell'
+import { useUpdatePin } from '@/lib/hooks/use-pins'
 
 interface CalendarGridProps {
   pins: Pin[]
@@ -31,6 +32,7 @@ export function CalendarGrid({
   onViewChange,
 }: CalendarGridProps) {
   const [currentDate, setCurrentDate] = useState(new Date())
+  const updatePin = useUpdatePin()
 
   // Group pins by date (yyyy-MM-dd format)
   const pinsByDate = useMemo(() => {
@@ -46,6 +48,23 @@ export function CalendarGrid({
     })
     return grouped
   }, [pins])
+
+  // Handle pin drop - reschedule to new date, keeping same time
+  const handlePinDrop = (pinId: string, targetDate: Date) => {
+    // Find the pin to get its existing scheduled_at time
+    const pin = pins.find((p) => p.id === pinId)
+    if (!pin || !pin.scheduled_at) return
+
+    const existingDate = new Date(pin.scheduled_at)
+    const newDate = new Date(targetDate)
+    // Keep the same time, change the date
+    newDate.setHours(existingDate.getHours(), existingDate.getMinutes(), 0, 0)
+
+    updatePin.mutate({
+      id: pinId,
+      scheduled_at: newDate.toISOString(),
+    })
+  }
 
   // Compute calendar grid days
   const calendarDays = useMemo(() => {
@@ -115,6 +134,7 @@ export function CalendarGrid({
                   isToday={isToday(date)}
                   view={view}
                   onPinClick={onPinClick}
+                  onPinDrop={handlePinDrop}
                 />
               )
             })}
@@ -134,6 +154,7 @@ export function CalendarGrid({
                   isToday={isToday(date)}
                   view={view}
                   onPinClick={onPinClick}
+                  onPinDrop={handlePinDrop}
                 />
               )
             })}
