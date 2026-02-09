@@ -27,7 +27,6 @@ const __dirname = path.dirname(__filename)
 interface IdMaps {
   projects: Record<string, string> // airtableId -> supabaseUUID
   articles: Record<string, string>
-  boards: Record<string, string>
   pins: Record<string, string>
 }
 
@@ -52,7 +51,6 @@ function loadIdMaps(): IdMaps {
   return {
     projects: {},
     articles: {},
-    boards: {},
     pins: {},
   }
 }

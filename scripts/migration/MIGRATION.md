@@ -1,6 +1,6 @@
 # Airtable to Supabase Migration
 
-Migrates all data from the Airtable + n8n workflow into Supabase: projects, articles, boards, pins (with images), board covers, and brand kit files.
+Migrates all data from the Airtable + n8n workflow into Supabase: projects, articles, pins (with images), and brand kit files. Boards are no longer stored locally — they are fetched live from the Pinterest API. Board info (pinterest_board_id, pinterest_board_name) is stored directly on pins.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ MIGRATION_TENANT_ID=300aacb4-3625-4251-9240-1a64ccbecb1d
 
 ### Database Migration
 
-The branding columns and storage buckets must exist before running scripts. Migration `00008_blog_project_branding_fields.sql` adds 16 branding columns to `blog_projects` and creates the `board-covers` and `brand-kit` storage buckets. This should already be applied -- verify with:
+The branding columns and storage bucket must exist before running scripts. Migration `00008_blog_project_branding_fields.sql` adds 16 branding columns to `blog_projects` and creates the `brand-kit` storage bucket. This should already be applied -- verify with:
 
 ```sql
 SELECT column_name FROM information_schema.columns
@@ -35,10 +35,9 @@ Scripts must be run in this exact order. Each script depends on the ID mappings 
 ```
 1. migrate-projects.ts    (2 records, ~5 seconds)
 2. migrate-articles.ts    (99 records, ~30 seconds)
-3. migrate-boards.ts      (130 records, ~30 seconds)
-4. migrate-pins.ts        (1649 records + images, ~10-15 minutes)
-5. migrate-images.ts      (board covers + brand kit, ~1-3 minutes)
-6. validate.ts            (full validation report, ~1-2 minutes)
+3. migrate-pins.ts        (1649 records + images, ~10-15 minutes)
+4. migrate-images.ts      (brand kit, ~1-3 minutes)
+5. validate.ts            (full validation report, ~1-2 minutes)
 ```
 
 ## Running the Scripts
@@ -63,23 +62,13 @@ Migrates 99 blog articles with full content, linked to projects via FK. Uses `on
 
 **Expected output:** `Created: 99` (or `Updated: 99` on re-run)
 
-### Step 3: Boards
-
-```bash
-npx tsx scripts/migration/migrate-boards.ts
-```
-
-Migrates 130 boards with Pinterest board IDs and cover image URLs (still pointing to Airtable CDN at this stage). Uses `onConflict: 'blog_project_id,pinterest_board_id'` for boards with Pinterest IDs. Updates `id-maps.json` with board mappings.
-
-**Expected output:** `Created: 130` (or `Updated: 130` on re-run)
-
-### Step 4: Pins + Images
+### Step 3: Pins + Images
 
 ```bash
 npx tsx scripts/migration/migrate-pins.ts
 ```
 
-Migrates 1649 pins with status mapping (German to English), FK references to articles/boards/projects, and downloads + uploads pin images to the `pin-images` Supabase Storage bucket.
+Migrates 1649 pins with status mapping (German to English), FK references to articles/projects, pinterest_board_id/pinterest_board_name from linked Airtable boards, and downloads + uploads pin images to the `pin-images` Supabase Storage bucket.
 
 **Runtime:** ~10-15 minutes due to 200ms rate limiting between image uploads.
 
@@ -91,27 +80,27 @@ Migrates 1649 pins with status mapping (German to English), FK references to art
 
 **Expected output:** `Created: 1649, Image Errors: 0-3` (a few CDN timeouts are normal)
 
-### Step 5: Board Covers + Brand Kit
+### Step 4: Brand Kit
 
 ```bash
 npx tsx scripts/migration/migrate-images.ts
 ```
 
-Downloads board cover images from Airtable and uploads to the `board-covers` Supabase Storage bucket. Updates each board's `cover_image_url` to point to the Supabase Storage URL instead of the Airtable CDN. Also downloads brand kit files and uploads to the `brand-kit` bucket.
+Downloads brand kit files from Airtable and uploads to the `brand-kit` Supabase Storage bucket.
 
 **Flags:**
 - `--dry-run` -- Preview changes without uploading or updating records
 - `--force` -- Re-upload all files even if they already exist in Storage
 
-**Expected output:** `Board covers: X uploaded, Y skipped` and `Brand kit files: X uploaded, Y skipped`
+**Expected output:** `Brand kit files: X uploaded, Y skipped`
 
-### Step 6: Validation
+### Step 5: Validation
 
 ```bash
 npx tsx scripts/migration/validate.ts
 ```
 
-Re-fetches all 4 Airtable tables and compares field-by-field against Supabase. Also counts storage files per bucket. Generates two report files:
+Re-fetches all 3 Airtable tables (projects, articles, pins) and compares field-by-field against Supabase. Also counts storage files per bucket. Generates two report files:
 
 - `scripts/migration/data/validation-report.json` -- Structured data with all mismatches
 - `scripts/migration/data/validation-report.md` -- Human-readable report with pass/fail verdict
@@ -124,7 +113,6 @@ Quick-check scripts to spot-check migration results:
 
 ```bash
 npx tsx scripts/migration/verify-articles.ts   # Article counts, content lengths, project FKs
-npx tsx scripts/migration/verify-boards.ts      # Board counts, Pinterest IDs, cover images
 npx tsx scripts/migration/check-pins.ts         # Pin counts, status distribution, image counts
 ```
 
@@ -136,7 +124,6 @@ All scripts share `scripts/migration/data/id-maps.json`:
 {
   "projects": { "<airtable-id>": "<supabase-uuid>", ... },
   "articles": { "<airtable-id>": "<supabase-uuid>", ... },
-  "boards":   { "<airtable-id>": "<supabase-uuid>", ... },
   "pins":     { "<airtable-id>": "<supabase-uuid>", ... }
 }
 ```
@@ -183,15 +170,6 @@ All scripts share `scripts/migration/data/id-maps.json`:
 | Created | scraped_at |
 | Projekt (linked) | blog_project_id (via id-maps) |
 
-### Boards
-
-| Airtable Field | Supabase Column |
-|---|---|
-| Name | name |
-| pinterest_id | pinterest_board_id |
-| Cover (attachment) | cover_image_url |
-| Blog Projekt (linked) | blog_project_id (via id-maps) |
-
 ### Pins
 
 | Airtable Field | Supabase Column |
@@ -204,7 +182,7 @@ All scripts share `scripts/migration/data/id-maps.json`:
 | Veroffentlichungsdatum | scheduled_at / published_at |
 | Pin Bilder (attachment) | image_path (uploaded to Storage) |
 | Blog Artikel (linked) | blog_article_id (via id-maps) |
-| Board (linked) | board_id (via id-maps) |
+| Board (linked) | pinterest_board_id + pinterest_board_name (resolved from Airtable boards) |
 
 ### Pin Status Mapping
 

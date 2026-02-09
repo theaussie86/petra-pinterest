@@ -15,7 +15,7 @@ async function checkPins() {
   // Sample 5 pins
   const { data: sample } = await supabaseAdmin
     .from('pins')
-    .select('id, title, status, image_path, blog_article_id, board_id')
+    .select('id, title, status, image_path, blog_article_id, pinterest_board_id')
     .limit(5)
 
   console.log('\nSample pins:')

@@ -5,7 +5,7 @@
 -- Adds pinterest_connection_id to blog_projects, pinterest_pin_url to pins.
 -- Adds 'publishing' status to pin workflow.
 -- Sets up Supabase Vault for encrypted token storage.
--- Adds service_role bypass policies for Inngest background jobs.
+-- Adds service_role bypass policies for Inngest background jobs (pins).
 -- Created: 2026-02-09
 
 -- ============================================================================
@@ -317,19 +317,12 @@ END;
 $$;
 
 -- ============================================================================
--- STEP 8: SERVICE ROLE BYPASS POLICIES FOR PINS AND BOARDS
+-- STEP 8: SERVICE ROLE BYPASS POLICY FOR PINS
 -- ============================================================================
 -- Inngest background jobs need service_role access for publishing workflow
 
 CREATE POLICY "Service role full access pins"
   ON public.pins
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
-
-CREATE POLICY "Service role full access boards"
-  ON public.boards
   FOR ALL
   TO service_role
   USING (true)

@@ -6,7 +6,7 @@
  * Usage: npx tsx scripts/migration/migrate-pins.ts [--force-images] [--dry-run]
  *
  * Prerequisites:
- * - migrate-projects.ts, migrate-articles.ts, and migrate-boards.ts must have run first
+ * - migrate-projects.ts and migrate-articles.ts must have run first
  * - AIRTABLE_PAT environment variable set
  * - MIGRATION_TENANT_ID environment variable set
  * - SUPABASE_URL and SUPABASE_SECRET_KEY environment variables set
@@ -35,8 +35,13 @@ const __dirname = path.dirname(__filename)
 interface IdMaps {
   projects: Record<string, string> // airtableId -> supabaseUUID
   articles: Record<string, string>
-  boards: Record<string, string>
   pins: Record<string, string>
+}
+
+// Airtable board info resolved for direct storage on pins
+interface AirtableBoardInfo {
+  pinterest_board_id: string | null
+  name: string
 }
 
 const ID_MAPS_PATH = path.join(__dirname, 'data', 'id-maps.json')
@@ -51,7 +56,7 @@ const DRY_RUN = process.argv.includes('--dry-run')
 function loadIdMaps(): IdMaps {
   if (!fs.existsSync(ID_MAPS_PATH)) {
     throw new Error(
-      `ID mapping file not found at ${ID_MAPS_PATH}. Run migrate-projects.ts, migrate-articles.ts, and migrate-boards.ts first.`
+      `ID mapping file not found at ${ID_MAPS_PATH}. Run migrate-projects.ts and migrate-articles.ts first.`
     )
   }
 
@@ -117,7 +122,8 @@ function mapPinRecord(
   tenantId: string,
   pinId: string,
   idMaps: IdMaps,
-  articleProjectMap: Map<string, string>
+  articleProjectMap: Map<string, string>,
+  airtableBoardMap: Map<string, AirtableBoardInfo>
 ): { data: any; error: string | null; imagePath: string | null } {
   const fields = record.fields
 
@@ -141,19 +147,22 @@ function mapPinRecord(
     }
   }
 
-  // FK 2: board_id (nullable)
-  let boardId: string | null = null
+  // Board info: resolve pinterest_board_id and name from Airtable boards
+  let pinterestBoardId: string | null = null
+  let pinterestBoardName: string | null = null
   const airtableBoardIds = fields['Board']
   if (
     airtableBoardIds &&
     Array.isArray(airtableBoardIds) &&
     airtableBoardIds.length > 0
   ) {
-    const airtableBoardId = airtableBoardIds[0]
-    boardId = idMaps.boards[airtableBoardId] || null
-    if (!boardId) {
+    const boardInfo = airtableBoardMap.get(airtableBoardIds[0])
+    if (boardInfo) {
+      pinterestBoardId = boardInfo.pinterest_board_id
+      pinterestBoardName = boardInfo.name
+    } else {
       console.warn(
-        `Board mapping not found for ${airtableBoardId}, setting board_id to NULL`
+        `Board info not found for ${airtableBoardIds[0]}, setting pinterest_board fields to NULL`
       )
     }
   }
@@ -185,7 +194,8 @@ function mapPinRecord(
     id: pinId,
     tenant_id: tenantId,
     blog_article_id: blogArticleId,
-    board_id: boardId,
+    pinterest_board_id: pinterestBoardId,
+    pinterest_board_name: pinterestBoardName,
     blog_project_id: blogProjectId,
     title: fields['PIN Titel'] || null,
     description: fields['Beschreibung des Pins'] || null,
@@ -277,16 +287,15 @@ async function migratePins() {
     // Verify required mappings exist
     const projectCount = Object.keys(idMaps.projects).length
     const articleCount = Object.keys(idMaps.articles).length
-    const boardCount = Object.keys(idMaps.boards).length
 
-    if (projectCount === 0 || articleCount === 0 || boardCount === 0) {
+    if (projectCount === 0 || articleCount === 0) {
       throw new Error(
-        `Missing required mappings. Found: ${projectCount} projects, ${articleCount} articles, ${boardCount} boards. Run previous migration scripts first.`
+        `Missing required mappings. Found: ${projectCount} projects, ${articleCount} articles. Run previous migration scripts first.`
       )
     }
 
     console.log(
-      `Found ${projectCount} projects, ${articleCount} articles, ${boardCount} boards\n`
+      `Found ${projectCount} projects, ${articleCount} articles\n`
     )
 
     // Get tenant ID
@@ -308,6 +317,18 @@ async function migratePins() {
       articleProjectMap.set(article.id, article.blog_project_id)
     })
     console.log(`Loaded ${articleProjectMap.size} article-project mappings\n`)
+
+    // Fetch Airtable boards to resolve pinterest_board_id/name for pins
+    console.log('Fetching Airtable boards for board info resolution...')
+    const airtableBoards = await fetchAllRecords(TABLES.BOARDS)
+    const airtableBoardMap = new Map<string, AirtableBoardInfo>()
+    for (const board of airtableBoards) {
+      airtableBoardMap.set(board.id, {
+        pinterest_board_id: board.fields['pinterest_id'] || null,
+        name: board.fields['Name'] || '',
+      })
+    }
+    console.log(`Loaded ${airtableBoardMap.size} Airtable boards\n`)
 
     // Load existing images from Storage (single batch call)
     console.log('Loading existing images from Storage...')
@@ -336,7 +357,7 @@ async function migratePins() {
           data: pinData,
           error: mapError,
           imagePath,
-        } = mapPinRecord(record, tenantId, pinId, idMaps, articleProjectMap)
+        } = mapPinRecord(record, tenantId, pinId, idMaps, articleProjectMap, airtableBoardMap)
 
         if (mapError || !pinData) {
           stats.skipped++

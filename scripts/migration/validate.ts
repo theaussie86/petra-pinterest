@@ -27,7 +27,6 @@ const __dirname = path.dirname(__filename)
 interface IdMaps {
   projects: Record<string, string>
   articles: Record<string, string>
-  boards: Record<string, string>
   pins: Record<string, string>
 }
 
@@ -64,11 +63,9 @@ interface ValidationReport {
   summary: {
     projects: EntitySummary
     articles: EntitySummary
-    boards: EntitySummary
     pins: EntitySummary
     storage: {
       pin_images: StorageSummary
-      board_covers: StorageSummary
       brand_kit: StorageSummary
     }
   }
@@ -404,156 +401,6 @@ async function validateArticles(
 }
 
 /**
- * Validate boards
- */
-async function validateBoards(
-  idMaps: IdMaps
-): Promise<{
-  summary: EntitySummary
-  mismatches: Mismatch[]
-  missing: MissingRecord[]
-  errors: string[]
-}> {
-  const mismatches: Mismatch[] = []
-  const missing: MissingRecord[] = []
-  const errors: string[] = []
-
-  const airtableRecords = await fetchAllRecords(TABLES.BOARDS)
-
-  const { data: supabaseBoards, error } = await supabaseAdmin
-    .from('boards')
-    .select('*')
-
-  if (error) {
-    errors.push(`Failed to fetch Supabase boards: ${error.message}`)
-    return {
-      summary: {
-        total: airtableRecords.length,
-        matched: 0,
-        mismatches: 0,
-        missing: airtableRecords.length,
-      },
-      mismatches,
-      missing,
-      errors,
-    }
-  }
-
-  const supabaseMap = new Map(supabaseBoards!.map((b) => [b.id, b]))
-  let matched = 0
-  let mismatchCount = 0
-
-  for (const record of airtableRecords) {
-    const supabaseId = idMaps.boards[record.id]
-    if (!supabaseId) {
-      missing.push({
-        entity: 'board',
-        airtableId: record.id,
-        reason: 'No ID mapping found',
-      })
-      continue
-    }
-
-    const sb = supabaseMap.get(supabaseId)
-    if (!sb) {
-      missing.push({
-        entity: 'board',
-        airtableId: record.id,
-        reason: `Supabase record ${supabaseId} not found`,
-      })
-      continue
-    }
-
-    const fields = record.fields
-    let hasMismatch = false
-
-    // Name
-    if (normalize(fields['Name']) !== normalize(sb.name)) {
-      mismatches.push({
-        entity: 'board',
-        airtableId: record.id,
-        supabaseId,
-        field: 'name',
-        expected: normalize(fields['Name']),
-        actual: normalize(sb.name),
-      })
-      hasMismatch = true
-    }
-
-    // Pinterest board ID
-    if (
-      normalize(fields['pinterest_id']) !== normalize(sb.pinterest_board_id)
-    ) {
-      mismatches.push({
-        entity: 'board',
-        airtableId: record.id,
-        supabaseId,
-        field: 'pinterest_board_id',
-        expected: normalize(fields['pinterest_id']),
-        actual: normalize(sb.pinterest_board_id),
-      })
-      hasMismatch = true
-    }
-
-    // Verify project FK
-    const airtableProjektIds = fields['Blog Projekt']
-    if (
-      airtableProjektIds &&
-      Array.isArray(airtableProjektIds) &&
-      airtableProjektIds.length > 0
-    ) {
-      const expectedProjectId = idMaps.projects[airtableProjektIds[0]]
-      if (expectedProjectId && expectedProjectId !== sb.blog_project_id) {
-        mismatches.push({
-          entity: 'board',
-          airtableId: record.id,
-          supabaseId,
-          field: 'blog_project_id',
-          expected: expectedProjectId,
-          actual: sb.blog_project_id,
-        })
-        hasMismatch = true
-      }
-    }
-
-    // Check cover_image_url points to Supabase (not still Airtable CDN)
-    if (
-      sb.cover_image_url &&
-      !sb.cover_image_url.includes('supabase') &&
-      sb.cover_image_url.includes('airtable')
-    ) {
-      mismatches.push({
-        entity: 'board',
-        airtableId: record.id,
-        supabaseId,
-        field: 'cover_image_url',
-        expected: 'Supabase Storage URL',
-        actual: 'Still pointing to Airtable CDN',
-      })
-      hasMismatch = true
-    }
-
-    if (hasMismatch) {
-      mismatchCount++
-    } else {
-      matched++
-    }
-  }
-
-  return {
-    summary: {
-      total: airtableRecords.length,
-      matched,
-      mismatches: mismatchCount,
-      missing: missing.length,
-    },
-    mismatches,
-    missing,
-    errors,
-  }
-}
-
-/**
  * Validate pins
  */
 async function validatePins(
@@ -724,30 +571,6 @@ async function validatePins(
       }
     }
 
-    // Board FK
-    const airtableBoardIds = fields['Board']
-    if (
-      airtableBoardIds &&
-      Array.isArray(airtableBoardIds) &&
-      airtableBoardIds.length > 0
-    ) {
-      const expectedBoardId = idMaps.boards[airtableBoardIds[0]] || null
-      if (
-        expectedBoardId !== null &&
-        expectedBoardId !== sp.board_id
-      ) {
-        mismatches.push({
-          entity: 'pin',
-          airtableId: record.id,
-          supabaseId,
-          field: 'board_id',
-          expected: expectedBoardId || '(null)',
-          actual: sp.board_id || '(null)',
-        })
-        hasMismatch = true
-      }
-    }
-
     // Image path exists
     const pinImages = fields['Pin Bilder']
     if (
@@ -802,12 +625,10 @@ function generateMarkdownReport(report: ValidationReport): string {
   const totalMismatches =
     report.summary.projects.mismatches +
     report.summary.articles.mismatches +
-    report.summary.boards.mismatches +
     report.summary.pins.mismatches
   const totalMissing =
     report.summary.projects.missing +
     report.summary.articles.missing +
-    report.summary.boards.missing +
     report.summary.pins.missing
 
   if (totalMismatches === 0 && totalMissing === 0 && report.errors.length === 0) {
@@ -906,7 +727,7 @@ async function main() {
 
   console.log(`Tenant: ${tenantId}`)
   console.log(
-    `ID maps: ${Object.keys(idMaps.projects).length} projects, ${Object.keys(idMaps.articles).length} articles, ${Object.keys(idMaps.boards).length} boards, ${Object.keys(idMaps.pins).length} pins\n`
+    `ID maps: ${Object.keys(idMaps.projects).length} projects, ${Object.keys(idMaps.articles).length} articles, ${Object.keys(idMaps.pins).length} pins\n`
   )
 
   const report: ValidationReport = {
@@ -914,11 +735,9 @@ async function main() {
     summary: {
       projects: { total: 0, matched: 0, mismatches: 0, missing: 0 },
       articles: { total: 0, matched: 0, mismatches: 0, missing: 0 },
-      boards: { total: 0, matched: 0, mismatches: 0, missing: 0 },
       pins: { total: 0, matched: 0, mismatches: 0, missing: 0 },
       storage: {
         pin_images: { expected: 0, actual: 0, missing: 0 },
-        board_covers: { expected: 0, actual: 0, missing: 0 },
         brand_kit: { expected: 0, actual: 0, missing: 0 },
       },
     },
@@ -948,16 +767,6 @@ async function main() {
     `  ${articleResult.summary.matched}/${articleResult.summary.total} matched, ${articleResult.summary.mismatches} mismatches, ${articleResult.summary.missing} missing\n`
   )
 
-  console.log('Validating boards...')
-  const boardResult = await validateBoards(idMaps)
-  report.summary.boards = boardResult.summary
-  report.mismatches.push(...boardResult.mismatches)
-  report.missing.push(...boardResult.missing)
-  report.errors.push(...boardResult.errors)
-  console.log(
-    `  ${boardResult.summary.matched}/${boardResult.summary.total} matched, ${boardResult.summary.mismatches} mismatches, ${boardResult.summary.missing} missing\n`
-  )
-
   console.log('Validating pins...')
   const pinResult = await validatePins(idMaps)
   report.summary.pins = pinResult.summary
@@ -980,23 +789,6 @@ async function main() {
     missing: Math.max(0, expectedPinImages - pinImageCount),
   }
   console.log(`  pin-images: ${pinImageCount}/${expectedPinImages}`)
-
-  // Board covers
-  const boardCoverCount = await countStorageFiles('board-covers', tenantId)
-  // Count Airtable boards that have covers
-  const airtableBoards = await fetchAllRecords(TABLES.BOARDS)
-  const expectedBoardCovers = airtableBoards.filter(
-    (r) =>
-      r.fields['Cover'] &&
-      Array.isArray(r.fields['Cover']) &&
-      r.fields['Cover'].length > 0
-  ).length
-  report.summary.storage.board_covers = {
-    expected: expectedBoardCovers,
-    actual: boardCoverCount,
-    missing: Math.max(0, expectedBoardCovers - boardCoverCount),
-  }
-  console.log(`  board-covers: ${boardCoverCount}/${expectedBoardCovers}`)
 
   // Brand kit
   let brandKitCount = 0
@@ -1036,12 +828,10 @@ async function main() {
   const totalMismatches =
     report.summary.projects.mismatches +
     report.summary.articles.mismatches +
-    report.summary.boards.mismatches +
     report.summary.pins.mismatches
   const totalMissing =
     report.summary.projects.missing +
     report.summary.articles.missing +
-    report.summary.boards.missing +
     report.summary.pins.missing
 
   console.log('\n=== Validation Complete ===')

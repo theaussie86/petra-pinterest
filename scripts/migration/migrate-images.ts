@@ -1,13 +1,12 @@
 #!/usr/bin/env tsx
 /**
- * Board Cover & Brand Kit Migration Script
- * Downloads board cover images and brand kit files from Airtable,
- * uploads them to Supabase Storage, and updates board cover_image_url.
+ * Brand Kit Migration Script
+ * Downloads brand kit files from Airtable and uploads them to Supabase Storage.
  *
  * Usage: npx tsx scripts/migration/migrate-images.ts [--force] [--dry-run]
  *
  * Prerequisites:
- * - migrate-projects.ts and migrate-boards.ts must have run first
+ * - migrate-projects.ts must have run first
  * - AIRTABLE_PAT environment variable set
  * - MIGRATION_TENANT_ID environment variable set
  * - SUPABASE_URL and SUPABASE_SECRET_KEY environment variables set
@@ -32,7 +31,6 @@ const __dirname = path.dirname(__filename)
 interface IdMaps {
   projects: Record<string, string>
   articles: Record<string, string>
-  boards: Record<string, string>
   pins: Record<string, string>
 }
 
@@ -44,46 +42,11 @@ const DRY_RUN = process.argv.includes('--dry-run')
 function loadIdMaps(): IdMaps {
   if (!fs.existsSync(ID_MAPS_PATH)) {
     throw new Error(
-      `ID mapping file not found at ${ID_MAPS_PATH}. Run migrate-projects.ts and migrate-boards.ts first.`
+      `ID mapping file not found at ${ID_MAPS_PATH}. Run migrate-projects.ts first.`
     )
   }
   const content = fs.readFileSync(ID_MAPS_PATH, 'utf-8')
   return JSON.parse(content)
-}
-
-/**
- * Load existing filenames from a storage bucket (single batch call)
- */
-async function loadExistingFiles(
-  bucket: string,
-  prefix: string
-): Promise<Set<string>> {
-  const existing = new Set<string>()
-  try {
-    let offset = 0
-    const limit = 1000
-    while (true) {
-      const { data, error } = await supabaseAdmin.storage
-        .from(bucket)
-        .list(prefix, { limit, offset })
-
-      if (error) {
-        console.error(`Error listing ${bucket} files:`, error)
-        break
-      }
-      if (!data || data.length === 0) break
-
-      for (const file of data) {
-        existing.add(`${prefix}/${file.name}`)
-      }
-
-      if (data.length < limit) break
-      offset += limit
-    }
-  } catch (error) {
-    console.error(`Error loading existing files from ${bucket}:`, error)
-  }
-  return existing
 }
 
 /**
@@ -112,130 +75,6 @@ async function loadExistingBrandKitFiles(
     }
   }
   return existing
-}
-
-/**
- * Migrate board cover images
- */
-async function migrateBoardCovers(
-  tenantId: string,
-  idMaps: IdMaps
-): Promise<{ uploaded: number; skipped: number; errors: number }> {
-  console.log('\n--- Board Cover Images ---\n')
-
-  const stats = { uploaded: 0, skipped: 0, errors: 0 }
-
-  // Load existing files from Storage
-  const existingFiles = await loadExistingFiles('board-covers', tenantId)
-  console.log(`Found ${existingFiles.size} existing board cover files\n`)
-
-  // Fetch all boards from Airtable
-  console.log('Fetching boards from Airtable...')
-  const airtableRecords = await fetchAllRecords(TABLES.BOARDS)
-  console.log(`Fetched ${airtableRecords.length} board records\n`)
-
-  const supabaseUrl = process.env.SUPABASE_URL!
-
-  for (let i = 0; i < airtableRecords.length; i++) {
-    const record = airtableRecords[i]
-    const name = record.fields['Name'] || record.id
-
-    // Check for cover attachment
-    const coverAttachments = record.fields['Cover']
-    if (
-      !coverAttachments ||
-      !Array.isArray(coverAttachments) ||
-      coverAttachments.length === 0
-    ) {
-      continue // No cover image, skip silently
-    }
-
-    // Look up Supabase board ID
-    const boardId = idMaps.boards[record.id]
-    if (!boardId) {
-      console.warn(`⚠ Board "${name}" not in id-maps, skipping cover`)
-      stats.skipped++
-      continue
-    }
-
-    const attachment = coverAttachments[0]
-    const ext = getFileExtension(attachment.filename)
-    const storagePath = `${tenantId}/${boardId}.${ext}`
-
-    const shouldUpload = FORCE || !existingFiles.has(storagePath)
-
-    if (!shouldUpload) {
-      // File exists, just update the URL in case it's still pointing to Airtable
-      if (!DRY_RUN) {
-        const publicUrl = `${supabaseUrl}/storage/v1/object/public/board-covers/${storagePath}`
-        await supabaseAdmin
-          .from('boards')
-          .update({ cover_image_url: publicUrl })
-          .eq('id', boardId)
-      }
-      stats.skipped++
-      continue
-    }
-
-    if (DRY_RUN) {
-      console.log(`[DRY RUN] Would upload cover for: ${name}`)
-      stats.uploaded++
-      continue
-    }
-
-    // Download from Airtable CDN
-    const buffer = await downloadFile(attachment.url)
-    if (!buffer) {
-      console.error(`✗ Download failed for cover: ${name}`)
-      stats.errors++
-      continue
-    }
-
-    // Determine content type
-    const extLower = ext.toLowerCase()
-    const contentTypeMap: Record<string, string> = {
-      jpg: 'image/jpeg',
-      jpeg: 'image/jpeg',
-      png: 'image/png',
-      gif: 'image/gif',
-      webp: 'image/webp',
-    }
-    const contentType = contentTypeMap[extLower] || 'image/jpeg'
-
-    // Upload to Supabase Storage
-    const publicUrl = await uploadToStorage(
-      'board-covers',
-      storagePath,
-      buffer,
-      contentType
-    )
-
-    if (!publicUrl) {
-      console.error(`✗ Upload failed for cover: ${name}`)
-      stats.errors++
-      continue
-    }
-
-    // Update board record with Supabase Storage URL
-    const { error: updateError } = await supabaseAdmin
-      .from('boards')
-      .update({ cover_image_url: publicUrl })
-      .eq('id', boardId)
-
-    if (updateError) {
-      console.error(
-        `✗ Failed to update cover_image_url for ${name}: ${updateError.message}`
-      )
-      stats.errors++
-      continue
-    }
-
-    stats.uploaded++
-    console.log(`✓ Uploaded cover: ${name}`)
-    await sleep(200)
-  }
-
-  return stats
 }
 
 /**
@@ -345,7 +184,7 @@ async function migrateBrandKitFiles(
 }
 
 async function main() {
-  console.log('=== Starting Image Migration ===\n')
+  console.log('=== Starting Brand Kit Migration ===\n')
 
   if (DRY_RUN) console.log('DRY RUN MODE - No changes will be made\n')
   if (FORCE) console.log('FORCE MODE - Re-uploading all files\n')
@@ -354,29 +193,19 @@ async function main() {
   console.log(`Target tenant: ${tenantId}`)
 
   const idMaps = loadIdMaps()
-  const boardCount = Object.keys(idMaps.boards).length
   const projectCount = Object.keys(idMaps.projects).length
 
-  if (boardCount === 0) {
-    throw new Error('No board mappings found. Run migrate-boards.ts first.')
-  }
   if (projectCount === 0) {
     throw new Error('No project mappings found. Run migrate-projects.ts first.')
   }
 
-  console.log(`Found ${boardCount} board mappings, ${projectCount} project mappings`)
-
-  // Migrate board covers
-  const coverStats = await migrateBoardCovers(tenantId, idMaps)
+  console.log(`Found ${projectCount} project mappings`)
 
   // Migrate brand kit files
   const brandKitStats = await migrateBrandKitFiles(tenantId, idMaps)
 
   // Summary
-  console.log('\n=== Image Migration Complete ===')
-  console.log(
-    `Board covers: ${coverStats.uploaded} uploaded, ${coverStats.skipped} skipped, ${coverStats.errors} errors`
-  )
+  console.log('\n=== Brand Kit Migration Complete ===')
   console.log(
     `Brand kit files: ${brandKitStats.uploaded} uploaded, ${brandKitStats.skipped} skipped, ${brandKitStats.errors} errors`
   )

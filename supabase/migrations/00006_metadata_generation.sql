@@ -63,7 +63,7 @@ ALTER TABLE public.pin_metadata_generations ENABLE ROW LEVEL SECURITY;
 -- RLS POLICIES (PIN_METADATA_GENERATIONS)
 -- ============================================================================
 -- These policies enforce tenant isolation for metadata generations.
--- Pattern matches existing pins and boards table policies.
+-- Pattern matches existing pins table policies.
 
 -- Policy 1: Users can view metadata generations in their tenant
 CREATE POLICY "Users can view own tenant metadata generations"
