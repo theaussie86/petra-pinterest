@@ -152,10 +152,14 @@ Plans:
   3. Airtable formulas converted to equivalent Postgres logic or application logic
   4. Airtable linked records converted to proper foreign key relationships
   5. Data validation confirms 100% migration accuracy (no data loss)
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD during planning
+- [ ] 07-01-PLAN.md -- Schema migration (branding fields, storage buckets) + shared migration utilities
+- [ ] 07-02-PLAN.md -- Migrate blog projects and articles from Airtable
+- [ ] 07-03-PLAN.md -- Migrate boards from Airtable
+- [ ] 07-04-PLAN.md -- Migrate pins with image upload to Supabase Storage
+- [ ] 07-05-PLAN.md -- Migrate board covers and brand kit files + validation report
 
 ### Phase 8: Pinterest OAuth Authentication for Multi-Account Publishing
 **Goal**: Users can connect any Pinterest account via OAuth and the app can publish pins on their behalf
@@ -185,5 +189,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 4. Pin Management | 6/6 | Complete | 2026-01-28 |
 | 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
 | 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
-| 7. Data Migration | 0/? | Not started | - |
+| 7. Data Migration | 0/5 | Not started | - |
 | 8. Pinterest OAuth | 0/? | Not started | - |
