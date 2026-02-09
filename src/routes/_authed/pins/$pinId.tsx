@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ArrowLeft, Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
-import { Header } from '@/components/layout/header'
+import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
+import { PageLayout } from '@/components/layout/page-layout'
+import { PageHeader } from '@/components/layout/page-header'
 import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
@@ -23,7 +24,6 @@ export const Route = createFileRoute('/_authed/pins/$pinId')({
 })
 
 function PinDetail() {
-  const { user } = Route.useRouteContext()
   const { pinId } = Route.useParams()
   const { data: pin, isLoading, error } = usePin(pinId)
   const navigate = useNavigate()
@@ -36,212 +36,182 @@ function PinDetail() {
   // Fetch Pinterest connection status for the pin's project
   const { data: connectionData } = usePinterestConnection(pin?.blog_project_id || '')
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <Header user={user} />
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-          </div>
-        </main>
-      </div>
-    )
-  }
-
-  if (error || !pin) {
-    return (
-      <div className="min-h-screen bg-slate-50">
-        <Header user={user} />
-        <main className="container mx-auto px-4 py-8">
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <p className="text-slate-600">Pin not found</p>
-            <Link to="/dashboard">
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </Link>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header user={user} />
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Back navigation */}
-        <div className="mb-6">
-          <Link to="/projects/$id" params={{ id: pin.blog_project_id }}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Project
-            </Button>
-          </Link>
-        </div>
-
-        {/* Two-column layout */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Left column - Image */}
-          <div className="lg:col-span-2">
-            <div className="overflow-hidden rounded-lg shadow-sm bg-white">
-              <img
-                src={getPinImageUrl(pin.image_path)}
-                alt={pin.title || 'Pin image'}
-                className="w-full h-auto object-contain"
-              />
+    <>
+      <PageHeader
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: pin?.title || "Pin" },
+        ]}
+        title={pin?.title || "Pin Details"}
+        actions={
+          pin ? (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit
+              </Button>
+              <Button variant="outline" className="text-red-600" onClick={() => setDeleteDialogOpen(true)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
             </div>
-          </div>
-
-          {/* Right column - Metadata */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Pin info card */}
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                {/* Title */}
-                <div>
-                  <h1 className="text-xl font-bold text-slate-900">
-                    {pin.title || <span className="italic text-slate-400">Untitled</span>}
-                  </h1>
-                </div>
-
-                {/* Description */}
-                <div>
-                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Description</h3>
-                  <p className="text-sm text-slate-700">
-                    {pin.description || <span className="text-slate-400">No description</span>}
-                  </p>
-                </div>
-
-                {/* Alt Text */}
-                <div>
-                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Alt Text</h3>
-                  <p className="text-sm text-slate-700">
-                    {pin.alt_text || <span className="text-slate-400">No alt text</span>}
-                  </p>
-                </div>
-
-                {/* Status */}
-                <div>
-                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Status</h3>
-                  <PinStatusBadge status={pin.status} />
-                </div>
-
-                {/* Article */}
-                <PinArticleLink articleId={pin.blog_article_id} />
-
-                {/* Board */}
-                <div>
-                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Board</h3>
-                  <p className="text-sm text-slate-700">
-                    {pin.pinterest_board_name || <span className="text-slate-400">Not assigned</span>}
-                  </p>
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                  <div>
-                    <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Created</h3>
-                    <p className="text-sm text-slate-700">{formatDate(pin.created_at)}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Updated</h3>
-                    <p className="text-sm text-slate-700">{formatDate(pin.updated_at)}</p>
-                  </div>
-                </div>
-
-                {/* Scheduled */}
-                {pin.scheduled_at && (
-                  <div className="pt-2 border-t">
-                    <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Scheduled</h3>
-                    <p className="text-sm text-slate-700">{formatDateTime(pin.scheduled_at)}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* AI Metadata generation */}
-            <GenerateMetadataButton
-              pin={pin}
-              onHistoryOpen={() => setHistoryDialogOpen(true)}
-              onRegenerateOpen={() => setFeedbackDialogOpen(true)}
-            />
-
-            {/* Pin scheduling */}
-            <SchedulePinSection pin={pin} />
-
-            {/* Pinterest publishing */}
-            <div className="space-y-2">
-              <PublishPinButton
-                pinId={pin.id}
-                pinStatus={pin.status}
-                hasPinterestConnection={connectionData?.connected ?? false}
-                hasPinterestBoard={!!pin.pinterest_board_id}
-                pinterestPinUrl={pin.pinterest_pin_url}
-              />
-              {pin.pinterest_pin_url && (
-                <a
-                  href={pin.pinterest_pin_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  View on Pinterest
-                </a>
-              )}
-            </div>
-
-            {/* Error alert */}
+          ) : undefined
+        }
+      />
+      <PageLayout maxWidth="medium" isLoading={isLoading} error={error ?? null}>
+        {pin && (
+          <>
+            {/* Error alert section */}
             {pin.status === 'error' && (
-              <ErrorAlert pin={pin} />
+              <div className="mb-6">
+                <ErrorAlert pin={pin} />
+              </div>
             )}
 
-            {/* Actions */}
-            <div className="flex flex-col gap-2">
-              <Button onClick={() => setEditDialogOpen(true)} className="w-full">
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit Pin
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setDeleteDialogOpen(true)}
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete Pin
-              </Button>
-            </div>
-          </div>
-        </div>
+            {/* Two-column layout */}
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+              {/* Left column - Image */}
+              <div className="lg:col-span-2">
+                <div className="overflow-hidden rounded-lg shadow-sm bg-white">
+                  <img
+                    src={getPinImageUrl(pin.image_path)}
+                    alt={pin.title || 'Pin image'}
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+              </div>
 
-        {/* Dialogs */}
-        <EditPinDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
-          pin={pin}
-          projectId={pin.blog_project_id}
-        />
-        <DeletePinDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          pin={pin}
-          onDeleted={() => navigate({ to: '/projects/$id', params: { id: pin.blog_project_id } })}
-        />
-        <MetadataHistoryDialog
-          pinId={pinId}
-          open={historyDialogOpen}
-          onOpenChange={setHistoryDialogOpen}
-        />
-        <RegenerateFeedbackDialog
-          pinId={pinId}
-          open={feedbackDialogOpen}
-          onOpenChange={setFeedbackDialogOpen}
-        />
-      </main>
-    </div>
+              {/* Right column - Metadata */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Pin info card */}
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    {/* Title */}
+                    <div>
+                      <h1 className="text-xl font-bold text-slate-900">
+                        {pin.title || <span className="italic text-slate-400">Untitled</span>}
+                      </h1>
+                    </div>
+
+                    {/* Description */}
+                    <div>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Description</h3>
+                      <p className="text-sm text-slate-700">
+                        {pin.description || <span className="text-slate-400">No description</span>}
+                      </p>
+                    </div>
+
+                    {/* Alt Text */}
+                    <div>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Alt Text</h3>
+                      <p className="text-sm text-slate-700">
+                        {pin.alt_text || <span className="text-slate-400">No alt text</span>}
+                      </p>
+                    </div>
+
+                    {/* Status */}
+                    <div>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Status</h3>
+                      <PinStatusBadge status={pin.status} />
+                    </div>
+
+                    {/* Article */}
+                    <PinArticleLink articleId={pin.blog_article_id} />
+
+                    {/* Board */}
+                    <div>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Board</h3>
+                      <p className="text-sm text-slate-700">
+                        {pin.pinterest_board_name || <span className="text-slate-400">Not assigned</span>}
+                      </p>
+                    </div>
+
+                    {/* Dates */}
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      <div>
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Created</h3>
+                        <p className="text-sm text-slate-700">{formatDate(pin.created_at)}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Updated</h3>
+                        <p className="text-sm text-slate-700">{formatDate(pin.updated_at)}</p>
+                      </div>
+                    </div>
+
+                    {/* Scheduled */}
+                    {pin.scheduled_at && (
+                      <div className="pt-2 border-t">
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Scheduled</h3>
+                        <p className="text-sm text-slate-700">{formatDateTime(pin.scheduled_at)}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* AI Metadata generation */}
+                <GenerateMetadataButton
+                  pin={pin}
+                  onHistoryOpen={() => setHistoryDialogOpen(true)}
+                  onRegenerateOpen={() => setFeedbackDialogOpen(true)}
+                />
+
+                {/* Pin scheduling */}
+                <SchedulePinSection pin={pin} />
+
+                {/* Pinterest publishing */}
+                <div className="space-y-2">
+                  <PublishPinButton
+                    pinId={pin.id}
+                    pinStatus={pin.status}
+                    hasPinterestConnection={connectionData?.connected ?? false}
+                    hasPinterestBoard={!!pin.pinterest_board_id}
+                    pinterestPinUrl={pin.pinterest_pin_url}
+                  />
+                  {pin.pinterest_pin_url && (
+                    <a
+                      href={pin.pinterest_pin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      View on Pinterest
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+      </PageLayout>
+
+      {/* Dialogs */}
+      {pin && (
+        <>
+          <EditPinDialog
+            open={editDialogOpen}
+            onOpenChange={setEditDialogOpen}
+            pin={pin}
+            projectId={pin.blog_project_id}
+          />
+          <DeletePinDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            pin={pin}
+            onDeleted={() => navigate({ to: '/projects/$id', params: { id: pin.blog_project_id }, search: { pinterest_connected: undefined, pinterest_error: undefined } })}
+          />
+          <MetadataHistoryDialog
+            pinId={pinId}
+            open={historyDialogOpen}
+            onOpenChange={setHistoryDialogOpen}
+          />
+          <RegenerateFeedbackDialog
+            pinId={pinId}
+            open={feedbackDialogOpen}
+            onOpenChange={setFeedbackDialogOpen}
+          />
+        </>
+      )}
+    </>
   )
 }
 
