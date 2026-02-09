@@ -86,7 +86,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
         title: pin.title || '',
         description: pin.description || '',
         alt_text: pin.alt_text || '',
-        board_id: pin.board_id || '',
+        board_id: pin.board_id || '__none__',
         status: pin.status,
       })
     }
@@ -115,7 +115,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
         title: data.title.trim() || null,
         description: data.description.trim() || null,
         alt_text: data.alt_text.trim() || null,
-        board_id: data.board_id || null,
+        board_id: data.board_id === '__none__' ? null : data.board_id,
         status: data.status as PinStatus,
       })
       // Do NOT close sidebar after save - user stays to continue editing
@@ -226,7 +226,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                   <Label htmlFor="sidebar-board">Board</Label>
                   <Select
                     value={currentBoardId}
-                    onValueChange={(value) => setValue('board_id', value === '__none__' ? '' : value)}
+                    onValueChange={(value) => setValue('board_id', value)}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger id="sidebar-board">
