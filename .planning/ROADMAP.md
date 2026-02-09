@@ -198,9 +198,12 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 ### Phase 9: Consistent UI & Dashboard Layout
 
-**Goal:** [To be planned]
+**Goal:** Migrate from top header navigation to sidebar layout, standardize page wrappers with PageLayout + PageHeader components, and eliminate duplicate loading/error state code across all routes
 **Depends on:** Phase 8
-**Plans:** 0 plans
+**Plans:** 4 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 9 to break down)
+- [ ] 09-01-PLAN.md -- Install shadcn/ui Sidebar + Breadcrumb, create shared layout components (LoadingSpinner, ErrorState, PageLayout, PageHeader, AppSidebar)
+- [ ] 09-02-PLAN.md -- Wire SidebarProvider into _authed.tsx, migrate Dashboard and Calendar to PageLayout
+- [ ] 09-03-PLAN.md -- Migrate Projects, Pins, Articles detail pages to PageLayout with breadcrumbs, delete Header
+- [ ] 09-04-PLAN.md -- Visual verification of complete layout migration
