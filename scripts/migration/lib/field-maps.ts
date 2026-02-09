@@ -19,22 +19,24 @@ export const ARTICLE_STATUS_MAP: Record<string, string | null> = {
  * Pin status mapping: Airtable German -> Supabase English
  * Maps from German workflow statuses in Airtable to English status enum in Supabase.
  * Includes both with and without umlauts to handle data inconsistencies.
+ *
+ * Note: Supabase uses English status values after migration 00007_english_pin_statuses.sql
  */
 export const PIN_STATUS_MAP: Record<string, string> = {
-  Entwurf: 'entwurf',
-  'Bereit fur Generierung': 'bereit_fuer_generierung', // without umlaut
-  'Bereit für Generierung': 'bereit_fuer_generierung', // with umlaut
-  'Pin generieren': 'entwurf', // removed status, fallback to draft
-  'Pin wird generiert': 'entwurf', // removed status, fallback to draft
-  'Pin generiert': 'entwurf', // removed status, fallback to draft
-  'Metadaten generieren': 'metadaten_generieren',
-  'Metadaten werden generiert': 'metadaten_werden_generiert',
-  'Metadaten erstellt': 'metadaten_erstellt',
-  'Bereit zum Planen/Veröffentlichen': 'bereit_zum_planen',
-  Veröffentlicht: 'veroeffentlicht',
-  Fehler: 'fehler',
-  Löschen: 'loeschen', // with umlaut
-  Loschen: 'loeschen', // without umlaut
+  Entwurf: 'draft',
+  'Bereit fur Generierung': 'ready_for_generation', // without umlaut
+  'Bereit für Generierung': 'ready_for_generation', // with umlaut
+  'Pin generieren': 'draft', // removed status, fallback to draft
+  'Pin wird generiert': 'draft', // removed status, fallback to draft
+  'Pin generiert': 'draft', // removed status, fallback to draft
+  'Metadaten generieren': 'generate_metadata',
+  'Metadaten werden generiert': 'generating_metadata',
+  'Metadaten erstellt': 'metadata_created',
+  'Bereit zum Planen/Veröffentlichen': 'ready_to_schedule',
+  Veröffentlicht: 'published',
+  Fehler: 'error',
+  Löschen: 'deleted', // with umlaut
+  Loschen: 'deleted', // without umlaut
 }
 
 /**

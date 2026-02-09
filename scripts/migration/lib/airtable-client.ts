@@ -4,6 +4,9 @@
  * Used for Airtable-to-Supabase data migration
  */
 
+import { config } from 'dotenv'
+config({ path: '.env.local' })
+
 const AIRTABLE_PAT = process.env.AIRTABLE_PAT
 const BASE_ID = 'appWR3q78rre27F5q'
 const API_URL = `https://api.airtable.com/v0/${BASE_ID}`

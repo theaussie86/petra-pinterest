@@ -3,7 +3,10 @@
  * Uses service role key to bypass RLS for migration scripts
  */
 
+import { config } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
+
+config({ path: '.env.local' })
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseKey = process.env.SUPABASE_SECRET_KEY!
