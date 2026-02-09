@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start/server'
+import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { createPinterestPin } from './pinterest-api'
 import type { PinterestCreatePinPayload } from '@/types/pinterest'
@@ -128,7 +128,7 @@ export async function publishSinglePin(
  * Publish a single pin to Pinterest (manual/user-triggered)
  */
 export const publishPinFn = createServerFn({ method: 'POST' })
-  .validator((data: { pin_id: string }) => data)
+  .inputValidator((data: { pin_id: string }) => data)
   .handler(async ({ data }) => {
     const supabase = getSupabaseServerClient()
     const serviceClient = getSupabaseServiceClient()
@@ -161,7 +161,7 @@ export const publishPinFn = createServerFn({ method: 'POST' })
  * Publish multiple pins to Pinterest (bulk operation)
  */
 export const publishPinsBulkFn = createServerFn({ method: 'POST' })
-  .validator((data: { pin_ids: string[] }) => data)
+  .inputValidator((data: { pin_ids: string[] }) => data)
   .handler(async ({ data }) => {
     const supabase = getSupabaseServerClient()
     const serviceClient = getSupabaseServiceClient()
