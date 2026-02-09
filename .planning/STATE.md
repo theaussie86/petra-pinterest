@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 
 ## Current Position
 
-Phase: 6 of 7 (Visual Calendar) -- COMPLETE (VERIFIED)
-Plan: 4 of 4 in phase (Phase 6 complete)
+Phase: 6 of 7 (Visual Calendar) -- COMPLETE (VERIFIED + GAP CLOSURE)
+Plan: 5 of 5 in phase (Phase 6 complete with gap closure)
 Status: Phase complete - ready for Phase 7
-Last activity: 2026-02-09 — Phase 6 verified (21/21 must-haves passed)
+Last activity: 2026-02-09 — Gap closure plan 06-05 complete (board select fix)
 
 Progress: [█████████░] 86%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
+- Total plans completed: 33
 - Average duration: ~2.9min
-- Total execution time: ~1.64 hours
+- Total execution time: ~1.66 hours
 
 **By Phase:**
 
@@ -32,14 +32,15 @@ Progress: [█████████░] 86%
 | 3. Blog Scraping & Articles | 6 | ~14min | ~2.3min |
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
-| 6. Visual Calendar | 4 | ~12.5min | ~3.1min |
+| 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
 
 **Recent Trend:**
-- Last 5 plans: 06-04 (3.6min), 06-03 (2.5min), 06-02 (3.3min), 06-01 (3.1min), 05-05 (3.4min)
-- Trend: Phase 6 complete, consistent ~3.1min average maintained
+- Last 5 plans: 06-05 (2.0min), 06-04 (3.6min), 06-03 (2.5min), 06-02 (3.3min), 06-01 (3.1min)
+- Trend: Phase 6 complete with gap closure, efficient 2min fix for board select issue
 
 *Updated after each plan completion*
 | Phase 06 P04 | 3.6 | 2 tasks | 3 files |
+| Phase 06 P05 | 120 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -248,6 +249,14 @@ Recent decisions affecting current work:
 - Show project name instead of article title in unscheduled list — Unscheduled pins come from all projects, avoiding per-project useArticles queries keeps it efficient
 - Clear selection after bulk schedule dialog closes — Consistent with bulk scheduling UX, pins move out of unscheduled view so selection becomes stale
 
+**From 06-05 (Board Select Fix - Gap Closure):**
+- Use __none__ sentinel consistently in form state for controlled Radix UI Select components — Prevents value mismatch with SelectItem options, conversion to null only at submission boundary
+- Surface actual error messages in all mutation hooks — All onError handlers accept Error parameter and display error.message, enables debugging of database constraints and RLS errors
+
+### Roadmap Evolution
+
+- Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
+
 ### Pending Todos
 
 2 pending todo(s):
@@ -273,7 +282,7 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 06-04-PLAN.md (Drag-and-Drop & Unscheduled Pins) - PHASE 6 COMPLETE
+Stopped at: Completed 06-05-PLAN.md (Board Select Fix - Gap Closure) - PHASE 6 COMPLETE
 Resume file: None
 Next: Phase 7 - Airtable Migration & Production Launch
 
