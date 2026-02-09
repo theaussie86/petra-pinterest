@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
-import { Header } from '@/components/layout/header'
+import { PageLayout } from '@/components/layout/page-layout'
+import { PageHeader } from '@/components/layout/page-header'
 import { useAllPins } from '@/lib/hooks/use-pins'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
 import { PIN_STATUS, getStatusBadgeClasses } from '@/types/pins'
@@ -46,7 +47,6 @@ export const Route = createFileRoute('/_authed/calendar')({
 })
 
 function CalendarPage() {
-  const { user } = Route.useRouteContext()
   const navigate = useNavigate({ from: Route.fullPath })
   const searchParams = Route.useSearch()
 
@@ -146,15 +146,11 @@ function CalendarPage() {
   ) as PinStatus[]
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header user={user} />
-      <main className={cn(
-        "container mx-auto px-4 py-6 max-w-7xl transition-all duration-200",
-        selectedPinId && "mr-[350px]"
-      )}>
+    <>
+      <PageHeader title="Calendar" />
+      <PageLayout maxWidth="wide" className={cn(selectedPinId && "mr-[350px]")}>
         {/* Toolbar row */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold text-slate-900">Calendar</h1>
           <div className="flex items-center gap-3">
             {/* Project dropdown */}
             <Select
@@ -281,13 +277,13 @@ function CalendarPage() {
             )}
           </>
         )}
-      </main>
+      </PageLayout>
 
       {/* Pin Sidebar */}
       <PinSidebar
         pinId={selectedPinId}
         onClose={() => setSelectedPinId(null)}
       />
-    </div>
+    </>
   )
 }
