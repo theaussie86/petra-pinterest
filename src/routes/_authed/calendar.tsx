@@ -13,12 +13,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { CalendarGrid } from '@/components/calendar/calendar-grid'
 
 // Search params validation schema
 type CalendarSearch = {
   project?: string
   statuses?: string[]
   tab?: 'calendar' | 'unscheduled'
+  view?: 'month' | 'week'
 }
 
 export const Route = createFileRoute('/_authed/calendar')({
@@ -32,6 +34,10 @@ export const Route = createFileRoute('/_authed/calendar')({
         search.tab === 'calendar' || search.tab === 'unscheduled'
           ? search.tab
           : 'calendar',
+      view:
+        search.view === 'month' || search.view === 'week'
+          ? search.view
+          : 'month',
     }
   },
   component: CalendarPage,
@@ -45,7 +51,7 @@ function CalendarPage() {
   const { data: allPins, isLoading: pinsLoading } = useAllPins()
   const { data: projects, isLoading: projectsLoading } = useBlogProjects()
 
-  const { project, statuses, tab } = searchParams
+  const { project, statuses, tab, view } = searchParams
 
   // Client-side filtering
   const filteredPins = useMemo(() => {
@@ -110,6 +116,21 @@ function CalendarPage() {
         tab: newTab,
       }),
     })
+  }
+
+  // Handle view change
+  const handleViewChange = (newView: 'month' | 'week') => {
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        view: newView,
+      }),
+    })
+  }
+
+  // Handle pin click (placeholder for Plan 03 sidebar)
+  const handlePinClick = (pinId: string) => {
+    console.log('Pin clicked:', pinId)
   }
 
   const isLoading = pinsLoading || projectsLoading
@@ -199,23 +220,51 @@ function CalendarPage() {
 
         {/* Loading state */}
         {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+            {/* Header skeleton */}
+            <div className="grid grid-cols-7 border-b border-slate-200">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                <div
+                  key={day}
+                  className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+            {/* Grid skeleton */}
+            <div className="grid grid-cols-7">
+              {Array.from({ length: 42 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="border-r border-b min-h-[100px] p-2 bg-slate-100 animate-pulse"
+                />
+              ))}
+            </div>
           </div>
         )}
 
-        {/* Content area - placeholder for now */}
+        {/* Content area */}
         {!isLoading && (
           <>
             {tab === 'calendar' ? (
-              <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-                <p className="text-slate-600">
-                  Calendar view placeholder
-                </p>
-                <p className="text-sm text-slate-500 mt-2">
-                  {scheduledPins.length} scheduled pins
-                </p>
-              </div>
+              scheduledPins.length === 0 ? (
+                <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+                  <p className="text-slate-600">
+                    No scheduled pins match your filters.
+                  </p>
+                  <p className="text-sm text-slate-500 mt-2">
+                    Try adjusting your project or status filters.
+                  </p>
+                </div>
+              ) : (
+                <CalendarGrid
+                  pins={scheduledPins}
+                  view={view || 'month'}
+                  onPinClick={handlePinClick}
+                  onViewChange={handleViewChange}
+                />
+              )
             ) : (
               <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
                 <p className="text-slate-600">
