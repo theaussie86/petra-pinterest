@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   getPinsByProject,
+  getAllPins,
   getPin,
   createPin,
   createPins,
@@ -19,6 +20,14 @@ export function usePins(projectId: string) {
     queryKey: ['pins', projectId],
     queryFn: () => getPinsByProject(projectId),
     enabled: !!projectId,
+    staleTime: 30000,
+  })
+}
+
+export function useAllPins() {
+  return useQuery({
+    queryKey: ['pins', 'all'],
+    queryFn: getAllPins,
     staleTime: 30000,
   })
 }
