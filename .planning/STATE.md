@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 7 IN PROGRESS — Data Migration. Foundation complete (Plan 01), entity migration next.
+**Current focus:** Phase 8 IN PROGRESS — Pinterest OAuth. Foundation complete (Plan 01), OAuth flow next.
 
 ## Current Position
 
-Phase: 7 of 7 (Data Migration) -- IN PROGRESS
-Plan: 3 of 5 in phase
-Status: Boards migration complete, pins next
-Last activity: 2026-02-09 — Plan 07-03 complete (boards migration)
+Phase: 8 of 8 (Pinterest OAuth Authentication) -- IN PROGRESS
+Plan: 1 of 5 in phase
+Status: OAuth foundation complete, OAuth flow next
+Last activity: 2026-02-09 — Plan 08-01 complete (Pinterest OAuth foundation)
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
-- Average duration: ~2.8min
-- Total execution time: ~1.77 hours
+- Total plans completed: 37
+- Average duration: ~2.7min
+- Total execution time: ~1.81 hours
 
 **By Phase:**
 
@@ -33,16 +33,18 @@ Progress: [█████████░] 90%
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
+| 8. Pinterest OAuth | 1 | ~2.4min | ~2.4min |
 
 **Recent Trend:**
-- Last 5 plans: 07-03 (2.0min), 07-02 (2.0min), 07-01 (2.6min), 06-05 (2.0min), 06-04 (3.6min)
-- Trend: Phase 7 maintaining strong velocity at 2.2min average, migration patterns established
+- Last 5 plans: 08-01 (2.4min), 07-03 (2.0min), 07-02 (2.0min), 07-01 (2.6min), 06-05 (2.0min)
+- Trend: Phase 8 started strong at 2.4min, continuing efficient execution pattern
 
 *Updated after each plan completion*
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
 | Phase 07 P01 | 2.6 | 2 tasks | 6 files |
 | Phase 07 P02 | 2.0 | 2 tasks | 4 files |
 | Phase 07 P03 | 2 | 1 tasks | 3 files |
+| Phase 08 P01 | 144 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -272,6 +274,12 @@ Recent decisions affecting current work:
 - Force-commit id-maps.json despite gitignore — Critical mapping file required for subsequent migrations, explicitly tracked in version control
 - Dual upsert strategy for boards — Unique constraint (blog_project_id, pinterest_board_id) for boards with Pinterest ID, name+project lookup for boards without
 
+**From 08-01 (Pinterest OAuth Foundation):**
+- Supabase Vault for encrypted Pinterest OAuth token storage — Pinterest OAuth tokens require encryption at rest; Vault provides built-in encryption with SECURITY DEFINER RPC functions
+- Service role bypass policies for Inngest background publishing jobs — Background jobs run without user session context; service_role policies enable tenant-isolated writes after token-based auth
+- PKCE OAuth flow over implicit grant — Pinterest API v5 requires authorization code flow with PKCE; implicit grant deprecated
+- 'publishing' status added as system-managed — Prevents manual status setting during async publish; system controls ready_to_schedule → publishing → published/error transition
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -301,9 +309,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 07-02-PLAN.md (Blog Projects & Articles Migration) - PHASE 7 PLAN 2 COMPLETE
+Stopped at: Completed 08-01-PLAN.md (Pinterest OAuth Foundation)
 Resume file: None
-Next: Phase 7 Plan 03 or 04 - Boards/Pin Migration
+Next: Phase 8 Plan 02 - OAuth Flow Implementation
 
 Config:
 {
