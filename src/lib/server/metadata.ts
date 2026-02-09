@@ -26,10 +26,10 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
     if (!profile) throw new Error('Profile not found')
 
     try {
-      // Update pin status to 'metadaten_werden_generiert' first
+      // Update pin status to 'generating_metadata' first
       await supabase
         .from('pins')
-        .update({ status: 'metadaten_werden_generiert' })
+        .update({ status: 'generating_metadata' })
         .eq('id', data.pin_id)
 
       // Fetch pin with article data
@@ -68,7 +68,7 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
           title: metadata.title,
           description: metadata.description,
           alt_text: metadata.alt_text,
-          status: 'metadaten_erstellt',
+          status: 'metadata_created',
         })
         .eq('id', data.pin_id)
 
@@ -90,11 +90,11 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
 
       return { success: true, metadata }
     } catch (error) {
-      // On error: update pin status to 'fehler', set error_message
+      // On error: update pin status to 'error', set error_message
       await supabase
         .from('pins')
         .update({
-          status: 'fehler',
+          status: 'error',
           error_message: String(error),
         })
         .eq('id', data.pin_id)
@@ -125,10 +125,10 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
     if (!profile) throw new Error('Profile not found')
 
     try {
-      // Update pin status to 'metadaten_werden_generiert' first
+      // Update pin status to 'generating_metadata' first
       await supabase
         .from('pins')
-        .update({ status: 'metadaten_werden_generiert' })
+        .update({ status: 'generating_metadata' })
         .eq('id', data.pin_id)
 
       // Fetch previous generation from pin_metadata_generations (latest for pin_id)
@@ -179,14 +179,14 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
         feedback: data.feedback,
       })
 
-      // Update pin with new values, set status to 'metadaten_erstellt'
+      // Update pin with new values, set status to 'metadata_created'
       await supabase
         .from('pins')
         .update({
           title: metadata.title,
           description: metadata.description,
           alt_text: metadata.alt_text,
-          status: 'metadaten_erstellt',
+          status: 'metadata_created',
         })
         .eq('id', data.pin_id)
 
@@ -208,11 +208,11 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
 
       return { success: true, metadata }
     } catch (error) {
-      // On error: update pin status to 'fehler', set error_message
+      // On error: update pin status to 'error', set error_message
       await supabase
         .from('pins')
         .update({
-          status: 'fehler',
+          status: 'error',
           error_message: String(error),
         })
         .eq('id', data.pin_id)
@@ -242,10 +242,10 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
       .single()
     if (!profile) throw new Error('Profile not found')
 
-    // Update all selected pins status to 'metadaten_werden_generiert'
+    // Update all selected pins status to 'generating_metadata'
     await supabase
       .from('pins')
-      .update({ status: 'metadaten_werden_generiert' })
+      .update({ status: 'generating_metadata' })
       .in('id', data.pin_ids)
 
     // Send Inngest event

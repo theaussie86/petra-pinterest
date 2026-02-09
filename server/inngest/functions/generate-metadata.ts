@@ -51,14 +51,14 @@ export const generateMetadataBulk = inngest.createFunction(
             feedback: null,
           })
 
-          // Update pin with metadata + status 'metadaten_erstellt'
+          // Update pin with metadata + status 'metadata_created'
           await supabase
             .from('pins')
             .update({
               title: metadata.title,
               description: metadata.description,
               alt_text: metadata.alt_text,
-              status: 'metadaten_erstellt',
+              status: 'metadata_created',
             })
             .eq('id', pin_id)
 
@@ -80,11 +80,11 @@ export const generateMetadataBulk = inngest.createFunction(
 
           return { pin_id, success: true }
         } catch (error) {
-          // On per-pin error: update that pin's status to 'fehler' with error_message, continue to next pin
+          // On per-pin error: update that pin's status to 'error' with error_message, continue to next pin
           await supabase
             .from('pins')
             .update({
-              status: 'fehler',
+              status: 'error',
               error_message: String(error),
             })
             .eq('id', pin_id)

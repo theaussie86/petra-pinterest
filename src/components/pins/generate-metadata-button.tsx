@@ -18,7 +18,7 @@ export function GenerateMetadataButton({
   const generateMetadata = useGenerateMetadata()
 
   const hasMetadata = pin.title || pin.description
-  const isGenerating = pin.status === 'metadaten_werden_generiert'
+  const isGenerating = pin.status === 'generating_metadata'
   const isDisabled = generateMetadata.isPending || isGenerating
 
   return (

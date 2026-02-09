@@ -163,7 +163,7 @@ function PinDetail() {
             <SchedulePinSection pin={pin} />
 
             {/* Error alert */}
-            {pin.status === 'fehler' && (
+            {pin.status === 'error' && (
               <ErrorAlert pin={pin} />
             )}
 
@@ -257,7 +257,7 @@ function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; 
   const handleResetStatus = async () => {
     await updateMutation.mutateAsync({
       id: pin.id,
-      status: (pin.previous_status as any) || 'entwurf',
+      status: (pin.previous_status as any) || 'draft',
       error_message: null,
     })
   }

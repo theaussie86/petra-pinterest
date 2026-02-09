@@ -57,7 +57,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
       description: '',
       alt_text: '',
       board_id: '',
-      status: 'entwurf',
+      status: 'draft',
     },
   })
 
@@ -106,7 +106,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
   // Determine which statuses are selectable
   const isStatusSelectable = (status: PinStatus): boolean => {
     if (ACTIVE_STATUSES.includes(status)) return true
-    if (status === 'fehler') return true
+    if (status === 'error') return true
     return false
   }
 
@@ -193,7 +193,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
               <SelectContent>
                 {(Object.keys(PIN_STATUS) as PinStatus[]).map((status) => {
                   const selectable = isStatusSelectable(status)
-                  const isDisabledStatus = SYSTEM_MANAGED_STATUSES.includes(status) || status === 'loeschen'
+                  const isDisabledStatus = SYSTEM_MANAGED_STATUSES.includes(status) || status === 'deleted'
                   return (
                     <SelectItem
                       key={status}

@@ -1,44 +1,31 @@
 // Pin status constants with display labels and badge colors
 export const PIN_STATUS = {
-  entwurf: { label: 'Entwurf', color: 'slate' },
-  bereit_fuer_generierung: { label: 'Bereit fur Generierung', color: 'blue' },
-  pin_generieren: { label: 'Pin generieren', color: 'indigo' },
-  pin_wird_generiert: { label: 'Pin wird generiert', color: 'indigo' },
-  pin_generiert: { label: 'Pin generiert', color: 'purple' },
-  metadaten_generieren: { label: 'Metadaten generieren', color: 'violet' },
-  metadaten_werden_generiert: { label: 'Metadaten werden generiert', color: 'violet' },
-  metadaten_erstellt: { label: 'Metadaten erstellt', color: 'teal' },
-  bereit_zum_planen: { label: 'Bereit zum Planen', color: 'green' },
-  veroeffentlicht: { label: 'Veroffentlicht', color: 'emerald' },
-  fehler: { label: 'Fehler', color: 'red' },
-  loeschen: { label: 'Loschen', color: 'gray' },
+  draft: { label: 'Entwurf', color: 'slate' },
+  ready_for_generation: { label: 'Bereit fur Generierung', color: 'blue' },
+  generate_metadata: { label: 'Metadaten generieren', color: 'violet' },
+  generating_metadata: { label: 'Metadaten werden generiert', color: 'violet' },
+  metadata_created: { label: 'Metadaten erstellt', color: 'teal' },
+  ready_to_schedule: { label: 'Bereit zum Planen', color: 'green' },
+  published: { label: 'Veroffentlicht', color: 'emerald' },
+  error: { label: 'Fehler', color: 'red' },
+  deleted: { label: 'Loschen', color: 'gray' },
 } as const
 
 export type PinStatus = keyof typeof PIN_STATUS
 
 // Active statuses (editable in UI for Phase 5)
 export const ACTIVE_STATUSES: PinStatus[] = [
-  'entwurf',
-  'bereit_fuer_generierung',
-  'metadaten_generieren',
-  'metadaten_erstellt',
-  'bereit_zum_planen',
+  'draft',
+  'ready_for_generation',
+  'generate_metadata',
+  'metadata_created',
+  'ready_to_schedule',
 ]
 
 // System-managed statuses (visible but not user-selectable)
 export const SYSTEM_MANAGED_STATUSES: PinStatus[] = [
-  'pin_generieren',
-  'pin_wird_generiert',
-  'pin_generiert',
-  'metadaten_werden_generiert',
-  'veroeffentlicht',
-]
-
-// Hidden statuses (not shown in Phase 5 UI - future pin image generation)
-export const HIDDEN_STATUSES: PinStatus[] = [
-  'pin_generieren',
-  'pin_wird_generiert',
-  'pin_generiert',
+  'generating_metadata',
+  'published',
 ]
 
 export interface Pin {
@@ -112,8 +99,6 @@ export function getStatusBadgeClasses(status: PinStatus): string {
   const colorMap: Record<string, string> = {
     slate: 'bg-slate-100 text-slate-700',
     blue: 'bg-blue-100 text-blue-700',
-    indigo: 'bg-indigo-100 text-indigo-700',
-    purple: 'bg-purple-100 text-purple-700',
     violet: 'bg-violet-100 text-violet-700',
     teal: 'bg-teal-100 text-teal-700',
     green: 'bg-green-100 text-green-700',

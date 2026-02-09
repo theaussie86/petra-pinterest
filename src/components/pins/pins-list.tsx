@@ -53,7 +53,7 @@ interface PinsListProps {
   projectId: string
 }
 
-const STATUS_TABS = ['all', 'entwurf', 'bereit_fuer_generierung', 'fehler'] as const
+const STATUS_TABS = ['all', 'draft', 'ready_for_generation', 'error'] as const
 type StatusTab = (typeof STATUS_TABS)[number]
 
 export function PinsList({ projectId }: PinsListProps) {
@@ -247,9 +247,9 @@ export function PinsList({ projectId }: PinsListProps) {
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="entwurf">Entwurf</TabsTrigger>
-          <TabsTrigger value="bereit_fuer_generierung">Bereit fur Generierung</TabsTrigger>
-          <TabsTrigger value="fehler">Fehler</TabsTrigger>
+          <TabsTrigger value="draft">{PIN_STATUS.draft.label}</TabsTrigger>
+          <TabsTrigger value="ready_for_generation">{PIN_STATUS.ready_for_generation.label}</TabsTrigger>
+          <TabsTrigger value="error">{PIN_STATUS.error.label}</TabsTrigger>
         </TabsList>
 
         {/* Toolbar row */}

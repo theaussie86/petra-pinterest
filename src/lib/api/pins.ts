@@ -175,7 +175,7 @@ export async function schedulePinsBulk(
       .from('pins')
       .update({
         scheduled_at: scheduledDate.toISOString(),
-        status: 'bereit_zum_planen' as PinStatus,
+        status: 'ready_to_schedule' as PinStatus,
       })
       .eq('id', pinIds[i])
 
