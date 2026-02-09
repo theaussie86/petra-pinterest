@@ -307,6 +307,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
+- Phase 9 added: Consistent UI & Dashboard Layout
 
 ### Pending Todos
 

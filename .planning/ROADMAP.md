@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [x] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
 - [ ] **Phase 7: Data Migration** - Airtable data migration to Supabase
-- [ ] **Phase 8: Pinterest OAuth** - Pinterest OAuth authentication for multi-account publishing
+- [x] **Phase 8: Pinterest OAuth** - Pinterest OAuth authentication for multi-account publishing
 
 ## Phase Details
 
@@ -174,11 +174,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Database schema (pinterest_connections, oauth_state_mapping, Vault, pins columns) + Pinterest API v5 client
-- [ ] 08-02-PLAN.md — OAuth server functions (initiate, exchange, disconnect) + callback route
-- [ ] 08-03-PLAN.md — Connection UX in project settings (connect/disconnect/status) + board syncing from Pinterest API
-- [ ] 08-04-PLAN.md — Pin publishing server functions + Inngest crons (auto-publish every 15min, token refresh daily)
-- [ ] 08-05-PLAN.md — Publishing UI integration (publish button on detail/sidebar/list, bulk publish) + end-to-end verification
+- [x] 08-01-PLAN.md — Database schema (pinterest_connections, oauth_state_mapping, Vault, pins columns) + Pinterest API v5 client
+- [x] 08-02-PLAN.md — OAuth server functions (initiate, exchange, disconnect) + callback route
+- [x] 08-03-PLAN.md — Connection UX in project settings (connect/disconnect/status) + board syncing from Pinterest API
+- [x] 08-04-PLAN.md — Pin publishing server functions + Inngest crons (auto-publish every 15min, token refresh daily)
+- [x] 08-05-PLAN.md — Publishing UI integration (publish button on detail/sidebar/list, bulk publish) + end-to-end verification
 
 ## Progress
 
@@ -194,4 +194,13 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. AI Metadata & Publishing | 5/5 | Complete | 2026-01-29 |
 | 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/5 | Not started | - |
-| 8. Pinterest OAuth | 0/5 | Not started | - |
+| 8. Pinterest OAuth | 5/5 | Complete | 2026-02-09 |
+
+### Phase 9: Consistent UI & Dashboard Layout
+
+**Goal:** [To be planned]
+**Depends on:** Phase 8
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 9 to break down)
