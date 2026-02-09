@@ -15,6 +15,7 @@ import {
 import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
+import { UnscheduledPinsList } from '@/components/calendar/unscheduled-pins-list'
 
 // Search params validation schema
 type CalendarSearch = {
@@ -273,14 +274,10 @@ function CalendarPage() {
                 />
               )
             ) : (
-              <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-                <p className="text-slate-600">
-                  Unscheduled view placeholder
-                </p>
-                <p className="text-sm text-slate-500 mt-2">
-                  {unscheduledPins.length} unscheduled pins
-                </p>
-              </div>
+              <UnscheduledPinsList
+                pins={unscheduledPins}
+                onPinClick={handlePinClick}
+              />
             )}
           </>
         )}
