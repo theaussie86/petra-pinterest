@@ -10,15 +10,21 @@ import { ScrapeButton } from '@/components/articles/scrape-button'
 import { AddArticleDialog } from '@/components/articles/add-article-dialog'
 import { CreatePinDialog } from '@/components/pins/create-pin-dialog'
 import { PinsList } from '@/components/pins/pins-list'
+import { PinterestConnection } from '@/components/projects/pinterest-connection'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_authed/projects/$id')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    pinterest_connected: (search.pinterest_connected as string) || undefined,
+    pinterest_error: (search.pinterest_error as string) || undefined,
+  }),
   component: ProjectDetail,
 })
 
 function ProjectDetail() {
   const { user } = Route.useRouteContext()
   const { id } = Route.useParams()
+  const search = Route.useSearch()
   const { data: project, isLoading, error } = useBlogProject(id)
   const navigate = useNavigate()
 
@@ -145,6 +151,15 @@ function ProjectDetail() {
           >
             Delete Project
           </Button>
+        </div>
+
+        {/* Pinterest Connection */}
+        <div className="mb-8">
+          <PinterestConnection
+            blogProjectId={id}
+            pinterestConnected={search.pinterest_connected === 'true'}
+            pinterestError={search.pinterest_error}
+          />
         </div>
 
         {/* Articles section */}
