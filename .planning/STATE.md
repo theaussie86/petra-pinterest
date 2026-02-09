@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-26)
 
 **Core value:** Users can efficiently schedule Pinterest pins for multiple blogs from a single calendar view with visual pin previews.
-**Current focus:** Phase 8 IN PROGRESS — Pinterest OAuth. UI integration complete (Plan 03), board publishing next.
+**Current focus:** Phase 8 IN PROGRESS — Pinterest OAuth. Pin publishing complete (Plan 04), UI integration next.
 
 ## Current Position
 
 Phase: 8 of 8 (Pinterest OAuth Authentication) -- IN PROGRESS
-Plan: 3 of 5 in phase
-Status: UI integration complete, board publishing next
-Last activity: 2026-02-09 — Plan 08-03 complete (Pinterest connection UI & board sync)
+Plan: 4 of 5 in phase
+Status: Pin publishing & token refresh complete, UI integration next
+Last activity: 2026-02-09 — Plan 08-04 complete (Pin Publishing & Token Refresh)
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 95%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
+- Total plans completed: 40
 - Average duration: ~2.7min
-- Total execution time: ~1.91 hours
+- Total execution time: ~1.96 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [█████████░] 93%
 | 4. Pin Management | 6 | ~15.3min | ~2.6min |
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
-| 8. Pinterest OAuth | 3 | ~7.7min | ~2.6min |
+| 8. Pinterest OAuth | 4 | ~10.4min | ~2.6min |
 
 **Recent Trend:**
-- Last 5 plans: 08-03 (2.8min), 08-02 (2.5min), 08-01 (2.4min), 07-03 (2.0min), 07-02 (2.0min)
-- Trend: Phase 8 maintaining efficient 2.4-2.8min pace per plan
+- Last 5 plans: 08-04 (2.7min), 08-03 (2.8min), 08-02 (2.5min), 08-01 (2.4min), 07-03 (2.0min)
+- Trend: Phase 8 maintaining consistent 2.4-2.8min pace per plan
 
 *Updated after each plan completion*
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
@@ -47,6 +47,7 @@ Progress: [█████████░] 93%
 | Phase 08 P01 | 144 | 2 tasks | 4 files |
 | Phase 08 P02 | 148 | 2 tasks | 3 files |
 | Phase 08 P03 | 169 | 3 tasks | 4 files |
+| Phase 08 P04 | 163 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -288,6 +289,13 @@ Recent decisions affecting current work:
 - Connection reuse across projects — Multiple blog projects can share one Pinterest connection; disconnect only removes FK, cleanup (tokens + connection) only when no other projects reference it
 - Exchange callback returns blog_project_id — Enables redirect back to specific project page after OAuth completion instead of generic dashboard landing
 
+**From 08-04 (Pin Publishing & Token Refresh):**
+- Exported publishSinglePin helper for Inngest reuse — Single source of truth prevents drift between manual and cron publish logic
+- 10-second delay between bulk publishes — Conservative rate limiting (6 pins/min = 360/hour) provides safety margin below Pinterest's 300 req/hour limit
+- No auto-retry on publish failure in manual functions — Per user decision, failures set pin to error status for manual review
+- Inngest cron uses step.sleep for rate limiting — Enables durable execution with proper sleep/resume semantics instead of setTimeout
+- Vault security pattern for all token retrieval — get_pinterest_access_token, get_pinterest_refresh_token, store_pinterest_tokens RPCs with service role client
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -317,9 +325,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-09
-Stopped at: Completed 08-03-PLAN.md (Pinterest Connection UI & Board Sync)
+Stopped at: Completed 08-04-PLAN.md (Pin Publishing & Token Refresh)
 Resume file: None
-Next: Phase 8 Plan 04 - Board Publishing
+Next: Phase 8 Plan 05 - UI Integration
 
 Config:
 {
