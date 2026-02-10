@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 9 of 9 (Consistent UI & Dashboard Layout)
-Plan: 5 of 5 in phase
-Status: Complete - All layout gaps closed, sidebar fully functional
-Last activity: 2026-02-10 — Plan 09-05 complete (Sidebar Layout Gap Closure)
+Plan: 7 of 7 in phase
+Status: Complete - All layout gaps closed, nested routes implemented
+Last activity: 2026-02-10 — Plan 09-07 complete (Nested Route Structure)
 
 Progress: [████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45
+- Total plans completed: 46
 - Average duration: ~12.5min
-- Total execution time: ~9.9 hours
+- Total execution time: ~9.95 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [████████████] 100%
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
 | 8. Pinterest OAuth | 5 | ~35min | ~2.5min |
-| 9. Consistent UI & Dashboard Layout | 5 | ~457.4min | ~91.5min |
+| 9. Consistent UI & Dashboard Layout | 7 | ~460.4min | ~65.8min |
 
 **Recent Trend:**
-- Last 5 plans: 09-05 (1.4min), 09-04 (446.5min), 09-03 (4.3min), 09-02 (2min), 09-01 (3min)
-- Trend: Phase 9 complete with gap closure, all phases finished
+- Last 5 plans: 09-07 (3min), 09-05 (1.4min), 09-04 (446.5min), 09-03 (4.3min), 09-02 (2min)
+- Trend: Phase 9 complete with nested routes and gap closure, all phases finished
 
 *Updated after each plan completion*
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
@@ -55,6 +55,7 @@ Progress: [████████████] 100%
 | Phase 09 P03 | 4.3 | 2 tasks | 4 files |
 | Phase 09 P04 | 446.5 | 1 tasks | 0 files |
 | Phase 09 P05 | 83 | 2 tasks | 2 files |
+| Phase 09 P07 | 3 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -320,6 +321,13 @@ Recent decisions affecting current work:
 - [Phase 09-05]: Applied min-w-0 to SidebarInset to constrain flex child width
 - [Phase 09-05]: Reduced PageHeader padding and title size for more compact header
 
+**From 09-07 (Nested Route Structure):**
+- Article and pin detail routes moved from flat paths to nested paths under projects — URLs reflect project hierarchy: `/projects/{projectId}/articles/{articleId}` and `/projects/{projectId}/pins/{pinId}`
+- Breadcrumbs show 3-level hierarchy: Dashboard > Project Name > Entity — useBlogProject hook fetches project name for middle breadcrumb
+- TanStack Router auto-generates route tree on file changes — No manual routeTree.gen.ts editing required
+- PinCard uses pin.blog_project_id directly for nested links — Avoids prop drilling, Pin type already includes blog_project_id
+- Nested routes use $projectId param (differs from existing $id in projects/$id.tsx) — Creates separate route branches, correct for standalone detail pages
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -357,9 +365,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 09-05-PLAN.md (Sidebar Layout Gap Closure) — Phase 9 complete with all layout gaps closed
+Stopped at: Completed 09-07-PLAN.md (Nested Route Structure) — Phase 9 complete with nested routes and all layout gaps closed
 Resume file: None
-Next: All phases complete — Ready for production deployment or Phase 10 planning
+Next: Plan 09-06 (UAT verification) or production deployment
 
 Config:
 {
