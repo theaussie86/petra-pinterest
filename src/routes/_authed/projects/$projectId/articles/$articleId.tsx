@@ -3,17 +3,19 @@ import { ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { useArticle, useArchiveArticle } from '@/lib/hooks/use-articles'
+import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { sanitizeHtml } from '@/lib/utils'
 
-export const Route = createFileRoute('/_authed/articles/$articleId')({
+export const Route = createFileRoute('/_authed/projects/$projectId/articles/$articleId')({
   component: ArticleDetail,
 })
 
 function ArticleDetail() {
-  const { articleId } = Route.useParams()
+  const { projectId, articleId } = Route.useParams()
   const { data: article, isLoading, error } = useArticle(articleId)
+  const { data: project } = useBlogProject(projectId)
   const archiveMutation = useArchiveArticle()
   const navigate = useNavigate()
 
@@ -38,6 +40,7 @@ function ArticleDetail() {
       <PageHeader
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
+          { label: project?.name || "Project", href: `/projects/${projectId}` },
           { label: article?.title || "Article" },
         ]}
         title={article?.title || "Article"}

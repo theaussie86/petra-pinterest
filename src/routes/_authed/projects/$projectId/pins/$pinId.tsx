@@ -5,6 +5,7 @@ import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
+import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { EditPinDialog } from '@/components/pins/edit-pin-dialog'
@@ -19,13 +20,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
-export const Route = createFileRoute('/_authed/pins/$pinId')({
+export const Route = createFileRoute('/_authed/projects/$projectId/pins/$pinId')({
   component: PinDetail,
 })
 
 function PinDetail() {
-  const { pinId } = Route.useParams()
+  const { projectId, pinId } = Route.useParams()
   const { data: pin, isLoading, error } = usePin(pinId)
+  const { data: project } = useBlogProject(projectId)
   const navigate = useNavigate()
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -41,6 +43,7 @@ function PinDetail() {
       <PageHeader
         breadcrumbs={[
           { label: "Dashboard", href: "/dashboard" },
+          { label: project?.name || "Project", href: `/projects/${projectId}` },
           { label: pin?.title || "Pin" },
         ]}
         title={pin?.title || "Pin Details"}
@@ -115,7 +118,7 @@ function PinDetail() {
                     </div>
 
                     {/* Article */}
-                    <PinArticleLink articleId={pin.blog_article_id} />
+                    <PinArticleLink articleId={pin.blog_article_id} projectId={projectId} />
 
                     {/* Board */}
                     <div>
@@ -217,7 +220,7 @@ function PinDetail() {
 
 // Sub-components
 
-function PinArticleLink({ articleId }: { articleId: string }) {
+function PinArticleLink({ articleId, projectId }: { articleId: string; projectId: string }) {
   const { data: article } = useArticle(articleId)
 
   return (
@@ -225,8 +228,8 @@ function PinArticleLink({ articleId }: { articleId: string }) {
       <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Article</h3>
       {article ? (
         <Link
-          to="/articles/$articleId"
-          params={{ articleId: article.id }}
+          to="/projects/$projectId/articles/$articleId"
+          params={{ projectId, articleId: article.id }}
           className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
         >
           <FileText className="h-3.5 w-3.5 flex-shrink-0" />
