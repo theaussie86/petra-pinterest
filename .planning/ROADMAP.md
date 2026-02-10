@@ -196,16 +196,17 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/5 | Not started | - |
 | 8. Pinterest OAuth | 5/5 | Complete | 2026-02-09 |
-| 9. Consistent UI & Dashboard Layout | 4/4 | Complete | 2026-02-10 |
+| 9. Consistent UI & Dashboard Layout | 4/5 | In Progress | 2026-02-10 |
 
 ### Phase 9: Consistent UI & Dashboard Layout
 
 **Goal:** Migrate from top header navigation to sidebar layout, standardize page wrappers with PageLayout + PageHeader components, and eliminate duplicate loading/error state code across all routes
 **Depends on:** Phase 8
-**Plans:** 4 plans
+**Plans:** 5 plans
 
 Plans:
 - [x] 09-01-PLAN.md -- Install shadcn/ui Sidebar + Breadcrumb, create shared layout components (LoadingSpinner, ErrorState, PageLayout, PageHeader, AppSidebar)
 - [x] 09-02-PLAN.md -- Wire SidebarProvider into _authed.tsx, migrate Dashboard and Calendar to PageLayout
 - [x] 09-03-PLAN.md -- Migrate Projects, Pins, Articles detail pages to PageLayout with breadcrumbs, delete Header
 - [x] 09-04-PLAN.md -- Visual verification of complete layout migration
+- [ ] 09-05-PLAN.md -- Fix sidebar layout gaps (content overlap, collapse, trigger visibility, header padding)
