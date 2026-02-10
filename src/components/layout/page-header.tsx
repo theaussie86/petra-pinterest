@@ -30,14 +30,14 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <header className="border-b bg-white px-6 py-4">
-      {breadcrumbs && breadcrumbs.length > 0 && (
-        <div className="flex items-center gap-2">
-          <SidebarTrigger />
-          <Separator
-            orientation="vertical"
-            className="mr-2 data-[orientation=vertical]:h-4"
-          />
+    <header className="border-b bg-white px-4 py-2">
+      <div className="flex items-center gap-2">
+        <SidebarTrigger />
+        <Separator
+          orientation="vertical"
+          className="mr-2 data-[orientation=vertical]:h-4"
+        />
+        {breadcrumbs && breadcrumbs.length > 0 && (
           <Breadcrumb>
             <BreadcrumbList>
               {breadcrumbs.map((item, index) => {
@@ -59,11 +59,11 @@ export function PageHeader({
               })}
             </BreadcrumbList>
           </Breadcrumb>
-        </div>
-      )}
-      <div className="flex items-center justify-between mt-4">
+        )}
+      </div>
+      <div className="flex items-center justify-between mt-2">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
+          <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
           {description && (
             <p className="text-sm text-slate-600 mt-1">{description}</p>
           )}
