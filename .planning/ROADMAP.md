@@ -19,6 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [x] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
 - [ ] **Phase 7: Data Migration** - Airtable data migration to Supabase
+- [x] **Phase 9: Consistent UI & Dashboard Layout** - Sidebar navigation, PageLayout standardization, breadcrumbs
 - [x] **Phase 8: Pinterest OAuth** - Pinterest OAuth authentication for multi-account publishing
 
 ## Phase Details
@@ -195,6 +196,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/5 | Not started | - |
 | 8. Pinterest OAuth | 5/5 | Complete | 2026-02-09 |
+| 9. Consistent UI & Dashboard Layout | 4/4 | Complete | 2026-02-10 |
 
 ### Phase 9: Consistent UI & Dashboard Layout
 
@@ -203,7 +205,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 **Plans:** 4 plans
 
 Plans:
-- [ ] 09-01-PLAN.md -- Install shadcn/ui Sidebar + Breadcrumb, create shared layout components (LoadingSpinner, ErrorState, PageLayout, PageHeader, AppSidebar)
-- [ ] 09-02-PLAN.md -- Wire SidebarProvider into _authed.tsx, migrate Dashboard and Calendar to PageLayout
-- [ ] 09-03-PLAN.md -- Migrate Projects, Pins, Articles detail pages to PageLayout with breadcrumbs, delete Header
-- [ ] 09-04-PLAN.md -- Visual verification of complete layout migration
+- [x] 09-01-PLAN.md -- Install shadcn/ui Sidebar + Breadcrumb, create shared layout components (LoadingSpinner, ErrorState, PageLayout, PageHeader, AppSidebar)
+- [x] 09-02-PLAN.md -- Wire SidebarProvider into _authed.tsx, migrate Dashboard and Calendar to PageLayout
+- [x] 09-03-PLAN.md -- Migrate Projects, Pins, Articles detail pages to PageLayout with breadcrumbs, delete Header
+- [x] 09-04-PLAN.md -- Visual verification of complete layout migration
