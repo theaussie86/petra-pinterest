@@ -51,8 +51,8 @@ export function AppSidebar({ user }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-4">
-          <span className="text-xl font-bold">Petra</span>
+        <div className="flex items-center gap-2 px-4 py-4">
+          <span className="text-xl font-bold">PinMa</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
