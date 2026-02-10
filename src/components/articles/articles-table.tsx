@@ -163,8 +163,8 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
             <TableRow key={article.id}>
               <TableCell className="font-medium">
                 <Link
-                  to="/articles/$articleId"
-                  params={{ articleId: article.id }}
+                  to="/projects/$projectId/articles/$articleId"
+                  params={{ projectId, articleId: article.id }}
                   className="text-blue-600 hover:text-blue-700 hover:underline max-w-[400px] block overflow-hidden text-ellipsis whitespace-nowrap"
                 >
                   {article.title}

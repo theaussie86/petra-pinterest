@@ -442,8 +442,8 @@ export function PinsList({ projectId }: PinsListProps) {
                       </TableCell>
                       <TableCell className="font-medium">
                         <Link
-                          to="/pins/$pinId"
-                          params={{ pinId: pin.id }}
+                          to="/projects/$projectId/pins/$pinId"
+                          params={{ projectId, pinId: pin.id }}
                           className="text-blue-600 hover:text-blue-700 hover:underline max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
                         >
                           {pin.title ? (
@@ -476,7 +476,7 @@ export function PinsList({ projectId }: PinsListProps) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link to="/pins/$pinId" params={{ pinId: pin.id }}>
+                              <Link to="/projects/$projectId/pins/$pinId" params={{ projectId, pinId: pin.id }}>
                                 View / Edit
                               </Link>
                             </DropdownMenuItem>

@@ -14,7 +14,7 @@ interface PinCardProps {
 export function PinCard({ pin, selected, onToggleSelect, imageUrl }: PinCardProps) {
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md">
-      <Link to="/pins/$pinId" params={{ pinId: pin.id }} className="block">
+      <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }} className="block">
         <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-100">
           <img
             src={imageUrl}

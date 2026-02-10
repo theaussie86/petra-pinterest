@@ -322,12 +322,12 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
               </div>
 
               {/* Article link */}
-              {article && (
+              {article && pin && (
                 <div className="pt-4 border-t">
                   <h3 className="text-xs font-medium text-slate-500 uppercase mb-2">Article</h3>
                   <Link
-                    to="/articles/$articleId"
-                    params={{ articleId: article.id }}
+                    to="/projects/$projectId/articles/$articleId"
+                    params={{ projectId: pin.blog_project_id, articleId: article.id }}
                     className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
                   >
                     <FileText className="h-3.5 w-3.5 flex-shrink-0" />
@@ -339,8 +339,8 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
               {/* Actions footer */}
               <div className="pt-4 border-t space-y-2">
                 <Link
-                  to="/pins/$pinId"
-                  params={{ pinId: pin.id }}
+                  to="/projects/$projectId/pins/$pinId"
+                  params={{ projectId: pin.blog_project_id, pinId: pin.id }}
                   className="w-full"
                 >
                   <Button variant="outline" className="w-full">
