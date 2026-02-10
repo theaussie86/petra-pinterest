@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: AI Metadata & Publishing** - AI-powered metadata and scheduling integration
 - [x] **Phase 6: Visual Calendar** - Calendar view with filtering and sidebar editing
 - [ ] **Phase 7: Data Migration** - Airtable data migration to Supabase
-- [x] **Phase 9: Consistent UI & Dashboard Layout** - Sidebar navigation, PageLayout standardization, breadcrumbs ✓
+- [ ] **Phase 9: Consistent UI & Dashboard Layout** - Sidebar navigation, PageLayout standardization, breadcrumbs
 - [x] **Phase 8: Pinterest OAuth** - Pinterest OAuth authentication for multi-account publishing
 
 ## Phase Details
@@ -196,13 +196,13 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 6. Visual Calendar | 5/5 | Complete | 2026-02-09 |
 | 7. Data Migration | 0/5 | Not started | - |
 | 8. Pinterest OAuth | 5/5 | Complete | 2026-02-09 |
-| 9. Consistent UI & Dashboard Layout | 7/7 | Complete | 2026-02-10 |
+| 9. Consistent UI & Dashboard Layout | 7/8 | In progress | - |
 
 ### Phase 9: Consistent UI & Dashboard Layout
 
 **Goal:** Migrate from top header navigation to sidebar layout, standardize page wrappers with PageLayout + PageHeader components, and eliminate duplicate loading/error state code across all routes
 **Depends on:** Phase 8
-**Plans:** 7 plans
+**Plans:** 8 plans
 
 Plans:
 - [x] 09-01-PLAN.md -- Install shadcn/ui Sidebar + Breadcrumb, create shared layout components (LoadingSpinner, ErrorState, PageLayout, PageHeader, AppSidebar)
@@ -212,3 +212,4 @@ Plans:
 - [x] 09-05-PLAN.md -- Fix sidebar layout gaps (content overlap, collapse, trigger visibility, header padding)
 - [x] 09-06-PLAN.md -- Fix sidebar overlay, brand name "PinMa", menu alignment (UAT gap closure)
 - [x] 09-07-PLAN.md -- Nest article/pin routes under projects with updated breadcrumbs (UAT gap closure)
+- [ ] 09-08-PLAN.md -- Fix sidebar header collapse and menu SidebarGroup alignment (UAT gap closure round 2)
