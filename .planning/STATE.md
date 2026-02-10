@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-26)
 ## Current Position
 
 Phase: 9 of 9 (Consistent UI & Dashboard Layout)
-Plan: 7 of 7 in phase
-Status: Complete - All layout gaps closed, nested routes implemented
-Last activity: 2026-02-10 — Plan 09-07 complete (Nested Route Structure)
+Plan: 8 of 8 in phase
+Status: Complete - All layout gaps closed, nested routes implemented, sidebar collapse/alignment fixed
+Last activity: 2026-02-10 — Plan 09-08 complete (Sidebar Collapse and Menu Alignment Gap Closure)
 
 Progress: [████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 46
-- Average duration: ~12.5min
-- Total execution time: ~9.95 hours
+- Total plans completed: 47
+- Average duration: ~12.7min
+- Total execution time: ~10.0 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [████████████] 100%
 | 5. AI Metadata & Publishing | 5 | ~13.3min | ~2.7min |
 | 6. Visual Calendar | 5 | ~14.5min | ~2.9min |
 | 8. Pinterest OAuth | 5 | ~35min | ~2.5min |
-| 9. Consistent UI & Dashboard Layout | 7 | ~460.4min | ~65.8min |
+| 9. Consistent UI & Dashboard Layout | 8 | ~461.5min | ~57.7min |
 
 **Recent Trend:**
-- Last 5 plans: 09-07 (3min), 09-05 (1.4min), 09-04 (446.5min), 09-03 (4.3min), 09-02 (2min)
-- Trend: Phase 9 complete with nested routes and gap closure, all phases finished
+- Last 5 plans: 09-08 (1.1min), 09-07 (3min), 09-05 (1.4min), 09-04 (446.5min), 09-03 (4.3min)
+- Trend: Phase 9 complete with all UAT gaps closed - sidebar collapse/alignment, nested routes, layout standardization
 
 *Updated after each plan completion*
 | Phase 06 P05 | 120 | 3 tasks | 3 files |
@@ -57,6 +57,7 @@ Progress: [████████████] 100%
 | Phase 09 P05 | 83 | 2 tasks | 2 files |
 | Phase 09 P07 | 3 | 2 tasks | 6 files |
 | Phase 09 P06 | 5 | 2 tasks | 2 files |
+| Phase 09 P08 | 68 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -330,6 +331,11 @@ Recent decisions affecting current work:
 - Nested routes use $projectId param (differs from existing $id in projects/$id.tsx) — Creates separate route branches, correct for standalone detail pages
 - [Phase 09-06]: Use inline style={{width}} instead of Tailwind v4 w-[--sidebar-width] syntax for CSS variable resolution
 
+**From 09-08 (Sidebar Collapse and Menu Alignment):**
+- Use SidebarMenuButton size="lg" for collapse behavior — Leverages shadcn CSS selectors (group-data-[collapsible=icon]:!p-0) for automatic text hiding without JS conditionals
+- Wrap menus in SidebarGroup for padding — SidebarGroup provides p-2 padding that centers icons in collapsed mode and positions items correctly when expanded
+- Increase avatar from h-6 w-6 to h-8 w-8 — Better fills the size="lg" button height (h-12), improves visual balance
+
 ### Roadmap Evolution
 
 - Phase 8 added: Pinterest OAuth Authentication for Multi-Account Publishing
@@ -367,9 +373,9 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-02-10
-Stopped at: Completed 09-06-PLAN.md (Sidebar Layout Gap Closure) — Phase 9 complete with all UAT gap closure plans executed
+Stopped at: Completed 09-08-PLAN.md (Sidebar Collapse and Menu Alignment Gap Closure) — Phase 9 fully complete with all UAT gaps closed
 Resume file: None
-Next: Production deployment ready - Phase 9 complete
+Next: Production deployment ready - All phases complete
 
 Config:
 {
