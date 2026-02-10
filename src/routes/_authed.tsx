@@ -26,7 +26,7 @@ function AuthedLayout() {
   return (
     <SidebarProvider>
       <AppSidebar user={user} />
-      <SidebarInset>
+      <SidebarInset className="min-w-0 overflow-auto">
         <Outlet />
       </SidebarInset>
     </SidebarProvider>
