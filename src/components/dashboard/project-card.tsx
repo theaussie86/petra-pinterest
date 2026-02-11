@@ -2,21 +2,19 @@ import { Link } from '@tanstack/react-router'
 import { Pencil, Trash2, ExternalLink } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { BlogProject } from '@/types/blog-projects'
 
 interface ProjectCardProps {
   project: BlogProject
   onEdit: (project: BlogProject) => void
   onDelete: (project: BlogProject) => void
+  stats?: { articles: number; scheduled: number; published: number }
+  statsLoading?: boolean
 }
 
-export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
-  // Phase 2: All stats are 0 (articles/pins don't exist yet)
-  const stats = {
-    articles: 0,
-    scheduled: 0,
-    published: 0,
-  }
+export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: ProjectCardProps) {
+  const displayStats = stats ?? { articles: 0, scheduled: 0, published: 0 }
 
   return (
     <Link to="/projects/$id" params={{ id: project.id }}>
@@ -45,15 +43,27 @@ export function ProjectCard({ project, onEdit, onDelete }: ProjectCardProps) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex gap-4">
               <div>
-                <span className="font-medium text-slate-900">{stats.articles}</span>
+                {statsLoading ? (
+                  <Skeleton className="inline-block h-4 w-4 align-middle" />
+                ) : (
+                  <span className="font-medium text-slate-900">{displayStats.articles}</span>
+                )}
                 <span className="text-slate-500 ml-1">articles</span>
               </div>
               <div>
-                <span className="font-medium text-slate-900">{stats.scheduled}</span>
+                {statsLoading ? (
+                  <Skeleton className="inline-block h-4 w-4 align-middle" />
+                ) : (
+                  <span className="font-medium text-slate-900">{displayStats.scheduled}</span>
+                )}
                 <span className="text-slate-500 ml-1">scheduled</span>
               </div>
               <div>
-                <span className="font-medium text-slate-900">{stats.published}</span>
+                {statsLoading ? (
+                  <Skeleton className="inline-block h-4 w-4 align-middle" />
+                ) : (
+                  <span className="font-medium text-slate-900">{displayStats.published}</span>
+                )}
                 <span className="text-slate-500 ml-1">published</span>
               </div>
             </div>

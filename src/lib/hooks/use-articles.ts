@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
+  getAllArticles,
   getArticlesByProject,
   getArticle,
   getArchivedArticles,
@@ -9,6 +10,14 @@ import {
   scrapeBlog,
   addArticleManually
 } from '@/lib/api/articles'
+
+export function useAllArticles() {
+  return useQuery({
+    queryKey: ['articles', 'all'],
+    queryFn: getAllArticles,
+    staleTime: 30000
+  })
+}
 
 export function useArticles(projectId: string) {
   return useQuery({

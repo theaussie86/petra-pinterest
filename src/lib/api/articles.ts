@@ -2,6 +2,17 @@ import { supabase } from '@/lib/supabase'
 import { scrapeBlogFn, scrapeSingleFn } from '@/lib/server/scraping'
 import type { Article, ScrapeRequest, ScrapeResponse } from '@/types/articles'
 
+export async function getAllArticles(): Promise<Article[]> {
+  const { data, error } = await supabase
+    .from('blog_articles')
+    .select('*')
+    .is('archived_at', null)
+    .order('published_at', { ascending: false, nullsFirst: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function getArticlesByProject(projectId: string): Promise<Article[]> {
   const { data, error } = await supabase
     .from('blog_articles')
