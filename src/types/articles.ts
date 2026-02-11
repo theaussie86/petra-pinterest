@@ -32,7 +32,7 @@ export interface ScrapeResponse {
   articles_found: number
   articles_created: number
   articles_updated: number
-  method: 'sitemap' | 'rss' | 'html' | 'single'
+  method: 'firecrawl-map' | 'firecrawl' | 'single'
   errors: string[]
 }
 

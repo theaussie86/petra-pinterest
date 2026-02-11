@@ -9,6 +9,7 @@ export interface ArticleData {
 }
 
 /**
+ * @deprecated Use `discoverBlogUrls` from `server/lib/firecrawl.ts` instead.
  * Discover RSS feed URL from blog homepage
  */
 export async function discoverRssFeed(blogUrl: string): Promise<string | null> {
@@ -55,6 +56,7 @@ export async function discoverRssFeed(blogUrl: string): Promise<string | null> {
 }
 
 /**
+ * @deprecated Use `discoverBlogUrls` + `scrapeArticlesBatch` from `server/lib/firecrawl.ts` instead.
  * Scrape sitemap.xml for article URLs
  */
 export async function scrapeSitemap(blogUrl: string, sitemapUrl?: string): Promise<ArticleData[]> {
@@ -130,6 +132,7 @@ export async function scrapeSitemap(blogUrl: string, sitemapUrl?: string): Promi
 }
 
 /**
+ * @deprecated Use `discoverBlogUrls` + `scrapeArticlesBatch` from `server/lib/firecrawl.ts` instead.
  * Scrape RSS/Atom feed
  */
 export async function scrapeRss(blogUrl: string, rssUrl?: string): Promise<ArticleData[]> {
@@ -212,6 +215,7 @@ export async function scrapeRss(blogUrl: string, rssUrl?: string): Promise<Artic
 }
 
 /**
+ * @deprecated Use `discoverBlogUrls` + `scrapeArticlesBatch` from `server/lib/firecrawl.ts` instead.
  * Scrape blog homepage for article links (HTML fallback)
  */
 export async function scrapeHtml(blogUrl: string): Promise<ArticleData[]> {
@@ -281,6 +285,7 @@ export async function scrapeHtml(blogUrl: string): Promise<ArticleData[]> {
 }
 
 /**
+ * @deprecated Use `scrapeArticle` from `server/lib/firecrawl.ts` instead.
  * Scrape a single URL and extract article data
  */
 export async function scrapeSingleUrl(url: string): Promise<ArticleData> {

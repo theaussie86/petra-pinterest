@@ -1,6 +1,6 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
-import { scrapeSingleUrl } from '../../lib/scraping'
+import { scrapeArticle } from '../../lib/firecrawl'
 
 export const scrapeSingle = inngest.createFunction(
   { id: 'scrape-single-article' },
@@ -14,7 +14,7 @@ export const scrapeSingle = inngest.createFunction(
     )
 
     const result = await step.run('scrape-and-upsert', async () => {
-      const article = await scrapeSingleUrl(url)
+      const article = await scrapeArticle(url)
 
       const { error: upsertError } = await supabase
         .from('blog_articles')
@@ -39,7 +39,7 @@ export const scrapeSingle = inngest.createFunction(
         articles_found: 1,
         articles_created: 1,
         articles_updated: 0,
-        method: 'single' as const,
+        method: 'firecrawl' as const,
         errors: [],
       }
     })

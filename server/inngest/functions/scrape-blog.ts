@@ -1,13 +1,12 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
-import { scrapeSitemap, scrapeRss, scrapeHtml } from '../../lib/scraping'
-import type { ArticleData } from '../../lib/scraping'
+import { discoverBlogUrls, scrapeArticlesBatch } from '../../lib/firecrawl'
 
 export const scrapeBlog = inngest.createFunction(
   { id: 'scrape-blog' },
   { event: 'blog/scrape.requested' },
   async ({ event, step }) => {
-    const { blog_project_id, blog_url, sitemap_url, rss_url, tenant_id } = event.data
+    const { blog_project_id, blog_url, tenant_id } = event.data
 
     // Create Supabase client with service role
     const supabase = createClient(
@@ -15,51 +14,42 @@ export const scrapeBlog = inngest.createFunction(
       process.env.SUPABASE_SECRET_KEY!
     )
 
-    const errors: string[] = []
+    // Step 1: Discover URLs via Firecrawl map + diff against existing articles
+    const newUrls = await step.run('discover-urls', async () => {
+      const discoveredUrls = await discoverBlogUrls(blog_url)
 
-    // Step 1: Try sitemap scraping
-    const sitemapResult = await step.run('scrape-sitemap', async () => {
-      try {
-        const articles = await scrapeSitemap(blog_url, sitemap_url || undefined)
-        return { articles, error: null as string | null }
-      } catch (error) {
-        return { articles: [] as ArticleData[], error: String(error) as string | null }
-      }
+      // Fetch existing article URLs for this project
+      const { data: existingArticles } = await supabase
+        .from('blog_articles')
+        .select('url')
+        .eq('blog_project_id', blog_project_id)
+
+      const existingUrls = new Set(
+        (existingArticles ?? []).map((a: { url: string }) => a.url)
+      )
+
+      // Return only URLs we haven't scraped yet
+      return discoveredUrls.filter((url) => !existingUrls.has(url))
     })
 
-    let articles = sitemapResult.articles
-    let method: 'sitemap' | 'rss' | 'html' = sitemapResult.articles.length > 0 ? 'sitemap' : 'rss'
-
-    if (sitemapResult.error) errors.push(`Sitemap failed: ${sitemapResult.error}`)
-
-    // Step 2: RSS fallback if sitemap found no articles
-    if (articles.length === 0) {
-      const rssResult = await step.run('scrape-rss', async () => {
-        try {
-          const articles = await scrapeRss(blog_url, rss_url || undefined)
-          return { articles, error: null as string | null }
-        } catch (error) {
-          return { articles: [] as ArticleData[], error: String(error) as string | null }
-        }
-      })
-
-      articles = rssResult.articles
-      method = rssResult.articles.length > 0 ? 'rss' : 'html'
-      if (rssResult.error) errors.push(`RSS failed: ${rssResult.error}`)
+    if (newUrls.length === 0) {
+      return {
+        success: true,
+        articles_found: 0,
+        articles_created: 0,
+        articles_updated: 0,
+        method: 'firecrawl-map' as const,
+        errors: [],
+      }
     }
 
-    // Step 3: HTML fallback if RSS also failed
-    if (articles.length === 0) {
-      const htmlResult = await step.run('scrape-html', async () => {
-        try {
-          return { articles: await scrapeHtml(blog_url), error: null as string | null }
-        } catch (error) {
-          return { articles: [] as ArticleData[], error: String(error) as string | null }
-        }
-      })
-      articles = htmlResult.articles
-      if (htmlResult.error) errors.push(`HTML scraping failed: ${htmlResult.error}`)
-    }
+    // Step 2: Scrape new article URLs via Firecrawl
+    const scrapeResult = await step.run('scrape-new-articles', async () => {
+      return scrapeArticlesBatch(newUrls)
+    })
+
+    const articles = scrapeResult.articles
+    const errors = scrapeResult.errors
 
     if (articles.length === 0) {
       return {
@@ -67,8 +57,8 @@ export const scrapeBlog = inngest.createFunction(
         articles_found: 0,
         articles_created: 0,
         articles_updated: 0,
-        method,
-        errors: errors.length > 0 ? errors : ['No articles found'],
+        method: 'firecrawl-map' as const,
+        errors: errors.length > 0 ? errors : ['No articles could be scraped'],
       }
     }
 
@@ -120,9 +110,8 @@ export const scrapeBlog = inngest.createFunction(
       articles_found: articles.length,
       articles_created: upsertResult.created,
       articles_updated: upsertResult.updated,
-      method,
+      method: 'firecrawl-map' as const,
       errors: [...errors, ...upsertResult.errors],
     }
   }
 )
-
