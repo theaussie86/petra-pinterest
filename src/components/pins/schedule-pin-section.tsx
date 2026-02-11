@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { CalendarIcon, Clock, X } from 'lucide-react'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
@@ -22,6 +23,7 @@ const PRESET_TIMES = [
 ]
 
 export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
+  const { t } = useTranslation()
   const hasMetadata = !!pin.title && !!pin.description
   const existingDate = pin.scheduled_at ? new Date(pin.scheduled_at) : undefined
 
@@ -58,17 +60,17 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
   return (
     <Card>
       <CardContent className="pt-6">
-        <h3 className="text-lg font-semibold mb-4">Schedule</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('schedulePin.title')}</h3>
 
         {!hasMetadata ? (
           <p className="text-sm text-muted-foreground">
-            Generate metadata before scheduling
+            {t('schedulePin.noMetadata')}
           </p>
         ) : (
           <div className="space-y-4">
             {/* Date Picker */}
             <div>
-              <label className="text-sm font-medium mb-2 block">Date</label>
+              <label className="text-sm font-medium mb-2 block">{t('schedulePin.fieldDate')}</label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -76,7 +78,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
                     className="w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, 'PPP') : 'Pick a date'}
+                    {date ? format(date, 'PPP') : t('schedulePin.placeholderDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -95,7 +97,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
             <div>
               <label className="text-sm font-medium mb-2 block flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Time
+                {t('schedulePin.fieldTime')}
               </label>
 
               {/* Preset Times */}
@@ -128,7 +130,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
                 onClick={handleSchedule}
                 disabled={!date || !time || updatePin.isPending}
               >
-                Schedule
+                {t('schedulePin.schedule')}
               </Button>
 
               {pin.scheduled_at && (
@@ -139,7 +141,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <X className="h-3 w-3" />
-                  Clear Schedule
+                  {t('schedulePin.clearSchedule')}
                 </button>
               )}
             </div>

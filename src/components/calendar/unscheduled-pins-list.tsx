@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   ImageIcon,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ interface UnscheduledPinsListProps {
 }
 
 export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListProps) {
+  const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false)
   const [sortField, setSortField] = useState<PinSortField>('created_at')
@@ -143,9 +145,9 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
         <CalendarIcon className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-        <p className="text-slate-600 mb-2">No unscheduled pins match your filters.</p>
+        <p className="text-slate-600 mb-2">{t('unscheduledPins.emptyMessage')}</p>
         <p className="text-sm text-slate-500">
-          Try adjusting your project or status filters.
+          {t('unscheduledPins.emptyHint')}
         </p>
       </div>
     )
@@ -160,10 +162,10 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
           <Checkbox
             checked={allSelected}
             onCheckedChange={toggleSelectAll}
-            aria-label="Select all pins"
+            aria-label={t('pinsList.selectAll')}
           />
           <span className="text-sm text-slate-500">
-            {hasSelection ? `${selectedIds.size} selected` : 'Select all'}
+            {hasSelection ? t('pinsList.selected', { count: selectedIds.size }) : t('pinsList.selectAll')}
           </span>
         </div>
 
@@ -172,7 +174,7 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
           {hasSelection && (
             <Button variant="outline" size="sm" onClick={handleBulkSchedule}>
               <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-              Schedule ({selectedIds.size})
+              {t('pinsList.schedule', { count: selectedIds.size })}
             </Button>
           )}
 
@@ -180,22 +182,22 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                Sort
+                {t('pinsList.sort')}
                 <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleSort('title')}>
-                Title {sortField === 'title' && (sortDirection === 'asc' ? '(A-Z)' : '(Z-A)')}
+                {t('pinsList.sortTitle')} {sortField === 'title' && (sortDirection === 'asc' ? t('pinsList.sortAZ') : t('pinsList.sortZA'))}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSort('status')}>
-                Status {sortField === 'status' && (sortDirection === 'asc' ? '(A-Z)' : '(Z-A)')}
+                {t('pinsList.sortStatus')} {sortField === 'status' && (sortDirection === 'asc' ? t('pinsList.sortAZ') : t('pinsList.sortZA'))}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSort('created_at')}>
-                Created {sortField === 'created_at' && (sortDirection === 'asc' ? '(oldest)' : '(newest)')}
+                {t('pinsList.sortCreated')} {sortField === 'created_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleSort('updated_at')}>
-                Updated {sortField === 'updated_at' && (sortDirection === 'asc' ? '(oldest)' : '(newest)')}
+                {t('pinsList.sortUpdated')} {sortField === 'updated_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -211,19 +213,19 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
                 <Checkbox
                   checked={allSelected}
                   onCheckedChange={toggleSelectAll}
-                  aria-label="Select all"
+                  aria-label={t('pinsList.selectAll')}
                 />
               </TableHead>
-              <TableHead className="w-[60px]">Image</TableHead>
+              <TableHead className="w-[60px]">{t('unscheduledPins.columnImage')}</TableHead>
               <TableHead className="cursor-pointer" onClick={() => handleSort('title')}>
-                Title {getSortIcon('title')}
+                {t('unscheduledPins.columnTitle')} {getSortIcon('title')}
               </TableHead>
-              <TableHead className="w-[200px]">Project</TableHead>
+              <TableHead className="w-[200px]">{t('unscheduledPins.columnProject')}</TableHead>
               <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
-                Status {getSortIcon('status')}
+                {t('unscheduledPins.columnStatus')} {getSortIcon('status')}
               </TableHead>
               <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
-                Created {getSortIcon('created_at')}
+                {t('unscheduledPins.columnCreated')} {getSortIcon('created_at')}
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -234,7 +236,7 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
                   <Checkbox
                     checked={selectedIds.has(pin.id)}
                     onCheckedChange={() => toggleSelect(pin.id)}
-                    aria-label={`Select pin ${pin.title || 'Untitled'}`}
+                    aria-label={`Select pin ${pin.title || t('common.untitled')}`}
                   />
                 </TableCell>
                 <TableCell>
@@ -255,13 +257,13 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
                     {pin.title ? (
                       pin.title
                     ) : (
-                      <span className="italic text-slate-400">Untitled</span>
+                      <span className="italic text-slate-400">{t('common.untitled')}</span>
                     )}
                   </button>
                 </TableCell>
                 <TableCell>
                   <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
-                    {projectMap.get(pin.blog_project_id) || 'Unknown project'}
+                    {projectMap.get(pin.blog_project_id) || t('unscheduledPins.unknownProject')}
                   </span>
                 </TableCell>
                 <TableCell>

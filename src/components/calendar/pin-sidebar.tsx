@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { X, ExternalLink, Trash2, FileText } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { usePinterestConnection, usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
@@ -49,6 +50,7 @@ const editPinSchema = z.object({
 type EditPinFormData = z.infer<typeof editPinSchema>
 
 export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
+  const { t } = useTranslation()
   const { data: pin, isLoading } = usePin(pinId || '')
   const { data: boards } = usePinterestBoards(pin?.blog_project_id || '')
   const { data: article } = useArticle(pin?.blog_article_id || '')
@@ -151,7 +153,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
         <div className="p-4 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Pin Details</h2>
+            <h2 className="text-lg font-semibold text-slate-900">{t('pinSidebar.title')}</h2>
             <button
               onClick={onClose}
               className="p-1 rounded-md hover:bg-slate-100 transition-colors"
@@ -189,11 +191,11 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
               {/* Inline edit form */}
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="sidebar-title">Title</Label>
+                  <Label htmlFor="sidebar-title">{t('editPin.fieldTitle')}</Label>
                   <Input
                     id="sidebar-title"
                     {...register('title')}
-                    placeholder="Pin title"
+                    placeholder={t('editPin.placeholderTitle')}
                     disabled={isSubmitting}
                   />
                   {errors.title && (
@@ -202,11 +204,11 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebar-description">Description</Label>
+                  <Label htmlFor="sidebar-description">{t('editPin.fieldDescription')}</Label>
                   <Textarea
                     id="sidebar-description"
                     {...register('description')}
-                    placeholder="Pin description"
+                    placeholder={t('editPin.placeholderDescription')}
                     disabled={isSubmitting}
                     rows={3}
                   />
@@ -216,11 +218,11 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebar-alt-text">Alt Text</Label>
+                  <Label htmlFor="sidebar-alt-text">{t('editPin.fieldAltText')}</Label>
                   <Textarea
                     id="sidebar-alt-text"
                     {...register('alt_text')}
-                    placeholder="Describe the image for accessibility"
+                    placeholder={t('editPin.placeholderAltText')}
                     disabled={isSubmitting}
                     rows={2}
                   />
@@ -230,17 +232,17 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebar-board">Board</Label>
+                  <Label htmlFor="sidebar-board">{t('editPin.fieldBoard')}</Label>
                   <Select
                     value={currentBoardId}
                     onValueChange={(value) => setValue('pinterest_board_id', value)}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger id="sidebar-board">
-                      <SelectValue placeholder="Select a board" />
+                      <SelectValue placeholder={t('editPin.placeholderBoard')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__none__">Not assigned</SelectItem>
+                      <SelectItem value="__none__">{t('common.notAssigned')}</SelectItem>
                       {boards?.map((board) => (
                         <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
                           {board.name}
@@ -251,7 +253,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sidebar-status">Status</Label>
+                  <Label htmlFor="sidebar-status">{t('editPin.fieldStatus')}</Label>
                   <Select
                     value={currentStatus}
                     onValueChange={(value) => setValue('status', value)}
@@ -281,7 +283,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                 </div>
 
                 <Button type="submit" disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                  {isSubmitting ? t('common.saving') : t('pinSidebar.saveChanges')}
                 </Button>
               </form>
 
@@ -316,7 +318,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                     className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    View on Pinterest
+                    {t('pinSidebar.viewOnPinterest')}
                   </a>
                 )}
               </div>
@@ -324,7 +326,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
               {/* Article link */}
               {article && pin && (
                 <div className="pt-4 border-t">
-                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-2">Article</h3>
+                  <h3 className="text-xs font-medium text-slate-500 uppercase mb-2">{t('pinSidebar.article')}</h3>
                   <Link
                     to="/projects/$projectId/articles/$articleId"
                     params={{ projectId: pin.blog_project_id, articleId: article.id }}
@@ -345,7 +347,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                 >
                   <Button variant="outline" className="w-full">
                     <ExternalLink className="mr-2 h-4 w-4" />
-                    Open Full Detail
+                    {t('pinSidebar.openFullDetail')}
                   </Button>
                 </Link>
                 <Button
@@ -354,7 +356,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
                   className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {t('common.delete')}
                 </Button>
               </div>
             </>

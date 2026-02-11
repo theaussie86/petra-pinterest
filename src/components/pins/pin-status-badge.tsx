@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { PIN_STATUS, getStatusBadgeClasses } from '@/types/pins'
 import type { PinStatus } from '@/types/pins'
@@ -8,7 +9,7 @@ interface PinStatusBadgeProps {
 }
 
 export function PinStatusBadge({ status, disabled }: PinStatusBadgeProps) {
-  const { label } = PIN_STATUS[status]
+  const { t } = useTranslation()
   const colorClasses = getStatusBadgeClasses(status)
 
   return (
@@ -19,7 +20,7 @@ export function PinStatusBadge({ status, disabled }: PinStatusBadgeProps) {
         disabled && 'opacity-50'
       )}
     >
-      {label}
+      {t('pinStatus.' + status)}
     </span>
   )
 }

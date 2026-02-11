@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { format, addDays } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
 import { useBulkSchedulePins } from '@/lib/hooks/use-pins'
@@ -35,6 +36,7 @@ export function BulkScheduleDialog({
   open,
   onOpenChange,
 }: BulkScheduleDialogProps) {
+  const { t } = useTranslation()
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [time, setTime] = useState<string>('')
   const [intervalDays, setIntervalDays] = useState<number>(2)
@@ -77,16 +79,16 @@ export function BulkScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Schedule Pins</DialogTitle>
+          <DialogTitle>{t('bulkSchedule.title')}</DialogTitle>
           <DialogDescription>
-            Schedule {pinIds.length} pins across dates
+            {t('bulkSchedule.description', { count: pinIds.length })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Date Picker */}
           <div>
-            <label className="text-sm font-medium mb-2 block">Start Date</label>
+            <label className="text-sm font-medium mb-2 block">{t('bulkSchedule.fieldStartDate')}</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
@@ -94,7 +96,7 @@ export function BulkScheduleDialog({
                   className="w-full justify-start text-left font-normal"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, 'PPP') : 'Pick a date'}
+                  {startDate ? format(startDate, 'PPP') : t('bulkSchedule.placeholderDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -113,7 +115,7 @@ export function BulkScheduleDialog({
           <div>
             <label className="text-sm font-medium mb-2 block flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Time
+              {t('bulkSchedule.fieldTime')}
             </label>
 
             {/* Preset Times */}
@@ -143,7 +145,7 @@ export function BulkScheduleDialog({
           {/* Interval Input */}
           <div>
             <label className="text-sm font-medium mb-2 block">
-              Days between pins
+              {t('bulkSchedule.fieldInterval')}
             </label>
             <Input
               type="number"
@@ -157,15 +159,15 @@ export function BulkScheduleDialog({
           {/* Preview */}
           {startDate && time && previewDates.length > 0 && (
             <div className="bg-muted p-3 rounded-md">
-              <p className="text-sm font-medium mb-2">Preview:</p>
+              <p className="text-sm font-medium mb-2">{t('bulkSchedule.previewTitle')}</p>
               <ul className="text-sm text-muted-foreground space-y-1">
                 {previewDates.map((date, index) => (
                   <li key={index}>
-                    Pin {index + 1}: {date} at {time}
+                    {t('bulkSchedule.previewItem', { n: index + 1, date, time })}
                   </li>
                 ))}
                 {remainingCount > 0 && (
-                  <li>and {remainingCount} more...</li>
+                  <li>{t('bulkSchedule.previewMore', { count: remainingCount })}</li>
                 )}
               </ul>
             </div>
@@ -174,13 +176,13 @@ export function BulkScheduleDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleScheduleAll}
             disabled={!startDate || !time || bulkSchedule.isPending}
           >
-            {bulkSchedule.isPending ? 'Scheduling...' : 'Schedule All'}
+            {bulkSchedule.isPending ? t('bulkSchedule.scheduling') : t('bulkSchedule.scheduleAll')}
           </Button>
         </DialogFooter>
       </DialogContent>

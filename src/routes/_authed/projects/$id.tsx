@@ -1,16 +1,12 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { ExternalLink, FileText, Pin, Plus } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { ProjectDialog } from '@/components/projects/project-dialog'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
-import { ArticlesTable } from '@/components/articles/articles-table'
-import { ScrapeButton } from '@/components/articles/scrape-button'
-import { AddArticleDialog } from '@/components/articles/add-article-dialog'
-import { CreatePinDialog } from '@/components/pins/create-pin-dialog'
-import { PinsList } from '@/components/pins/pins-list'
 import { PinterestConnection } from '@/components/projects/pinterest-connection'
 import { Button } from '@/components/ui/button'
 
@@ -23,6 +19,7 @@ export const Route = createFileRoute('/_authed/projects/$id')({
 })
 
 function ProjectDetail() {
+  const { t, i18n } = useTranslation()
   const { id } = Route.useParams()
   const search = Route.useSearch()
   const { data: project, isLoading, error } = useBlogProject(id)
@@ -30,11 +27,9 @@ function ProjectDetail() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [addArticleDialogOpen, setAddArticleDialogOpen] = useState(false)
-  const [createPinDialogOpen, setCreatePinDialogOpen] = useState(false)
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language === 'de' ? 'de-DE' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -49,7 +44,7 @@ function ProjectDetail() {
     }
     return (
       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[frequency]}`}>
-        {frequency.charAt(0).toUpperCase() + frequency.slice(1)}
+        {t('projectDetail.frequency' + frequency.charAt(0).toUpperCase() + frequency.slice(1))}
       </span>
     )
   }
@@ -58,15 +53,15 @@ function ProjectDetail() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: project?.name || "Project" },
+          { label: t('projectDetail.breadcrumbDashboard'), href: "/dashboard" },
+          { label: project?.name || t('projectDetail.breadcrumbProject') },
         ]}
-        title={project?.name || "Project"}
+        title={project?.name || t('projectDetail.breadcrumbProject')}
         actions={
           project ? (
             <>
-              <Button variant="outline" onClick={() => setEditDialogOpen(true)}>Edit</Button>
-              <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={() => setDeleteDialogOpen(true)}>Delete</Button>
+              <Button variant="outline" onClick={() => setEditDialogOpen(true)}>{t('common.edit')}</Button>
+              <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={() => setDeleteDialogOpen(true)}>{t('common.delete')}</Button>
             </>
           ) : undefined
         }
@@ -87,13 +82,13 @@ function ProjectDetail() {
                   <ExternalLink className="h-4 w-4" />
                 </a>
                 <div className="flex items-center gap-4 text-sm">
-                  <span>Created {formatDate(project.created_at)}</span>
+                  <span>{t('projectDetail.created', { date: formatDate(project.created_at) })}</span>
                   <span>•</span>
-                  <span>Scraping: {getFrequencyBadge(project.scraping_frequency)}</span>
+                  <span>{t('projectDetail.scraping')} {getFrequencyBadge(project.scraping_frequency)}</span>
                 </div>
                 {project.sitemap_url && (
                   <div className="text-sm">
-                    <span className="text-slate-500">Sitemap:</span>{' '}
+                    <span className="text-slate-500">{t('projectDetail.sitemap')}</span>{' '}
                     <a
                       href={project.sitemap_url}
                       target="_blank"
@@ -105,7 +100,7 @@ function ProjectDetail() {
                   </div>
                 )}
                 {!project.sitemap_url && (
-                  <div className="text-sm text-slate-500">Sitemap: Not configured</div>
+                  <div className="text-sm text-slate-500">{t('projectDetail.sitemap')} {t('projectDetail.sitemapNotConfigured')}</div>
                 )}
                 {project.description && (
                   <p className="text-sm mt-2">{project.description}</p>
@@ -120,37 +115,6 @@ function ProjectDetail() {
                 pinterestConnected={search.pinterest_connected === 'true'}
                 pinterestError={search.pinterest_error}
               />
-            </div>
-
-            {/* Articles section */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Articles
-                </h2>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setAddArticleDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Add Article
-                  </Button>
-                  <ScrapeButton blogProjectId={id} blogUrl={project.blog_url} sitemapUrl={project.sitemap_url} />
-                </div>
-              </div>
-              <ArticlesTable projectId={id} />
-            </div>
-
-            {/* Pins section */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold flex items-center gap-2">
-                  <Pin className="h-5 w-5" />
-                  Pins
-                </h2>
-                <Button variant="outline" size="sm" onClick={() => setCreatePinDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Create Pin
-                </Button>
-              </div>
-              <PinsList projectId={id} />
             </div>
           </>
         )}
@@ -169,16 +133,6 @@ function ProjectDetail() {
             onOpenChange={setDeleteDialogOpen}
             project={project}
             onDeleted={() => navigate({ to: '/dashboard' })}
-          />
-          <AddArticleDialog
-            open={addArticleDialogOpen}
-            onOpenChange={setAddArticleDialogOpen}
-            projectId={id}
-          />
-          <CreatePinDialog
-            open={createPinDialogOpen}
-            onOpenChange={setCreatePinDialogOpen}
-            projectId={id}
           />
         </>
       )}

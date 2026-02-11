@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Upload, X, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -29,6 +30,7 @@ interface ThumbnailInfo {
 }
 
 export function ImageUploadZone({ files, onFilesChange, disabled }: ImageUploadZoneProps) {
+  const { t } = useTranslation()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
   const [isDragOver, setIsDragOver] = useState(false)
@@ -182,11 +184,11 @@ export function ImageUploadZone({ files, onFilesChange, disabled }: ImageUploadZ
       >
         <Upload className={`h-8 w-8 mb-2 ${isDragOver ? 'text-blue-500' : 'text-slate-400'}`} />
         <p className="text-sm font-medium text-slate-600">
-          Drop images here or{' '}
-          <span className="text-blue-600 underline">browse files</span>
+          {t('imageUpload.dropMessage')}{' '}
+          <span className="text-blue-600 underline">{t('imageUpload.browseFiles')}</span>
         </p>
         <p className="text-xs text-slate-400 mt-1">
-          Supports drag-drop, file picker, and clipboard paste
+          {t('imageUpload.hint')}
         </p>
         <input
           ref={fileInputRef}
@@ -202,7 +204,9 @@ export function ImageUploadZone({ files, onFilesChange, disabled }: ImageUploadZ
       {/* File count */}
       {files.length > 0 && (
         <p className="text-sm text-slate-600 font-medium">
-          {files.length} image{files.length !== 1 ? 's' : ''} selected
+          {files.length === 1
+            ? t('imageUpload.count', { count: 1 })
+            : t('imageUpload.count_plural', { count: files.length })}
         </p>
       )}
 
@@ -249,7 +253,7 @@ export function ImageUploadZone({ files, onFilesChange, disabled }: ImageUploadZ
                 {hasRatioWarning && (
                   <div className="absolute top-1 left-1 flex items-center gap-1 rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-700">
                     <AlertTriangle className="h-3 w-3" />
-                    Not 2:3
+                    {t('imageUpload.warningAspectRatio')}
                   </div>
                 )}
 

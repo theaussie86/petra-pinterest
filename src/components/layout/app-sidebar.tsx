@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Calendar, LogOut, ChevronsUpDown } from "lucide-react";
+import { LayoutDashboard, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
 import {
@@ -26,14 +27,17 @@ interface AppSidebarProps {
   user: AuthUser;
 }
 
-const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Calendar", url: "/calendar", icon: Calendar },
-];
-
 export function AppSidebar({ user }: AppSidebarProps) {
   const navigate = useNavigate();
-  const {state} = useSidebar();
+  const { state } = useSidebar();
+  const { t, i18n } = useTranslation();
+
+  const navItems = [
+    { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
+    { title: t("nav.articles"), url: "/articles", icon: FileText },
+    { title: t("nav.pins"), url: "/pins", icon: Pin },
+    { title: t("nav.calendar"), url: "/calendar", icon: Calendar },
+  ];
 
   const handleSignOut = async () => {
     try {
@@ -42,6 +46,11 @@ export function AppSidebar({ user }: AppSidebarProps) {
     } catch (error) {
       console.error("Failed to sign out:", error);
     }
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "de" ? "en" : "de";
+    i18n.changeLanguage(newLang);
   };
 
   // Get user initials for avatar
@@ -72,7 +81,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <SidebarGroup>
           <SidebarMenu>
             {navItems.map((item) => (
-              <SidebarMenuItem key={item.title}>
+              <SidebarMenuItem key={item.url}>
                 <SidebarMenuButton asChild>
                   <Link
                     to={item.url}
@@ -92,6 +101,18 @@ export function AppSidebar({ user }: AppSidebarProps) {
       <SidebarFooter>
         <SidebarGroup>
           <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={toggleLanguage}>
+                <Globe />
+                {state === "expanded" ? (
+                  <span>
+                    <span className={i18n.language === "de" ? "font-bold" : ""}>DE</span>
+                    {" / "}
+                    <span className={i18n.language === "en" ? "font-bold" : ""}>EN</span>
+                  </span>
+                ) : null}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -114,7 +135,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                   </div>
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
+                    {t("common.signOut")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

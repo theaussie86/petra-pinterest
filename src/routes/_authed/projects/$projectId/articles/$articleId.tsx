@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
@@ -13,6 +14,7 @@ export const Route = createFileRoute('/_authed/projects/$projectId/articles/$art
 })
 
 function ArticleDetail() {
+  const { t, i18n } = useTranslation()
   const { projectId, articleId } = Route.useParams()
   const { data: article, isLoading, error } = useArticle(articleId)
   const { data: project } = useBlogProject(projectId)
@@ -20,7 +22,7 @@ function ArticleDetail() {
   const navigate = useNavigate()
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language === 'de' ? 'de-DE' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -39,21 +41,21 @@ function ArticleDetail() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: project?.name || "Project", href: `/projects/${projectId}` },
-          { label: article?.title || "Article" },
+          { label: t('articleDetail.breadcrumbDashboard'), href: "/dashboard" },
+          { label: project?.name || t('articleDetail.breadcrumbProject'), href: `/projects/${projectId}` },
+          { label: article?.title || t('articleDetail.breadcrumbArticle') },
         ]}
-        title={article?.title || "Article"}
+        title={article?.title || t('articleDetail.breadcrumbArticle')}
         actions={
           article ? (
             <>
               <Button variant="outline" asChild>
                 <a href={article.url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" /> View Original
+                  <ExternalLink className="mr-2 h-4 w-4" /> {t('articleDetail.viewOriginal')}
                 </a>
               </Button>
               <Button variant="outline" onClick={handleArchive} disabled={archiveMutation.isPending}>
-                {article.archived_at ? "Restore" : "Archive"}
+                {article.archived_at ? t('articleDetail.restore') : t('articleDetail.archive')}
               </Button>
             </>
           ) : undefined
@@ -66,11 +68,11 @@ function ArticleDetail() {
             <div className="mb-8">
               <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                 {article.published_at && (
-                  <span>Published {formatDate(article.published_at)}</span>
+                  <span>{t('articleDetail.published', { date: formatDate(article.published_at) })}</span>
                 )}
-                <span>Scraped {formatDate(article.scraped_at)}</span>
+                <span>{t('articleDetail.scraped', { date: formatDate(article.scraped_at) })}</span>
                 <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                  0 pins
+                  {t('articleDetail.pins', { count: 0 })}
                 </span>
               </div>
             </div>
@@ -81,7 +83,7 @@ function ArticleDetail() {
                 {article.content ? (
                   <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
                 ) : (
-                  <p className="text-slate-500 italic">No content available. The article content could not be scraped.</p>
+                  <p className="text-slate-500 italic">{t('articleDetail.noContent')}</p>
                 )}
               </CardContent>
             </Card>

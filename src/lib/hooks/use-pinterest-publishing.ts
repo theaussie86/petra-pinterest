@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import i18n from '@/lib/i18n'
 import { publishPinFn, publishPinsBulkFn } from '@/lib/server/pinterest-publishing'
 
 /**
@@ -15,11 +16,11 @@ export function usePublishPin() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
-      toast.success('Pin published to Pinterest!')
+      toast.success(i18n.t('toast.publish.published'))
     },
     onError: (error: Error) => {
       queryClient.invalidateQueries({ queryKey: ['pins'] }) // Status may have changed to error
-      toast.error(`Publish failed: ${error.message}`)
+      toast.error(i18n.t('toast.publish.failed', { error: error.message }))
     },
   })
 }
@@ -37,11 +38,11 @@ export function usePublishPinsBulk() {
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
-      toast.success(`Published ${result.published}/${result.total} pins`)
+      toast.success(i18n.t('toast.publish.bulkSuccess', { published: result.published, total: result.total }))
     },
     onError: (error: Error) => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
-      toast.error(`Bulk publish failed: ${error.message}`)
+      toast.error(i18n.t('toast.publish.bulkFailed', { error: error.message }))
     },
   })
 }

@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -16,6 +17,8 @@ export function CalendarHeader({
   onNavigate,
   onViewChange,
 }: CalendarHeaderProps) {
+  const { t } = useTranslation()
+
   // Format the current period label
   const periodLabel =
     view === 'month'
@@ -39,7 +42,7 @@ export function CalendarHeader({
           onClick={() => onNavigate('today')}
           className="h-9 px-3"
         >
-          Today
+          {t('calendar.today')}
         </Button>
         <Button
           variant="outline"
@@ -65,7 +68,7 @@ export function CalendarHeader({
               : 'text-slate-600 hover:text-slate-900'
           )}
         >
-          Month
+          {t('calendar.viewMonth')}
         </button>
         <button
           onClick={() => onViewChange('week')}
@@ -76,7 +79,7 @@ export function CalendarHeader({
               : 'text-slate-600 hover:text-slate-900'
           )}
         >
-          Week
+          {t('calendar.viewWeek')}
         </button>
       </div>
     </div>

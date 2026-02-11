@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -42,6 +43,7 @@ interface AddArticleDialogProps {
 }
 
 export function AddArticleDialog({ open, onOpenChange, projectId }: AddArticleDialogProps) {
+  const { t } = useTranslation()
   const addMutation = useAddArticle()
 
   const form = useForm<ArticleFormData>({
@@ -75,7 +77,7 @@ export function AddArticleDialog({ open, onOpenChange, projectId }: AddArticleDi
       onOpenChange(false)
     } catch (error) {
       setError('url', {
-        message: 'Failed to add article. Please check the URL and try again.',
+        message: t('addArticle.errorAddFailed'),
       })
     }
   }
@@ -84,23 +86,23 @@ export function AddArticleDialog({ open, onOpenChange, projectId }: AddArticleDi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Article</DialogTitle>
+          <DialogTitle>{t('addArticle.title')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="url">Article URL *</Label>
+            <Label htmlFor="url">{t('addArticle.fieldUrl')}</Label>
             <Input
               id="url"
               {...register('url')}
-              placeholder="https://example.com/article"
+              placeholder={t('addArticle.placeholderUrl')}
               disabled={isSubmitting}
             />
             {errors.url && (
               <p className="text-sm text-red-600">{errors.url.message}</p>
             )}
             <p className="text-xs text-slate-500">
-              Enter the URL of the article you want to add. It will be scraped automatically.
+              {t('addArticle.hint')}
             </p>
           </div>
 
@@ -111,10 +113,10 @@ export function AddArticleDialog({ open, onOpenChange, projectId }: AddArticleDi
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Adding...' : 'Add Article'}
+              {isSubmitting ? t('addArticle.adding') : t('addArticle.addButton')}
             </Button>
           </DialogFooter>
         </form>

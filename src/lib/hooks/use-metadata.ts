@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import i18n from '@/lib/i18n'
 import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn } from '@/lib/server/metadata'
 import { getMetadataHistory, restoreMetadataGeneration } from '@/lib/api/metadata'
 
@@ -28,12 +29,12 @@ export function useGenerateMetadata() {
       return await generateMetadataFn({ data: { pin_id } })
     },
     onSuccess: () => {
-      toast.success('Metadata generated')
+      toast.success(i18n.t('toast.metadata.generated'))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
       queryClient.invalidateQueries({ queryKey: ['metadata-history'] })
     },
     onError: () => {
-      toast.error('Failed to generate metadata')
+      toast.error(i18n.t('toast.metadata.generateFailed'))
     },
   })
 }
@@ -50,12 +51,12 @@ export function useGenerateMetadataWithFeedback() {
       return await generateMetadataWithFeedbackFn({ data: { pin_id, feedback } })
     },
     onSuccess: () => {
-      toast.success('Metadata regenerated')
+      toast.success(i18n.t('toast.metadata.regenerated'))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
       queryClient.invalidateQueries({ queryKey: ['metadata-history'] })
     },
     onError: () => {
-      toast.error('Failed to regenerate metadata')
+      toast.error(i18n.t('toast.metadata.regenerateFailed'))
     },
   })
 }
@@ -72,11 +73,11 @@ export function useTriggerBulkMetadata() {
       return await triggerBulkMetadataFn({ data: { pin_ids } })
     },
     onSuccess: (data) => {
-      toast.success(`Metadata generation started for ${data.pins_queued} pins`)
+      toast.success(i18n.t('toast.metadata.bulkStarted', { count: data.pins_queued }))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: () => {
-      toast.error('Failed to start bulk metadata generation')
+      toast.error(i18n.t('toast.metadata.bulkFailed'))
     },
   })
 }
@@ -93,12 +94,12 @@ export function useRestoreMetadataGeneration() {
       return await restoreMetadataGeneration(pinId, generationId)
     },
     onSuccess: () => {
-      toast.success('Metadata restored')
+      toast.success(i18n.t('toast.metadata.restored'))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
       queryClient.invalidateQueries({ queryKey: ['metadata-history'] })
     },
     onError: () => {
-      toast.error('Failed to restore metadata')
+      toast.error(i18n.t('toast.metadata.restoreFailed'))
     },
   })
 }

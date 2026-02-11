@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useMetadataHistory, useRestoreMetadataGeneration } from '@/lib/hooks/use-metadata'
 import {
   Dialog,
@@ -20,6 +21,7 @@ export function MetadataHistoryDialog({
   open,
   onOpenChange,
 }: MetadataHistoryDialogProps) {
+  const { t, i18n } = useTranslation()
   const { data: history, isLoading } = useMetadataHistory(pinId)
   const restoreGeneration = useRestoreMetadataGeneration()
 
@@ -28,11 +30,22 @@ export function MetadataHistoryDialog({
     onOpenChange(false)
   }
 
+  const formatDateTime = (dateString: string): string => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString(i18n.language, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Metadata History</DialogTitle>
+          <DialogTitle>{t('metadataHistory.title')}</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
@@ -41,7 +54,7 @@ export function MetadataHistoryDialog({
           </div>
         ) : !history || history.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            No generation history yet
+            {t('metadataHistory.empty')}
           </div>
         ) : (
           <div className="space-y-4">
@@ -58,13 +71,13 @@ export function MetadataHistoryDialog({
                       </span>
                       {index === 0 && (
                         <Badge variant="secondary" className="text-xs">
-                          Current
+                          {t('metadataHistory.current')}
                         </Badge>
                       )}
                     </div>
                     {generation.feedback && (
                       <p className="text-sm italic text-slate-600">
-                        Feedback: {generation.feedback}
+                        {t('metadataHistory.feedback', { feedback: generation.feedback })}
                       </p>
                     )}
                   </div>
@@ -75,26 +88,26 @@ export function MetadataHistoryDialog({
                       onClick={() => handleRestore(generation.id)}
                       disabled={restoreGeneration.isPending}
                     >
-                      Use This Version
+                      {t('metadataHistory.useVersion')}
                     </Button>
                   )}
                 </div>
 
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="font-medium text-slate-700">Title: </span>
+                    <span className="font-medium text-slate-700">{t('metadataHistory.fieldTitle')}</span>
                     <span className="text-slate-600">
                       {truncate(generation.title, 60)}
                     </span>
                   </div>
                   <div>
-                    <span className="font-medium text-slate-700">Description: </span>
+                    <span className="font-medium text-slate-700">{t('metadataHistory.fieldDescription')}</span>
                     <span className="text-slate-600">
                       {truncate(generation.description, 100)}
                     </span>
                   </div>
                   <div>
-                    <span className="font-medium text-slate-700">Alt Text: </span>
+                    <span className="font-medium text-slate-700">{t('metadataHistory.fieldAltText')}</span>
                     <span className="text-slate-600">
                       {truncate(generation.alt_text, 60)}
                     </span>
@@ -107,17 +120,6 @@ export function MetadataHistoryDialog({
       </DialogContent>
     </Dialog>
   )
-}
-
-function formatDateTime(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function truncate(text: string, maxLength: number): string {

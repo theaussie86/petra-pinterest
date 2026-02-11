@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import {
   Dialog,
@@ -37,6 +38,7 @@ export function CreatePinDialog({
   projectId,
   preselectedArticleId,
 }: CreatePinDialogProps) {
+  const { t } = useTranslation()
   const [files, setFiles] = useState<File[]>([])
   const [selectedArticleId, setSelectedArticleId] = useState<string>('')
   const [selectedBoardId, setSelectedBoardId] = useState<string>('')
@@ -59,11 +61,11 @@ export function CreatePinDialog({
   const handleSubmit = async () => {
     // Validation
     if (files.length === 0) {
-      toast.error('Please select at least one image')
+      toast.error(t('createPin.validationImageRequired'))
       return
     }
     if (!selectedArticleId) {
-      toast.error('Please select an article')
+      toast.error(t('createPin.validationArticleRequired'))
       return
     }
 
@@ -95,7 +97,7 @@ export function CreatePinDialog({
       onOpenChange(false)
     } catch (error) {
       console.error('Failed to create pins:', error)
-      toast.error('Failed to create pins. Please try again.')
+      toast.error(t('createPin.errorCreateFailed'))
     } finally {
       setIsUploading(false)
     }
@@ -103,29 +105,31 @@ export function CreatePinDialog({
 
   const pinCount = files.length
   const submitLabel = isUploading
-    ? 'Uploading...'
-    : `Create ${pinCount} Pin${pinCount !== 1 ? 's' : ''}`
+    ? t('createPin.uploading')
+    : pinCount === 1
+      ? t('createPin.createButton', { count: 1 })
+      : t('createPin.createButton_plural', { count: pinCount })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {pinCount <= 1 ? 'Create Pin' : `Create ${pinCount} Pins`}
+            {pinCount <= 1 ? t('createPin.titleSingle') : t('createPin.titleMultiple', { count: pinCount })}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-5">
           {/* Article selector */}
           <div className="space-y-2">
-            <Label>Article *</Label>
+            <Label>{t('createPin.fieldArticle')}</Label>
             <Select
               value={selectedArticleId}
               onValueChange={setSelectedArticleId}
               disabled={isUploading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select an article" />
+                <SelectValue placeholder={t('createPin.placeholderArticle')} />
               </SelectTrigger>
               <SelectContent>
                 {articles.map((article) => (
@@ -142,21 +146,21 @@ export function CreatePinDialog({
             </Select>
             {articles.length === 0 && (
               <p className="text-xs text-slate-500">
-                No articles found. Add articles to this project first.
+                {t('createPin.noArticles')}
               </p>
             )}
           </div>
 
           {/* Board selector (optional) */}
           <div className="space-y-2">
-            <Label>Board (optional)</Label>
+            <Label>{t('createPin.fieldBoard')}</Label>
             <Select
               value={selectedBoardId}
               onValueChange={setSelectedBoardId}
               disabled={isUploading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a board (optional)" />
+                <SelectValue placeholder={t('createPin.placeholderBoard')} />
               </SelectTrigger>
               <SelectContent>
                 {boards.map((board) => (
@@ -168,14 +172,14 @@ export function CreatePinDialog({
             </Select>
             {boards.length === 0 && (
               <p className="text-xs text-slate-500">
-                No boards synced yet. You can assign boards later.
+                {t('createPin.noBoards')}
               </p>
             )}
           </div>
 
           {/* Image upload zone */}
           <div className="space-y-2">
-            <Label>Images *</Label>
+            <Label>{t('createPin.fieldImages')}</Label>
             <ImageUploadZone
               files={files}
               onFilesChange={setFiles}
@@ -191,7 +195,7 @@ export function CreatePinDialog({
             onClick={() => onOpenChange(false)}
             disabled={isUploading}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"

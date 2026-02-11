@@ -1,15 +1,15 @@
-// Pin status constants with display labels and badge colors
+// Pin status constants with badge colors (labels come from i18n)
 export const PIN_STATUS = {
-  draft: { label: 'Entwurf', color: 'slate' },
-  ready_for_generation: { label: 'Bereit fur Generierung', color: 'blue' },
-  generate_metadata: { label: 'Metadaten generieren', color: 'violet' },
-  generating_metadata: { label: 'Metadaten werden generiert', color: 'violet' },
-  metadata_created: { label: 'Metadaten erstellt', color: 'teal' },
-  ready_to_schedule: { label: 'Bereit zum Planen', color: 'green' },
-  publishing: { label: 'Wird veroffentlicht', color: 'amber' },
-  published: { label: 'Veroffentlicht', color: 'emerald' },
-  error: { label: 'Fehler', color: 'red' },
-  deleted: { label: 'Loschen', color: 'gray' },
+  draft: { color: 'slate' },
+  ready_for_generation: { color: 'blue' },
+  generate_metadata: { color: 'violet' },
+  generating_metadata: { color: 'violet' },
+  metadata_created: { color: 'teal' },
+  ready_to_schedule: { color: 'green' },
+  publishing: { color: 'amber' },
+  published: { color: 'emerald' },
+  error: { color: 'red' },
+  deleted: { color: 'gray' },
 } as const
 
 export type PinStatus = keyof typeof PIN_STATUS

@@ -1,4 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { exchangeCodeFn } from '@/lib/server/auth'
 
 export const Route = createFileRoute('/auth/callback')({
@@ -28,11 +29,13 @@ export const Route = createFileRoute('/auth/callback')({
 })
 
 function AuthCallbackFallback() {
+  const { t } = useTranslation()
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50">
       <div className="text-center">
         <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-300 border-t-slate-900 mx-auto" />
-        <p className="text-lg text-slate-600">Signing in...</p>
+        <p className="text-lg text-slate-600">{t('authCallback.loading')}</p>
       </div>
     </div>
   )

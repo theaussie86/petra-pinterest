@@ -1,0 +1,447 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving...",
+    "delete": "Delete",
+    "deleting": "Deleting...",
+    "edit": "Edit",
+    "create": "Create",
+    "update": "Update",
+    "loading": "Loading...",
+    "error": "Error",
+    "retry": "Try again",
+    "signOut": "Sign out",
+    "goHome": "Go home",
+    "untitled": "Untitled",
+    "notAssigned": "Not assigned"
+  },
+  "meta": {
+    "title": "Pinterest Management",
+    "description": "Pinterest Management Platform"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Page not found"
+  },
+  "login": {
+    "heading": "Petra",
+    "subtitle": "Schedule Pinterest pins for multiple blogs from a single calendar view",
+    "signIn": "Sign in with Google",
+    "redirecting": "Redirecting...",
+    "errorSignIn": "Failed to sign in with Google"
+  },
+  "authCallback": {
+    "loading": "Signing in..."
+  },
+  "pinterestCallback": {
+    "loading": "Connecting Pinterest..."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "articles": "Articles",
+    "pins": "Pins",
+    "calendar": "Calendar"
+  },
+  "language": {
+    "label": "Language",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "yourProjects": "Your Projects",
+    "createProject": "Create Project",
+    "empty": {
+      "heading": "Hey! Let's get you set up with your first blog.",
+      "message": "Create a blog to start scheduling Pinterest pins and managing your content.",
+      "button": "Create your first blog"
+    }
+  },
+  "stats": {
+    "scheduled": "Scheduled",
+    "published": "Published",
+    "pending": "Pending"
+  },
+  "projectCard": {
+    "articles": "articles",
+    "scheduled": "scheduled",
+    "published": "published"
+  },
+  "projectDialog": {
+    "titleEdit": "Edit Project",
+    "titleCreate": "Create Project",
+    "fieldName": "Name *",
+    "placeholderName": "My Blog",
+    "fieldBlogUrl": "Blog URL *",
+    "placeholderBlogUrl": "https://myblog.com",
+    "fieldSitemapUrl": "Sitemap URL",
+    "placeholderSitemapUrl": "https://myblog.com/sitemap.xml",
+    "fieldFrequency": "Scraping Frequency",
+    "placeholderFrequency": "Select frequency",
+    "frequencyDaily": "Daily",
+    "frequencyWeekly": "Weekly",
+    "frequencyManual": "Manual",
+    "validationNameRequired": "Name is required",
+    "validationNameTooLong": "Name too long",
+    "validationInvalidUrl": "Must be a valid URL"
+  },
+  "deleteProject": {
+    "title": "Delete Project",
+    "message": "Are you sure you want to delete <strong>{{name}}</strong>? This action cannot be undone.",
+    "messageText": "Are you sure you want to delete this project? This action cannot be undone."
+  },
+  "projectDetail": {
+    "breadcrumbDashboard": "Dashboard",
+    "breadcrumbProject": "Project",
+    "created": "Created {{date}}",
+    "scraping": "Scraping:",
+    "sitemap": "Sitemap:",
+    "sitemapNotConfigured": "Not configured",
+    "articles": "Articles",
+    "addArticle": "Add Article",
+    "pins": "Pins",
+    "createPin": "Create Pin",
+    "frequencyDaily": "Daily",
+    "frequencyWeekly": "Weekly",
+    "frequencyManual": "Manual"
+  },
+  "pinterestConnection": {
+    "title": "Pinterest Connection",
+    "notConnected": "No Pinterest account connected",
+    "connecting": "Connecting...",
+    "connect": "Connect Pinterest",
+    "needsAttention": "Connection needs attention: {{error}}",
+    "connectionFailed": "Connection failed: {{error}}.",
+    "tryAgain": "Try again",
+    "reconnecting": "Reconnecting...",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "disconnecting": "Disconnecting...",
+    "connected": "Connected as @{{username}}",
+    "tokenExpires": "Token expires: {{date}}",
+    "disconnectTitle": "Disconnect Pinterest?",
+    "disconnectMessage": "This will disconnect @{{username}} from this project. Scheduled pins will no longer auto-publish. Are you sure?"
+  },
+  "articlesTable": {
+    "columnTitle": "Title",
+    "columnDate": "Date",
+    "columnPinCount": "Pin Count",
+    "columnUrl": "URL",
+    "columnArchivedOn": "Archived On",
+    "noDate": "No date",
+    "errorLoadFailed": "Failed to load articles",
+    "emptyArchived": "No archived articles.",
+    "emptyActive": "No articles yet. Scrape your blog or add an article manually.",
+    "tabActive": "Active",
+    "tabArchived": "Archived",
+    "restore": "Restore",
+    "archive": "Archive"
+  },
+  "scrapeButton": {
+    "scrapeBlog": "Scrape Blog",
+    "scraping": "Scraping...",
+    "scrapeStarted": "Scrape started",
+    "errorScrapeFailed": "Failed to scrape blog. Check your blog URL and try again."
+  },
+  "addArticle": {
+    "title": "Add Article",
+    "fieldUrl": "Article URL *",
+    "placeholderUrl": "https://example.com/article",
+    "hint": "Enter the URL of the article you want to add. It will be scraped automatically.",
+    "adding": "Adding...",
+    "addButton": "Add Article",
+    "validationUrlRequired": "URL is required",
+    "validationInvalidUrl": "Must be a valid URL starting with http:// or https://",
+    "errorAddFailed": "Failed to add article. Please check the URL and try again."
+  },
+  "pinStatus": {
+    "draft": "Draft",
+    "ready_for_generation": "Ready for Generation",
+    "generate_metadata": "Generate Metadata",
+    "generating_metadata": "Generating Metadata",
+    "metadata_created": "Metadata Created",
+    "ready_to_schedule": "Ready to Schedule",
+    "publishing": "Publishing",
+    "published": "Published",
+    "error": "Error",
+    "deleted": "Deleted"
+  },
+  "pinsList": {
+    "errorLoadFailed": "Failed to load pins",
+    "all": "All",
+    "selectAll": "Select all",
+    "selected": "{{count}} selected",
+    "generate": "Generate ({{count}})",
+    "schedule": "Schedule ({{count}})",
+    "publish": "Publish ({{count}})",
+    "changeStatus": "Change Status",
+    "sort": "Sort",
+    "sortTitle": "Title",
+    "sortStatus": "Status",
+    "sortCreated": "Created",
+    "sortUpdated": "Updated",
+    "sortAZ": "(A-Z)",
+    "sortZA": "(Z-A)",
+    "sortOldest": "(oldest)",
+    "sortNewest": "(newest)",
+    "columnImage": "Image",
+    "columnTitle": "Title",
+    "columnArticle": "Article",
+    "columnStatus": "Status",
+    "columnScheduled": "Scheduled",
+    "columnCreated": "Created",
+    "unknownArticle": "Unknown article",
+    "viewEdit": "View / Edit",
+    "emptyAll": "No pins yet. Upload images to create pins.",
+    "emptyStatus": "No pins with status \"{{status}}\".",
+    "deletePinsTitle": "Delete {{count}} Pin",
+    "deletePinsTitle_plural": "Delete {{count}} Pins",
+    "deletePinsMessage": "Are you sure you want to delete {{count}} selected pin(s)? The associated images will also be removed from storage. This action cannot be undone.",
+    "deleteSingleTitle": "Delete Pin",
+    "deleteSingleMessage": "Are you sure you want to delete this pin? The associated image will also be removed from storage. This action cannot be undone."
+  },
+  "deletePin": {
+    "title": "Delete Pin",
+    "message": "Are you sure you want to delete <strong>{{title}}</strong>? The associated image will also be removed from storage. This action cannot be undone."
+  },
+  "createPin": {
+    "titleSingle": "Create Pin",
+    "titleMultiple": "Create {{count}} Pins",
+    "fieldArticle": "Article *",
+    "placeholderArticle": "Select an article",
+    "noArticles": "No articles found. Add articles to this project first.",
+    "fieldBoard": "Board (optional)",
+    "placeholderBoard": "Select a board (optional)",
+    "noBoards": "No boards synced yet. You can assign boards later.",
+    "fieldImages": "Images *",
+    "uploading": "Uploading...",
+    "createButton": "Create {{count}} Pin",
+    "createButton_plural": "Create {{count}} Pins",
+    "validationImageRequired": "Please select at least one image",
+    "validationArticleRequired": "Please select an article",
+    "errorCreateFailed": "Failed to create pins. Please try again."
+  },
+  "editPin": {
+    "title": "Edit Pin",
+    "fieldTitle": "Title",
+    "placeholderTitle": "Pin title",
+    "fieldDescription": "Description",
+    "placeholderDescription": "Pin description",
+    "fieldAltText": "Alt Text",
+    "placeholderAltText": "Describe the image for accessibility",
+    "fieldBoard": "Board",
+    "placeholderBoard": "Select a board",
+    "fieldStatus": "Status",
+    "validationTitleTooLong": "Title too long",
+    "validationDescriptionTooLong": "Description too long",
+    "validationAltTextTooLong": "Alt text too long"
+  },
+  "imageUpload": {
+    "dropMessage": "Drop images here or ",
+    "browseFiles": "browse files",
+    "hint": "Supports drag-drop, file picker, and clipboard paste",
+    "count": "{{count}} image selected",
+    "count_plural": "{{count}} images selected",
+    "warningAspectRatio": "Not 2:3"
+  },
+  "metadataHistory": {
+    "title": "Metadata History",
+    "empty": "No generation history yet",
+    "current": "Current",
+    "feedback": "Feedback: {{feedback}}",
+    "useVersion": "Use This Version",
+    "fieldTitle": "Title: ",
+    "fieldDescription": "Description: ",
+    "fieldAltText": "Alt Text: "
+  },
+  "regenerateFeedback": {
+    "title": "Regenerate Metadata",
+    "fieldFeedback": "How should the metadata be improved?",
+    "placeholderFeedback": "e.g., make it shorter, focus on baking keywords, add more urgency...",
+    "regenerating": "Regenerating...",
+    "regenerate": "Regenerate"
+  },
+  "bulkSchedule": {
+    "title": "Schedule Pins",
+    "description": "Schedule {{count}} pins across dates",
+    "fieldStartDate": "Start Date",
+    "placeholderDate": "Pick a date",
+    "fieldTime": "Time",
+    "fieldInterval": "Days between pins",
+    "previewTitle": "Preview:",
+    "previewItem": "Pin {{n}}: {{date}} at {{time}}",
+    "previewMore": "and {{count}} more...",
+    "scheduling": "Scheduling...",
+    "scheduleAll": "Schedule All"
+  },
+  "generateMetadata": {
+    "title": "AI Metadata",
+    "generating": "Generating metadata...",
+    "generatingButton": "Generating...",
+    "generate": "Generate Metadata",
+    "regenerateFeedback": "Regenerate with Feedback",
+    "viewHistory": "View History",
+    "regenerate": "Regenerate"
+  },
+  "schedulePin": {
+    "title": "Schedule",
+    "noMetadata": "Generate metadata before scheduling",
+    "fieldDate": "Date",
+    "placeholderDate": "Pick a date",
+    "fieldTime": "Time",
+    "schedule": "Schedule",
+    "clearSchedule": "Clear Schedule"
+  },
+  "publishPin": {
+    "published": "Published",
+    "publishing": "Publishing...",
+    "retrying": "Retrying...",
+    "retryPublish": "Retry Publish",
+    "publish": "Publish",
+    "tooltipNoConnection": "Connect Pinterest in project settings",
+    "tooltipNoBoard": "Assign a Pinterest board first"
+  },
+  "articlesPage": {
+    "title": "Articles",
+    "allProjects": "All Projects",
+    "addArticle": "Add Article",
+    "scrape": "Scrape",
+    "selectProject": "Select a project first",
+    "columnProject": "Project",
+    "unknown": "Unknown"
+  },
+  "pinsPage": {
+    "title": "Pins",
+    "allProjects": "All Projects",
+    "createPin": "Create Pin",
+    "selectProject": "Select a project first",
+    "columnProject": "Project",
+    "unknown": "Unknown"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "allProjects": "All Projects",
+    "tabCalendar": "Calendar",
+    "tabUnscheduled": "Unscheduled",
+    "emptyScheduled": "No scheduled pins match your filters.",
+    "emptyHint": "Try adjusting your project or status filters.",
+    "today": "Today",
+    "viewMonth": "Month",
+    "viewWeek": "Week",
+    "dayMon": "Mon",
+    "dayTue": "Tue",
+    "dayWed": "Wed",
+    "dayThu": "Thu",
+    "dayFri": "Fri",
+    "daySat": "Sat",
+    "daySun": "Sun",
+    "allPinsFor": "All pins for {{date}}"
+  },
+  "unscheduledPins": {
+    "emptyMessage": "No unscheduled pins match your filters.",
+    "emptyHint": "Try adjusting your project or status filters.",
+    "columnImage": "Image",
+    "columnTitle": "Title",
+    "columnProject": "Project",
+    "columnStatus": "Status",
+    "columnCreated": "Created",
+    "unknownProject": "Unknown project",
+    "more": "+{{count}} more"
+  },
+  "pinSidebar": {
+    "title": "Pin Details",
+    "saveChanges": "Save Changes",
+    "viewOnPinterest": "View on Pinterest",
+    "article": "Article",
+    "openFullDetail": "Open Full Detail"
+  },
+  "pinDetail": {
+    "breadcrumbDashboard": "Dashboard",
+    "breadcrumbProject": "Project",
+    "breadcrumbPin": "Pin",
+    "title": "Pin Details",
+    "description": "Description",
+    "noDescription": "No description",
+    "altText": "Alt Text",
+    "noAltText": "No alt text",
+    "status": "Status",
+    "article": "Article",
+    "board": "Board",
+    "created": "Created",
+    "updated": "Updated",
+    "scheduled": "Scheduled",
+    "errorTitle": "Error",
+    "unknownError": "An unknown error occurred.",
+    "resetStatus": "Reset Status",
+    "resetting": "Resetting..."
+  },
+  "articleDetail": {
+    "breadcrumbDashboard": "Dashboard",
+    "breadcrumbProject": "Project",
+    "breadcrumbArticle": "Article",
+    "viewOriginal": "View Original",
+    "archive": "Archive",
+    "restore": "Restore",
+    "published": "Published {{date}}",
+    "scraped": "Scraped {{date}}",
+    "pins": "{{count}} pins",
+    "noContent": "No content available. The article content could not be scraped."
+  },
+  "toast": {
+    "project": {
+      "created": "Project created",
+      "createFailed": "Failed to create project",
+      "updated": "Project updated",
+      "updateFailed": "Failed to update project",
+      "deleted": "Project deleted",
+      "deleteFailed": "Failed to delete project"
+    },
+    "article": {
+      "scrapeStarted": "Blog scrape started. Articles will appear shortly.",
+      "scrapeFailed": "Failed to scrape blog. Check your blog URL and try again.",
+      "archived": "Article archived",
+      "archiveFailed": "Failed to archive article",
+      "restored": "Article restored",
+      "restoreFailed": "Failed to restore article",
+      "added": "Article added successfully",
+      "addFailed": "Failed to add article. Check the URL and try again."
+    },
+    "pin": {
+      "created": "Pin created",
+      "createFailed": "Failed to create pin: {{error}}",
+      "multipleCreated": "{{count}} pins created",
+      "multipleCreateFailed": "Failed to create pins: {{error}}",
+      "updated": "Pin updated",
+      "updateFailed": "Failed to update pin: {{error}}",
+      "deleted": "Pin deleted",
+      "deleteFailed": "Failed to delete pin: {{error}}",
+      "multipleDeleted": "{{count}} pins deleted",
+      "multipleDeleteFailed": "Failed to delete pins: {{error}}",
+      "statusUpdated": "Status updated for {{count}} pins",
+      "statusUpdateFailed": "Failed to update pin status: {{error}}",
+      "scheduled": "{{count}} pins scheduled",
+      "scheduleFailed": "Failed to schedule pins: {{error}}"
+    },
+    "metadata": {
+      "generated": "Metadata generated",
+      "generateFailed": "Failed to generate metadata",
+      "regenerated": "Metadata regenerated",
+      "regenerateFailed": "Failed to regenerate metadata",
+      "bulkStarted": "Metadata generation started for {{count}} pins",
+      "bulkFailed": "Failed to start bulk metadata generation",
+      "restored": "Metadata restored",
+      "restoreFailed": "Failed to restore metadata"
+    },
+    "publish": {
+      "published": "Pin published to Pinterest!",
+      "failed": "Publish failed: {{error}}",
+      "bulkSuccess": "Published {{published}}/{{total}} pins",
+      "bulkFailed": "Bulk publish failed: {{error}}"
+    },
+    "pinterest": {
+      "connected": "Pinterest connected successfully!",
+      "disconnected": "Pinterest disconnected"
+    }
+  }
+}

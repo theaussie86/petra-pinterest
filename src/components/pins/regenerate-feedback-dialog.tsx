@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useGenerateMetadataWithFeedback } from '@/lib/hooks/use-metadata'
 import {
   Dialog,
@@ -22,6 +23,7 @@ export function RegenerateFeedbackDialog({
   open,
   onOpenChange,
 }: RegenerateFeedbackDialogProps) {
+  const { t } = useTranslation()
   const [feedback, setFeedback] = useState('')
   const regenerateWithFeedback = useGenerateMetadataWithFeedback()
 
@@ -44,17 +46,17 @@ export function RegenerateFeedbackDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Regenerate Metadata</DialogTitle>
+          <DialogTitle>{t('regenerateFeedback.title')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="feedback">How should the metadata be improved?</Label>
+            <Label htmlFor="feedback">{t('regenerateFeedback.fieldFeedback')}</Label>
             <Textarea
               id="feedback"
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
-              placeholder="e.g., make it shorter, focus on baking keywords, add more urgency..."
+              placeholder={t('regenerateFeedback.placeholderFeedback')}
               rows={4}
               className="resize-none"
             />
@@ -67,13 +69,13 @@ export function RegenerateFeedbackDialog({
             onClick={() => handleOpenChange(false)}
             disabled={regenerateWithFeedback.isPending}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={!feedback.trim() || regenerateWithFeedback.isPending}
           >
-            {regenerateWithFeedback.isPending ? 'Regenerating...' : 'Regenerate'}
+            {regenerateWithFeedback.isPending ? t('regenerateFeedback.regenerating') : t('regenerateFeedback.regenerate')}
           </Button>
         </DialogFooter>
       </DialogContent>

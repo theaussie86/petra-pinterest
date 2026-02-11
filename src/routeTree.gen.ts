@@ -14,8 +14,10 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as ApiInngestRouteImport } from './routes/api/inngest'
+import { Route as AuthedPinsRouteImport } from './routes/_authed/pins'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
+import { Route as AuthedArticlesRouteImport } from './routes/_authed/articles'
 import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pinterest.callback'
 import { Route as AuthedProjectsIdRouteImport } from './routes/_authed/projects/$id'
 import { Route as AuthedProjectsProjectIdPinsPinIdRouteImport } from './routes/_authed/projects/$projectId/pins/$pinId'
@@ -45,6 +47,11 @@ const ApiInngestRoute = ApiInngestRouteImport.update({
   path: '/api/inngest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedPinsRoute = AuthedPinsRouteImport.update({
+  id: '/pins',
+  path: '/pins',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -53,6 +60,11 @@ const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
 const AuthedCalendarRoute = AuthedCalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedArticlesRoute = AuthedArticlesRouteImport.update({
+  id: '/articles',
+  path: '/articles',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthPinterestCallbackRoute = AuthPinterestCallbackRouteImport.update({
@@ -81,8 +93,10 @@ const AuthedProjectsProjectIdArticlesArticleIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/articles': typeof AuthedArticlesRoute
   '/calendar': typeof AuthedCalendarRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/pins': typeof AuthedPinsRoute
   '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
@@ -93,8 +107,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/articles': typeof AuthedArticlesRoute
   '/calendar': typeof AuthedCalendarRoute
   '/dashboard': typeof AuthedDashboardRoute
+  '/pins': typeof AuthedPinsRoute
   '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
@@ -107,8 +123,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authed/articles': typeof AuthedArticlesRoute
   '/_authed/calendar': typeof AuthedCalendarRoute
   '/_authed/dashboard': typeof AuthedDashboardRoute
+  '/_authed/pins': typeof AuthedPinsRoute
   '/api/inngest': typeof ApiInngestRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/projects/$id': typeof AuthedProjectsIdRoute
@@ -121,8 +139,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/articles'
     | '/calendar'
     | '/dashboard'
+    | '/pins'
     | '/api/inngest'
     | '/auth/callback'
     | '/projects/$id'
@@ -133,8 +153,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/articles'
     | '/calendar'
     | '/dashboard'
+    | '/pins'
     | '/api/inngest'
     | '/auth/callback'
     | '/projects/$id'
@@ -146,8 +168,10 @@ export interface FileRouteTypes {
     | '/'
     | '/_authed'
     | '/login'
+    | '/_authed/articles'
     | '/_authed/calendar'
     | '/_authed/dashboard'
+    | '/_authed/pins'
     | '/api/inngest'
     | '/auth/callback'
     | '/_authed/projects/$id'
@@ -202,6 +226,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInngestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/pins': {
+      id: '/_authed/pins'
+      path: '/pins'
+      fullPath: '/pins'
+      preLoaderRoute: typeof AuthedPinsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
@@ -214,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof AuthedCalendarRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/articles': {
+      id: '/_authed/articles'
+      path: '/articles'
+      fullPath: '/articles'
+      preLoaderRoute: typeof AuthedArticlesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/auth/pinterest/callback': {
@@ -248,16 +286,20 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedArticlesRoute: typeof AuthedArticlesRoute
   AuthedCalendarRoute: typeof AuthedCalendarRoute
   AuthedDashboardRoute: typeof AuthedDashboardRoute
+  AuthedPinsRoute: typeof AuthedPinsRoute
   AuthedProjectsIdRoute: typeof AuthedProjectsIdRoute
   AuthedProjectsProjectIdArticlesArticleIdRoute: typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   AuthedProjectsProjectIdPinsPinIdRoute: typeof AuthedProjectsProjectIdPinsPinIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedArticlesRoute: AuthedArticlesRoute,
   AuthedCalendarRoute: AuthedCalendarRoute,
   AuthedDashboardRoute: AuthedDashboardRoute,
+  AuthedPinsRoute: AuthedPinsRoute,
   AuthedProjectsIdRoute: AuthedProjectsIdRoute,
   AuthedProjectsProjectIdArticlesArticleIdRoute:
     AuthedProjectsProjectIdArticlesArticleIdRoute,

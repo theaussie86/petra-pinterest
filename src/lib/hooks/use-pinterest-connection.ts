@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import i18n from '@/lib/i18n'
 import {
   initPinterestOAuthFn,
   disconnectPinterestFn,
@@ -65,7 +66,7 @@ export function useDisconnectPinterest() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pinterest-connection', variables.blog_project_id] })
       queryClient.invalidateQueries({ queryKey: ['pinterest-boards'] })
-      toast.success('Pinterest disconnected')
+      toast.success(i18n.t('toast.pinterest.disconnected'))
     },
     onError: (error: Error) => {
       toast.error(error.message)

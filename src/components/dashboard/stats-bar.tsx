@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -8,21 +9,23 @@ interface StatsBarProps {
 }
 
 export function StatsBar({ stats, loading }: StatsBarProps) {
+  const { t } = useTranslation()
+
   const items = [
     {
-      label: 'Scheduled',
+      label: t('stats.scheduled'),
       count: stats.scheduled,
       icon: Clock,
       color: 'text-blue-600',
     },
     {
-      label: 'Published',
+      label: t('stats.published'),
       count: stats.published,
       icon: CheckCircle,
       color: 'text-green-600',
     },
     {
-      label: 'Pending',
+      label: t('stats.pending'),
       count: stats.pending,
       icon: AlertCircle,
       color: 'text-orange-600',

@@ -1,5 +1,6 @@
 import { format } from 'date-fns'
 import { useState, memo } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
 import { getPinImageUrl } from '@/lib/api/pins'
@@ -47,6 +48,8 @@ const CalendarDayCellComponent = ({
   onPinClick,
   onPinDrop,
 }: CalendarDayCellProps) => {
+  const { t } = useTranslation()
+
   // Determine thumbnail size and max visible count based on view
   const thumbnailSize = view === 'month' ? 32 : 48
   const maxVisible = view === 'month' ? 3 : 6
@@ -131,7 +134,7 @@ const CalendarDayCellComponent = ({
             onDragEnd={handleDragEnd}
             onClick={() => onPinClick(pin.id)}
             className="cursor-pointer"
-            title={pin.title || 'Untitled Pin'}
+            title={pin.title || t('common.untitled')}
           >
             <img
               src={getPinImageUrl(pin.image_path)}
@@ -155,13 +158,13 @@ const CalendarDayCellComponent = ({
           <Popover>
             <PopoverTrigger asChild>
               <button className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs px-2 py-0.5 font-medium hover:bg-slate-200 transition-colors">
-                +{overflowCount} more
+                {t('unscheduledPins.more', { count: overflowCount })}
               </button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-3" align="start">
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-900 mb-3">
-                  All pins for {format(date, 'MMM d, yyyy')}
+                  {t('calendar.allPinsFor', { date: format(date, 'MMM d, yyyy') })}
                 </p>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {pins.map((pin) => (
@@ -180,14 +183,14 @@ const CalendarDayCellComponent = ({
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-900 truncate">
-                          {pin.title || 'Untitled Pin'}
+                          {pin.title || t('common.untitled')}
                         </p>
                       </div>
                       <Badge
                         variant="secondary"
                         className="text-xs shrink-0"
                       >
-                        {PIN_STATUS[pin.status].label}
+                        {t('pinStatus.' + pin.status)}
                       </Badge>
                     </div>
                   ))}

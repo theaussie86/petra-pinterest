@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,7 @@ interface ProjectDialogProps {
 }
 
 export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProps) {
+  const { t } = useTranslation()
   const isEditMode = !!project
   const createMutation = useCreateBlogProject()
   const updateMutation = useUpdateBlogProject()
@@ -124,16 +126,16 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Project' : 'Create Project'}</DialogTitle>
+          <DialogTitle>{isEditMode ? t('projectDialog.titleEdit') : t('projectDialog.titleCreate')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="name">{t('projectDialog.fieldName')}</Label>
             <Input
               id="name"
               {...register('name')}
-              placeholder="My Blog"
+              placeholder={t('projectDialog.placeholderName')}
               disabled={isSubmitting}
             />
             {errors.name && (
@@ -142,11 +144,11 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="blog_url">Blog URL *</Label>
+            <Label htmlFor="blog_url">{t('projectDialog.fieldBlogUrl')}</Label>
             <Input
               id="blog_url"
               {...register('blog_url')}
-              placeholder="https://myblog.com"
+              placeholder={t('projectDialog.placeholderBlogUrl')}
               disabled={isSubmitting}
             />
             {errors.blog_url && (
@@ -157,11 +159,11 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
           {isEditMode && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="sitemap_url">Sitemap URL</Label>
+                <Label htmlFor="sitemap_url">{t('projectDialog.fieldSitemapUrl')}</Label>
                 <Input
                   id="sitemap_url"
                   {...register('sitemap_url')}
-                  placeholder="https://myblog.com/sitemap.xml"
+                  placeholder={t('projectDialog.placeholderSitemapUrl')}
                   disabled={isSubmitting}
                 />
                 {errors.sitemap_url && (
@@ -170,7 +172,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="scraping_frequency">Scraping Frequency</Label>
+                <Label htmlFor="scraping_frequency">{t('projectDialog.fieldFrequency')}</Label>
                 <Select
                   value={scrapingFrequency}
                   onValueChange={(value) =>
@@ -179,12 +181,12 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
                   disabled={isSubmitting}
                 >
                   <SelectTrigger id="scraping_frequency">
-                    <SelectValue placeholder="Select frequency" />
+                    <SelectValue placeholder={t('projectDialog.placeholderFrequency')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="daily">{t('projectDialog.frequencyDaily')}</SelectItem>
+                    <SelectItem value="weekly">{t('projectDialog.frequencyWeekly')}</SelectItem>
+                    <SelectItem value="manual">{t('projectDialog.frequencyManual')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -198,10 +200,10 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : isEditMode ? 'Update' : 'Create'}
+              {isSubmitting ? t('common.saving') : isEditMode ? t('common.update') : t('common.create')}
             </Button>
           </DialogFooter>
         </form>

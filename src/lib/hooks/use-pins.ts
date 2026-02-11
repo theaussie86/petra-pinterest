@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import i18n from '@/lib/i18n'
 import {
   getPinsByProject,
   getAllPins,
@@ -45,11 +46,11 @@ export function useCreatePin() {
   return useMutation({
     mutationFn: createPin,
     onSuccess: () => {
-      toast.success('Pin created')
+      toast.success(i18n.t('toast.pin.created'))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to create pin: ${error.message}`)
+      toast.error(i18n.t('toast.pin.createFailed', { error: error.message }))
     },
   })
 }
@@ -60,11 +61,11 @@ export function useCreatePins() {
   return useMutation({
     mutationFn: createPins,
     onSuccess: (data) => {
-      toast.success(`${data.length} pins created`)
+      toast.success(i18n.t('toast.pin.multipleCreated', { count: data.length }))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to create pins: ${error.message}`)
+      toast.error(i18n.t('toast.pin.multipleCreateFailed', { error: error.message }))
     },
   })
 }
@@ -75,11 +76,11 @@ export function useUpdatePin() {
   return useMutation({
     mutationFn: updatePin,
     onSuccess: () => {
-      toast.success('Pin updated')
+      toast.success(i18n.t('toast.pin.updated'))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update pin: ${error.message}`)
+      toast.error(i18n.t('toast.pin.updateFailed', { error: error.message }))
     },
   })
 }
@@ -90,11 +91,11 @@ export function useDeletePin() {
   return useMutation({
     mutationFn: deletePin,
     onSuccess: () => {
-      toast.success('Pin deleted')
+      toast.success(i18n.t('toast.pin.deleted'))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete pin: ${error.message}`)
+      toast.error(i18n.t('toast.pin.deleteFailed', { error: error.message }))
     },
   })
 }
@@ -105,11 +106,11 @@ export function useBulkDeletePins() {
   return useMutation({
     mutationFn: deletePins,
     onSuccess: (_data, ids) => {
-      toast.success(`${ids.length} pins deleted`)
+      toast.success(i18n.t('toast.pin.multipleDeleted', { count: ids.length }))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to delete pins: ${error.message}`)
+      toast.error(i18n.t('toast.pin.multipleDeleteFailed', { error: error.message }))
     },
   })
 }
@@ -121,11 +122,11 @@ export function useBulkUpdatePinStatus() {
     mutationFn: ({ ids, status }: { ids: string[]; status: PinStatus }) =>
       updatePinsStatus(ids, status),
     onSuccess: (_data, { ids }) => {
-      toast.success(`Status updated for ${ids.length} pins`)
+      toast.success(i18n.t('toast.pin.statusUpdated', { count: ids.length }))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to update pin status: ${error.message}`)
+      toast.error(i18n.t('toast.pin.statusUpdateFailed', { error: error.message }))
     },
   })
 }
@@ -146,12 +147,11 @@ export function useBulkSchedulePins() {
       time: string
     }) => schedulePinsBulk(pin_ids, start_date, interval_days, time),
     onSuccess: (_data, { pin_ids }) => {
-      toast.success(`${pin_ids.length} pins scheduled`)
+      toast.success(i18n.t('toast.pin.scheduled', { count: pin_ids.length }))
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: (error: Error) => {
-      toast.error(`Failed to schedule pins: ${error.message}`)
+      toast.error(i18n.t('toast.pin.scheduleFailed', { error: error.message }))
     },
   })
 }
-

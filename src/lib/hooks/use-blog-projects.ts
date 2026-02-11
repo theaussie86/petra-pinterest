@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import i18n from '@/lib/i18n'
 import {
   getBlogProjects,
   getBlogProject,
@@ -64,10 +65,10 @@ export function useCreateBlogProject() {
       if (context?.previousProjects) {
         queryClient.setQueryData(['blog-projects'], context.previousProjects)
       }
-      toast.error('Failed to create project')
+      toast.error(i18n.t('toast.project.createFailed'))
     },
     onSuccess: () => {
-      toast.success('Project created')
+      toast.success(i18n.t('toast.project.created'))
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['blog-projects'] })
@@ -81,11 +82,11 @@ export function useUpdateBlogProject() {
   return useMutation({
     mutationFn: updateBlogProject,
     onSuccess: () => {
-      toast.success('Project updated')
+      toast.success(i18n.t('toast.project.updated'))
       queryClient.invalidateQueries({ queryKey: ['blog-projects'] })
     },
     onError: () => {
-      toast.error('Failed to update project')
+      toast.error(i18n.t('toast.project.updateFailed'))
     }
   })
 }
@@ -96,11 +97,11 @@ export function useDeleteBlogProject() {
   return useMutation({
     mutationFn: deleteBlogProject,
     onSuccess: () => {
-      toast.success('Project deleted')
+      toast.success(i18n.t('toast.project.deleted'))
       queryClient.invalidateQueries({ queryKey: ['blog-projects'] })
     },
     onError: () => {
-      toast.error('Failed to delete project')
+      toast.error(i18n.t('toast.project.deleteFailed'))
     }
   })
 }

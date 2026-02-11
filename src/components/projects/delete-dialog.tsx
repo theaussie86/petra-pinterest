@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ interface DeleteDialogProps {
 }
 
 export function DeleteDialog({ open, onOpenChange, project, onDeleted }: DeleteDialogProps) {
+  const { t } = useTranslation()
   const deleteMutation = useDeleteBlogProject()
 
   const handleDelete = async () => {
@@ -39,10 +41,13 @@ export function DeleteDialog({ open, onOpenChange, project, onDeleted }: DeleteD
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Project</DialogTitle>
+          <DialogTitle>{t('deleteProject.title')}</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete <strong>{project.name}</strong>? This action cannot be
-            undone.
+            <Trans
+              i18nKey="deleteProject.message"
+              values={{ name: project.name }}
+              components={{ strong: <strong /> }}
+            />
           </DialogDescription>
         </DialogHeader>
 
@@ -53,7 +58,7 @@ export function DeleteDialog({ open, onOpenChange, project, onDeleted }: DeleteD
             onClick={() => onOpenChange(false)}
             disabled={deleteMutation.isPending}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
@@ -61,7 +66,7 @@ export function DeleteDialog({ open, onOpenChange, project, onDeleted }: DeleteD
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
           >
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            {deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>

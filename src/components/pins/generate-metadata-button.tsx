@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Sparkles, History, RefreshCw, Loader2 } from 'lucide-react'
 import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ export function GenerateMetadataButton({
   onHistoryOpen,
   onRegenerateOpen,
 }: GenerateMetadataButtonProps) {
+  const { t } = useTranslation()
   const generateMetadata = useGenerateMetadata()
 
   const hasMetadata = pin.title || pin.description
@@ -24,12 +26,12 @@ export function GenerateMetadataButton({
   return (
     <Card>
       <CardContent className="pt-6 space-y-3">
-        <h2 className="text-sm font-semibold text-slate-900">AI Metadata</h2>
+        <h2 className="text-sm font-semibold text-slate-900">{t('generateMetadata.title')}</h2>
 
         {isGenerating && (
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Generating metadata...</span>
+            <span>{t('generateMetadata.generating')}</span>
           </div>
         )}
 
@@ -42,12 +44,12 @@ export function GenerateMetadataButton({
             {isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating...
+                {t('generateMetadata.generatingButton')}
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Generate Metadata
+                {t('generateMetadata.generate')}
               </>
             )}
           </Button>
@@ -60,7 +62,7 @@ export function GenerateMetadataButton({
               className="w-full"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Regenerate with Feedback
+              {t('generateMetadata.regenerateFeedback')}
             </Button>
             <Button
               variant="outline"
@@ -69,7 +71,7 @@ export function GenerateMetadataButton({
               className="w-full"
             >
               <History className="mr-2 h-4 w-4" />
-              View History
+              {t('generateMetadata.viewHistory')}
             </Button>
             <Button
               variant="outline"
@@ -78,7 +80,7 @@ export function GenerateMetadataButton({
               className="w-full"
             >
               <Sparkles className="mr-2 h-4 w-4" />
-              Regenerate
+              {t('generateMetadata.regenerate')}
             </Button>
           </div>
         )}

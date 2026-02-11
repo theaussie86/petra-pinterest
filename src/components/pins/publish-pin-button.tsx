@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { ExternalLink, Send, Loader2, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,6 +30,7 @@ export function PublishPinButton({
   variant = 'outline',
   size = 'sm',
 }: PublishPinButtonProps) {
+  const { t } = useTranslation()
   const publishMutation = usePublishPin()
 
   const handlePublish = () => {
@@ -45,14 +47,14 @@ export function PublishPinButton({
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
         >
-          Published
+          {t('publishPin.published')}
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
       )
     }
     return (
       <Badge className="bg-emerald-100 text-emerald-700">
-        Published
+        {t('publishPin.published')}
       </Badge>
     )
   }
@@ -62,7 +64,7 @@ export function PublishPinButton({
     return (
       <Button variant={variant} size={size} disabled>
         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-        Publishing...
+        {t('publishPin.publishing')}
       </Button>
     )
   }
@@ -78,7 +80,7 @@ export function PublishPinButton({
         className="border-red-300 text-red-600 hover:bg-red-50"
       >
         <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-        {publishMutation.isPending ? 'Retrying...' : 'Retry Publish'}
+        {publishMutation.isPending ? t('publishPin.retrying') : t('publishPin.retryPublish')}
       </Button>
     )
   }
@@ -92,12 +94,12 @@ export function PublishPinButton({
             <span className="inline-block">
               <Button variant={variant} size={size} disabled>
                 <Send className="mr-1.5 h-3.5 w-3.5" />
-                Publish
+                {t('publishPin.publish')}
               </Button>
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Connect Pinterest in project settings</p>
+            <p>{t('publishPin.tooltipNoConnection')}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -113,12 +115,12 @@ export function PublishPinButton({
             <span className="inline-block">
               <Button variant={variant} size={size} disabled>
                 <Send className="mr-1.5 h-3.5 w-3.5" />
-                Publish
+                {t('publishPin.publish')}
               </Button>
             </span>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Assign a Pinterest board first</p>
+            <p>{t('publishPin.tooltipNoBoard')}</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -134,7 +136,7 @@ export function PublishPinButton({
       disabled={publishMutation.isPending}
     >
       <Send className="mr-1.5 h-3.5 w-3.5" />
-      {publishMutation.isPending ? 'Publishing...' : 'Publish'}
+      {publishMutation.isPending ? t('publishPin.publishing') : t('publishPin.publish')}
     </Button>
   )
 }

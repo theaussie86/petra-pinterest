@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, Unplug } from 'lucide-react'
 import {
   usePinterestConnection,
@@ -29,6 +30,7 @@ export function PinterestConnection({
   pinterestConnected,
   pinterestError,
 }: PinterestConnectionProps) {
+  const { t, i18n } = useTranslation()
   const { data, isLoading } = usePinterestConnection(blogProjectId)
   const connectMutation = useConnectPinterest()
   const disconnectMutation = useDisconnectPinterest()
@@ -39,7 +41,7 @@ export function PinterestConnection({
   // Show success toast after OAuth redirect
   useEffect(() => {
     if (pinterestConnected && !hasShownSuccessToast) {
-      toast.success('Pinterest connected successfully!')
+      toast.success(t('toast.pinterest.connected'))
       setHasShownSuccessToast(true)
 
       // Clean URL params after showing toast
@@ -49,7 +51,7 @@ export function PinterestConnection({
         window.history.replaceState({}, '', url.toString())
       }
     }
-  }, [pinterestConnected, hasShownSuccessToast])
+  }, [pinterestConnected, hasShownSuccessToast, t])
 
   const handleConnect = () => {
     connectMutation.mutate({ blog_project_id: blogProjectId })
@@ -67,7 +69,7 @@ export function PinterestConnection({
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language === 'de' ? 'de-DE' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -80,7 +82,7 @@ export function PinterestConnection({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Link className="h-5 w-5" />
-            Pinterest Connection
+            {t('pinterestConnection.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -100,7 +102,7 @@ export function PinterestConnection({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Link className="h-5 w-5" />
-            Pinterest Connection
+            {t('pinterestConnection.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -108,12 +110,12 @@ export function PinterestConnection({
           {pinterestError && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>
-                Connection failed: {pinterestError}.{' '}
+                {t('pinterestConnection.connectionFailed', { error: pinterestError })}{' '}
                 <button
                   onClick={handleConnect}
                   className="underline hover:no-underline"
                 >
-                  Try again
+                  {t('pinterestConnection.tryAgain')}
                 </button>
               </AlertDescription>
             </Alert>
@@ -122,7 +124,7 @@ export function PinterestConnection({
           {/* Not connected state */}
           {!connection && (
             <div className="space-y-4">
-              <p className="text-sm text-slate-600">No Pinterest account connected</p>
+              <p className="text-sm text-slate-600">{t('pinterestConnection.notConnected')}</p>
               <Button
                 onClick={handleConnect}
                 disabled={connectMutation.isPending}
@@ -130,12 +132,12 @@ export function PinterestConnection({
                 {connectMutation.isPending ? (
                   <>
                     <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    Connecting...
+                    {t('pinterestConnection.connecting')}
                   </>
                 ) : (
                   <>
                     <Link className="mr-2 h-4 w-4" />
-                    Connect Pinterest
+                    {t('pinterestConnection.connect')}
                   </>
                 )}
               </Button>
@@ -147,7 +149,7 @@ export function PinterestConnection({
             <div className="space-y-4">
               <Alert variant="destructive">
                 <AlertDescription>
-                  Connection needs attention: {connection.last_error || 'Unknown error'}
+                  {t('pinterestConnection.needsAttention', { error: connection.last_error || 'Unknown error' })}
                 </AlertDescription>
               </Alert>
               <div className="flex gap-2">
@@ -155,7 +157,7 @@ export function PinterestConnection({
                   onClick={handleConnect}
                   disabled={connectMutation.isPending}
                 >
-                  {connectMutation.isPending ? 'Reconnecting...' : 'Reconnect'}
+                  {connectMutation.isPending ? t('pinterestConnection.reconnecting') : t('pinterestConnection.reconnect')}
                 </Button>
                 <Button
                   variant="outline"
@@ -163,7 +165,7 @@ export function PinterestConnection({
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Unplug className="mr-2 h-4 w-4" />
-                  Disconnect
+                  {t('pinterestConnection.disconnect')}
                 </Button>
               </div>
             </div>
@@ -176,11 +178,11 @@ export function PinterestConnection({
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-green-500" />
                   <p className="text-sm font-medium">
-                    Connected as @{connection.pinterest_username}
+                    {t('pinterestConnection.connected', { username: connection.pinterest_username })}
                   </p>
                 </div>
                 <p className="text-sm text-slate-500">
-                  Token expires: {formatDate(connection.token_expires_at)}
+                  {t('pinterestConnection.tokenExpires', { date: formatDate(connection.token_expires_at) })}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -190,7 +192,7 @@ export function PinterestConnection({
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                 >
                   <Unplug className="mr-2 h-4 w-4" />
-                  Disconnect
+                  {t('pinterestConnection.disconnect')}
                 </Button>
               </div>
             </div>
@@ -202,10 +204,9 @@ export function PinterestConnection({
       <Dialog open={disconnectDialogOpen} onOpenChange={setDisconnectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Disconnect Pinterest?</DialogTitle>
+            <DialogTitle>{t('pinterestConnection.disconnectTitle')}</DialogTitle>
             <DialogDescription>
-              This will disconnect @{connection?.pinterest_username} from this project.
-              Scheduled pins will no longer auto-publish. Are you sure?
+              {t('pinterestConnection.disconnectMessage', { username: connection?.pinterest_username })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -214,14 +215,14 @@ export function PinterestConnection({
               onClick={() => setDisconnectDialogOpen(false)}
               disabled={disconnectMutation.isPending}
             >
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDisconnect}
               disabled={disconnectMutation.isPending}
             >
-              {disconnectMutation.isPending ? 'Disconnecting...' : 'Disconnect'}
+              {disconnectMutation.isPending ? t('pinterestConnection.disconnecting') : t('pinterestConnection.disconnect')}
             </Button>
           </DialogFooter>
         </DialogContent>

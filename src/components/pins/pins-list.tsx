@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowUp,
   ArrowDown,
@@ -41,8 +42,9 @@ import {
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { PinCard } from '@/components/pins/pin-card'
 import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
-import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
-import { useArticles } from '@/lib/hooks/use-articles'
+import { usePins, useAllPins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
+import { useArticles, useAllArticles } from '@/lib/hooks/use-articles'
+import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { getPinImageUrl } from '@/lib/api/pins'
@@ -52,13 +54,14 @@ import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
 type SortDirection = 'asc' | 'desc'
 
 interface PinsListProps {
-  projectId: string
+  projectId?: string
 }
 
 const STATUS_TABS = ['all', 'draft', 'ready_for_generation', 'error'] as const
 type StatusTab = (typeof STATUS_TABS)[number]
 
 export function PinsList({ projectId }: PinsListProps) {
+  const { t, i18n } = useTranslation()
   const [viewMode, setViewMode] = useState<PinViewMode>('table')
   const [activeTab, setActiveTab] = useState<StatusTab>('all')
   const [sortField, setSortField] = useState<PinSortField>('created_at')
@@ -68,8 +71,25 @@ export function PinsList({ projectId }: PinsListProps) {
   const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false)
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<string | null>(null)
 
-  const { data: pins, isLoading, error } = usePins(projectId)
-  const { data: articles } = useArticles(projectId)
+  // Always call both hooks; `enabled` inside controls which fires
+  const projectPinsQuery = usePins(projectId ?? '')
+  const allPinsQuery = useAllPins()
+  const pins = projectId ? projectPinsQuery.data : allPinsQuery.data
+  const isLoading = projectId ? projectPinsQuery.isLoading : allPinsQuery.isLoading
+  const error = projectId ? projectPinsQuery.error : allPinsQuery.error
+
+  const projectArticlesQuery = useArticles(projectId ?? '')
+  const allArticlesQuery = useAllArticles()
+  const articles = projectId ? projectArticlesQuery.data : allArticlesQuery.data
+
+  // Build project name lookup for cross-project mode
+  const { data: projects } = useBlogProjects()
+  const projectMap = useMemo(() => {
+    if (!projects) return new Map<string, string>()
+    return new Map(projects.map((p) => [p.id, p.name]))
+  }, [projects])
+
+  const isCrossProject = !projectId
   const bulkDeleteMutation = useBulkDeletePins()
   const bulkStatusMutation = useBulkUpdatePinStatus()
   const deletePinMutation = useDeletePin()
@@ -219,7 +239,7 @@ export function PinsList({ projectId }: PinsListProps) {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -242,9 +262,9 @@ export function PinsList({ projectId }: PinsListProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <p className="text-red-600">Failed to load pins</p>
+        <p className="text-red-600">{t('pinsList.errorLoadFailed')}</p>
         <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-          Retry
+          {t('common.retry')}
         </Button>
       </div>
     )
@@ -254,10 +274,10 @@ export function PinsList({ projectId }: PinsListProps) {
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="all">All</TabsTrigger>
-          <TabsTrigger value="draft">{PIN_STATUS.draft.label}</TabsTrigger>
-          <TabsTrigger value="ready_for_generation">{PIN_STATUS.ready_for_generation.label}</TabsTrigger>
-          <TabsTrigger value="error">{PIN_STATUS.error.label}</TabsTrigger>
+          <TabsTrigger value="all">{t('pinsList.all')}</TabsTrigger>
+          <TabsTrigger value="draft">{t('pinStatus.draft')}</TabsTrigger>
+          <TabsTrigger value="ready_for_generation">{t('pinStatus.ready_for_generation')}</TabsTrigger>
+          <TabsTrigger value="error">{t('pinStatus.error')}</TabsTrigger>
         </TabsList>
 
         {/* Toolbar row */}
@@ -294,7 +314,7 @@ export function PinsList({ projectId }: PinsListProps) {
                   aria-label="Select all pins"
                 />
                 <span className="text-sm text-slate-500">
-                  {hasSelection ? `${selectedIds.size} selected` : 'Select all'}
+                  {hasSelection ? t('pinsList.selected', { count: selectedIds.size }) : t('pinsList.selectAll')}
                 </span>
               </div>
             )}
@@ -311,7 +331,7 @@ export function PinsList({ projectId }: PinsListProps) {
                   disabled={triggerBulkMetadata.isPending}
                 >
                   <Sparkles className="mr-1 h-3.5 w-3.5" />
-                  Generate ({selectedIds.size})
+                  {t('pinsList.generate', { count: selectedIds.size })}
                 </Button>
 
                 <Button
@@ -320,7 +340,7 @@ export function PinsList({ projectId }: PinsListProps) {
                   onClick={handleBulkSchedule}
                 >
                   <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                  Schedule ({selectedIds.size})
+                  {t('pinsList.schedule', { count: selectedIds.size })}
                 </Button>
 
                 <Button
@@ -330,13 +350,13 @@ export function PinsList({ projectId }: PinsListProps) {
                   disabled={publishBulkMutation.isPending}
                 >
                   <Send className="mr-1 h-3.5 w-3.5" />
-                  Publish ({selectedIds.size})
+                  {t('pinsList.publish', { count: selectedIds.size })}
                 </Button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm">
-                      Change Status
+                      {t('pinsList.changeStatus')}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -358,7 +378,7 @@ export function PinsList({ projectId }: PinsListProps) {
                   disabled={bulkDeleteMutation.isPending}
                 >
                   <Trash2 className="mr-1 h-3.5 w-3.5" />
-                  Delete ({selectedIds.size})
+                  {t('pinsList.deletePinsTitle', { count: selectedIds.size })}
                 </Button>
               </>
             )}
@@ -367,22 +387,22 @@ export function PinsList({ projectId }: PinsListProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  Sort
+                  {t('pinsList.sort')}
                   <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleSort('title')}>
-                  Title {sortField === 'title' && (sortDirection === 'asc' ? '(A-Z)' : '(Z-A)')}
+                  {t('pinsList.sortTitle')} {sortField === 'title' && (sortDirection === 'asc' ? t('pinsList.sortAZ') : t('pinsList.sortZA'))}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSort('status')}>
-                  Status {sortField === 'status' && (sortDirection === 'asc' ? '(A-Z)' : '(Z-A)')}
+                  {t('pinsList.sortStatus')} {sortField === 'status' && (sortDirection === 'asc' ? t('pinsList.sortAZ') : t('pinsList.sortZA'))}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSort('created_at')}>
-                  Created {sortField === 'created_at' && (sortDirection === 'asc' ? '(oldest)' : '(newest)')}
+                  {t('pinsList.sortCreated')} {sortField === 'created_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleSort('updated_at')}>
-                  Updated {sortField === 'updated_at' && (sortDirection === 'asc' ? '(oldest)' : '(newest)')}
+                  {t('pinsList.sortUpdated')} {sortField === 'updated_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -405,17 +425,18 @@ export function PinsList({ projectId }: PinsListProps) {
                         aria-label="Select all"
                       />
                     </TableHead>
-                    <TableHead className="w-[60px]">Image</TableHead>
+                    <TableHead className="w-[60px]">{t('pinsList.columnImage')}</TableHead>
                     <TableHead className="cursor-pointer" onClick={() => handleSort('title')}>
-                      Title {getSortIcon('title')}
+                      {t('pinsList.columnTitle')} {getSortIcon('title')}
                     </TableHead>
-                    <TableHead className="w-[200px]">Article</TableHead>
+                    <TableHead className="w-[200px]">{t('pinsList.columnArticle')}</TableHead>
+                    {isCrossProject && <TableHead className="w-[180px]">Project</TableHead>}
                     <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
-                      Status {getSortIcon('status')}
+                      {t('pinsList.columnStatus')} {getSortIcon('status')}
                     </TableHead>
-                    <TableHead className="w-[120px]">Scheduled</TableHead>
+                    <TableHead className="w-[120px]">{t('pinsList.columnScheduled')}</TableHead>
                     <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
-                      Created {getSortIcon('created_at')}
+                      {t('pinsList.columnCreated')} {getSortIcon('created_at')}
                     </TableHead>
                     <TableHead className="w-[50px]" />
                   </TableRow>
@@ -427,7 +448,7 @@ export function PinsList({ projectId }: PinsListProps) {
                         <Checkbox
                           checked={selectedIds.has(pin.id)}
                           onCheckedChange={() => toggleSelect(pin.id)}
-                          aria-label={`Select pin ${pin.title || 'Untitled'}`}
+                          aria-label={`Select pin ${pin.title || t('common.untitled')}`}
                         />
                       </TableCell>
                       <TableCell>
@@ -443,26 +464,37 @@ export function PinsList({ projectId }: PinsListProps) {
                       <TableCell className="font-medium">
                         <Link
                           to="/projects/$projectId/pins/$pinId"
-                          params={{ projectId, pinId: pin.id }}
+                          params={{ projectId: pin.blog_project_id, pinId: pin.id }}
                           className="text-blue-600 hover:text-blue-700 hover:underline max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
                         >
                           {pin.title ? (
                             pin.title
                           ) : (
-                            <span className="italic text-slate-400">Untitled</span>
+                            <span className="italic text-slate-400">{t('common.untitled')}</span>
                           )}
                         </Link>
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
-                          {articleMap.get(pin.blog_article_id) || 'Unknown article'}
+                          {articleMap.get(pin.blog_article_id) || t('pinsList.unknownArticle')}
                         </span>
                       </TableCell>
+                      {isCrossProject && (
+                        <TableCell>
+                          <Link
+                            to="/projects/$id"
+                            params={{ id: pin.blog_project_id }}
+                            className="text-sm text-slate-600 hover:text-blue-600 hover:underline"
+                          >
+                            {projectMap.get(pin.blog_project_id) || 'Unknown'}
+                          </Link>
+                        </TableCell>
+                      )}
                       <TableCell>
                         <PinStatusBadge status={pin.status} />
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">
-                        {pin.scheduled_at ? formatDate(pin.scheduled_at) : '—'}
+                        {pin.scheduled_at ? formatDate(pin.scheduled_at) : '\u2014'}
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">
                         {formatDate(pin.created_at)}
@@ -476,15 +508,15 @@ export function PinsList({ projectId }: PinsListProps) {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                              <Link to="/projects/$projectId/pins/$pinId" params={{ projectId, pinId: pin.id }}>
-                                View / Edit
+                              <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }}>
+                                {t('pinsList.viewEdit')}
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-red-600 focus:text-red-600"
                               onClick={() => handleDeletePin(pin.id)}
                             >
-                              Delete
+                              {t('common.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -514,17 +546,17 @@ export function PinsList({ projectId }: PinsListProps) {
       <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete {selectedIds.size} Pin{selectedIds.size > 1 ? 's' : ''}</DialogTitle>
+            <DialogTitle>{t('pinsList.deletePinsTitle', { count: selectedIds.size })}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {selectedIds.size} selected pin{selectedIds.size > 1 ? 's' : ''}? The associated images will also be removed from storage. This action cannot be undone.
+              {t('pinsList.deletePinsMessage', { count: selectedIds.size })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkDeleteOpen(false)} disabled={bulkDeleteMutation.isPending}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmBulkDelete} disabled={bulkDeleteMutation.isPending}>
-              {bulkDeleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              {bulkDeleteMutation.isPending ? t('common.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -534,17 +566,17 @@ export function PinsList({ projectId }: PinsListProps) {
       <Dialog open={singleDeleteTarget !== null} onOpenChange={(open) => { if (!open) setSingleDeleteTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Pin</DialogTitle>
+            <DialogTitle>{t('pinsList.deleteSingleTitle')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this pin? The associated image will also be removed from storage. This action cannot be undone.
+              {t('pinsList.deleteSingleMessage')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSingleDeleteTarget(null)} disabled={deletePinMutation.isPending}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmSingleDelete} disabled={deletePinMutation.isPending}>
-              {deletePinMutation.isPending ? 'Deleting...' : 'Delete'}
+              {deletePinMutation.isPending ? t('common.deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -561,10 +593,12 @@ export function PinsList({ projectId }: PinsListProps) {
 }
 
 function EmptyState({ tab }: { tab: StatusTab }) {
+  const { t } = useTranslation()
+
   const message =
     tab === 'all'
-      ? 'No pins yet. Upload images to create pins.'
-      : `No pins with status "${PIN_STATUS[tab as keyof typeof PIN_STATUS]?.label || tab}".`
+      ? t('pinsList.emptyAll')
+      : t('pinsList.emptyStatus', { status: t('pinStatus.' + tab) })
 
   return (
     <div className="flex flex-col items-center justify-center py-16 space-y-3">

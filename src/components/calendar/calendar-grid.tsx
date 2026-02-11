@@ -11,6 +11,7 @@ import {
   isToday,
   format,
 } from 'date-fns'
+import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { CalendarHeader } from './calendar-header'
 import { CalendarDayCell } from './calendar-day-cell'
@@ -23,16 +24,25 @@ interface CalendarGridProps {
   onViewChange: (view: 'month' | 'week') => void
 }
 
-const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
 export function CalendarGrid({
   pins,
   view,
   onPinClick,
   onViewChange,
 }: CalendarGridProps) {
+  const { t } = useTranslation()
   const [currentDate, setCurrentDate] = useState(new Date())
   const updatePin = useUpdatePin()
+
+  const DAYS_OF_WEEK = [
+    t('calendar.dayMon'),
+    t('calendar.dayTue'),
+    t('calendar.dayWed'),
+    t('calendar.dayThu'),
+    t('calendar.dayFri'),
+    t('calendar.daySat'),
+    t('calendar.daySun'),
+  ]
 
   // Group pins by date (yyyy-MM-dd format)
   const pinsByDate = useMemo(() => {

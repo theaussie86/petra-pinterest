@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
@@ -12,6 +13,8 @@ interface PinCardProps {
 }
 
 export function PinCard({ pin, selected, onToggleSelect, imageUrl }: PinCardProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="group relative overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md">
       <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }} className="block">
@@ -29,7 +32,7 @@ export function PinCard({ pin, selected, onToggleSelect, imageUrl }: PinCardProp
               'text-sm font-medium text-white line-clamp-2',
               !pin.title && 'italic text-white/70'
             )}>
-              {pin.title || 'Untitled'}
+              {pin.title || t('common.untitled')}
             </p>
             <div className="mt-1 flex items-center gap-2">
               <PinStatusBadge status={pin.status} />

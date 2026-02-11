@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/_authed/projects/$projectId/pins/$pinId')
 })
 
 function PinDetail() {
+  const { t, i18n } = useTranslation()
   const { projectId, pinId } = Route.useParams()
   const { data: pin, isLoading, error } = usePin(pinId)
   const { data: project } = useBlogProject(projectId)
@@ -42,19 +44,19 @@ function PinDetail() {
     <>
       <PageHeader
         breadcrumbs={[
-          { label: "Dashboard", href: "/dashboard" },
-          { label: project?.name || "Project", href: `/projects/${projectId}` },
-          { label: pin?.title || "Pin" },
+          { label: t('pinDetail.breadcrumbDashboard'), href: "/dashboard" },
+          { label: project?.name || t('pinDetail.breadcrumbProject'), href: `/projects/${projectId}` },
+          { label: pin?.title || t('pinDetail.breadcrumbPin') },
         ]}
-        title={pin?.title || "Pin Details"}
+        title={pin?.title || t('pinDetail.title')}
         actions={
           pin ? (
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-                <Pencil className="mr-2 h-4 w-4" /> Edit
+                <Pencil className="mr-2 h-4 w-4" /> {t('common.edit')}
               </Button>
               <Button variant="outline" className="text-red-600" onClick={() => setDeleteDialogOpen(true)}>
-                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                <Trash2 className="mr-2 h-4 w-4" /> {t('common.delete')}
               </Button>
             </div>
           ) : undefined
@@ -91,29 +93,29 @@ function PinDetail() {
                     {/* Title */}
                     <div>
                       <h1 className="text-xl font-bold text-slate-900">
-                        {pin.title || <span className="italic text-slate-400">Untitled</span>}
+                        {pin.title || <span className="italic text-slate-400">{t('common.untitled')}</span>}
                       </h1>
                     </div>
 
                     {/* Description */}
                     <div>
-                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Description</h3>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.description')}</h3>
                       <p className="text-sm text-slate-700">
-                        {pin.description || <span className="text-slate-400">No description</span>}
+                        {pin.description || <span className="text-slate-400">{t('pinDetail.noDescription')}</span>}
                       </p>
                     </div>
 
                     {/* Alt Text */}
                     <div>
-                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Alt Text</h3>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.altText')}</h3>
                       <p className="text-sm text-slate-700">
-                        {pin.alt_text || <span className="text-slate-400">No alt text</span>}
+                        {pin.alt_text || <span className="text-slate-400">{t('pinDetail.noAltText')}</span>}
                       </p>
                     </div>
 
                     {/* Status */}
                     <div>
-                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Status</h3>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.status')}</h3>
                       <PinStatusBadge status={pin.status} />
                     </div>
 
@@ -122,29 +124,29 @@ function PinDetail() {
 
                     {/* Board */}
                     <div>
-                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Board</h3>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.board')}</h3>
                       <p className="text-sm text-slate-700">
-                        {pin.pinterest_board_name || <span className="text-slate-400">Not assigned</span>}
+                        {pin.pinterest_board_name || <span className="text-slate-400">{t('common.notAssigned')}</span>}
                       </p>
                     </div>
 
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                       <div>
-                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Created</h3>
-                        <p className="text-sm text-slate-700">{formatDate(pin.created_at)}</p>
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.created')}</h3>
+                        <p className="text-sm text-slate-700">{formatDate(pin.created_at, i18n.language)}</p>
                       </div>
                       <div>
-                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Updated</h3>
-                        <p className="text-sm text-slate-700">{formatDate(pin.updated_at)}</p>
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.updated')}</h3>
+                        <p className="text-sm text-slate-700">{formatDate(pin.updated_at, i18n.language)}</p>
                       </div>
                     </div>
 
                     {/* Scheduled */}
                     {pin.scheduled_at && (
                       <div className="pt-2 border-t">
-                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Scheduled</h3>
-                        <p className="text-sm text-slate-700">{formatDateTime(pin.scheduled_at)}</p>
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.scheduled')}</h3>
+                        <p className="text-sm text-slate-700">{formatDateTime(pin.scheduled_at, i18n.language)}</p>
                       </div>
                     )}
                   </CardContent>
@@ -177,7 +179,7 @@ function PinDetail() {
                       className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
-                      View on Pinterest
+                      {t('pinSidebar.viewOnPinterest')}
                     </a>
                   )}
                 </div>
@@ -221,11 +223,12 @@ function PinDetail() {
 // Sub-components
 
 function PinArticleLink({ articleId, projectId }: { articleId: string; projectId: string }) {
+  const { t } = useTranslation()
   const { data: article } = useArticle(articleId)
 
   return (
     <div>
-      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">Article</h3>
+      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.article')}</h3>
       {article ? (
         <Link
           to="/projects/$projectId/articles/$articleId"
@@ -236,13 +239,14 @@ function PinArticleLink({ articleId, projectId }: { articleId: string; projectId
           <span className="line-clamp-2">{article.title}</span>
         </Link>
       ) : (
-        <span className="text-sm text-slate-400">Loading...</span>
+        <span className="text-sm text-slate-400">{t('common.loading')}</span>
       )}
     </div>
   )
 }
 
 function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; previous_status: string | null } }) {
+  const { t } = useTranslation()
   const updateMutation = useUpdatePin()
 
   const handleResetStatus = async () => {
@@ -256,9 +260,9 @@ function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; 
   return (
     <Alert variant="destructive" className="border-red-200 bg-red-50">
       <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>Error</AlertTitle>
+      <AlertTitle>{t('pinDetail.errorTitle')}</AlertTitle>
       <AlertDescription className="mt-1">
-        <p className="mb-3">{pin.error_message || 'An unknown error occurred.'}</p>
+        <p className="mb-3">{pin.error_message || t('pinDetail.unknownError')}</p>
         <Button
           size="sm"
           variant="outline"
@@ -267,23 +271,23 @@ function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; 
           className="border-red-300 hover:bg-red-100"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          {updateMutation.isPending ? 'Resetting...' : 'Reset Status'}
+          {updateMutation.isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus')}
         </Button>
       </AlertDescription>
     </Alert>
   )
 }
 
-function formatDate(dateString: string) {
-  return new Date(dateString).toLocaleDateString('en-US', {
+function formatDate(dateString: string, language: string) {
+  return new Date(dateString).toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   })
 }
 
-function formatDateTime(dateString: string) {
-  return new Date(dateString).toLocaleString('en-US', {
+function formatDateTime(dateString: string, language: string) {
+  return new Date(dateString).toLocaleString(language === 'de' ? 'de-DE' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

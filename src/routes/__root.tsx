@@ -10,6 +10,8 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
+import { I18nextProvider, useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
 import { fetchUser } from '@/lib/server/auth'
 import '@/styles.css'
 
@@ -59,12 +61,14 @@ function RootComponent() {
 }
 
 function NotFound() {
+  const { t } = useTranslation()
+
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-      <h1 className="text-4xl font-bold">404</h1>
-      <p className="text-muted-foreground">Page not found</p>
+      <h1 className="text-4xl font-bold">{t('notFound.title')}</h1>
+      <p className="text-muted-foreground">{t('notFound.message')}</p>
       <Link to="/login" className="text-primary underline underline-offset-4">
-        Go home
+        {t('common.goHome')}
       </Link>
     </div>
   )
@@ -72,16 +76,18 @@ function NotFound() {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        <QueryClientProvider client={queryClient}>
-          {children}
-        </QueryClientProvider>
-        <Scripts />
-      </body>
-    </html>
+    <I18nextProvider i18n={i18n}>
+      <html lang={i18n.language}>
+        <head>
+          <HeadContent />
+        </head>
+        <body>
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
+          <Scripts />
+        </body>
+      </html>
+    </I18nextProvider>
   )
 }

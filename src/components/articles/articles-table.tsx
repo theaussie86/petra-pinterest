@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { ArrowUp, ArrowDown, ArrowUpDown, ExternalLink, MoreHorizontal } from 'lucide-react'
 import {
@@ -18,21 +19,38 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { useArticles, useArchivedArticles, useArchiveArticle, useRestoreArticle } from '@/lib/hooks/use-articles'
+import { useArticles, useAllArticles, useArchivedArticles, useArchiveArticle, useRestoreArticle } from '@/lib/hooks/use-articles'
+import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
 import type { Article } from '@/types/articles'
 import type { ArticleSortField, SortDirection } from '@/types/articles'
 
 interface ArticlesTableProps {
-  projectId: string
+  projectId?: string
 }
 
 export function ArticlesTable({ projectId }: ArticlesTableProps) {
+  const { t, i18n } = useTranslation()
   const [sortField, setSortField] = useState<ArticleSortField>('published_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active')
 
-  const { data: articles, isLoading, error } = useArticles(projectId)
-  const { data: archivedArticles, isLoading: archivedLoading, error: archivedError } = useArchivedArticles(projectId)
+  // Always call both hooks; `enabled` inside controls which fires
+  const projectQuery = useArticles(projectId ?? '')
+  const allQuery = useAllArticles()
+  const articles = projectId ? projectQuery.data : allQuery.data
+  const isLoading = projectId ? projectQuery.isLoading : allQuery.isLoading
+  const error = projectId ? projectQuery.error : allQuery.error
+
+  const { data: archivedArticles, isLoading: archivedLoading, error: archivedError } = useArchivedArticles(projectId ?? '')
+
+  // Build project name lookup for cross-project mode
+  const { data: projects } = useBlogProjects()
+  const projectMap = useMemo(() => {
+    if (!projects) return new Map<string, string>()
+    return new Map(projects.map((p) => [p.id, p.name]))
+  }, [projects])
+
+  const isCrossProject = !projectId
   const archiveMutation = useArchiveArticle()
   const restoreMutation = useRestoreArticle()
 
@@ -83,8 +101,8 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
   }
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No date'
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return t('articlesTable.noDate')
+    return new Date(dateString).toLocaleDateString(i18n.language === 'de' ? 'de-DE' : 'en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -120,9 +138,9 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
     if (err) {
       return (
         <div className="flex flex-col items-center justify-center py-8 space-y-4">
-          <p className="text-red-600">Failed to load articles</p>
+          <p className="text-red-600">{t('articlesTable.errorLoadFailed')}</p>
           <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-            Retry
+            {t('common.retry')}
           </Button>
         </div>
       )
@@ -132,7 +150,7 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
       return (
         <div className="flex items-center justify-center py-8">
           <p className="text-slate-500 text-sm">
-            {isArchived ? 'No archived articles.' : 'No articles yet. Scrape your blog or add an article manually.'}
+            {isArchived ? t('articlesTable.emptyArchived') : t('articlesTable.emptyActive')}
           </p>
         </div>
       )
@@ -145,16 +163,17 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
         <TableHeader>
           <TableRow>
             <TableHead className="cursor-pointer" onClick={() => handleSort('title')}>
-              Title {getSortIcon('title')}
+              {t('articlesTable.columnTitle')} {getSortIcon('title')}
             </TableHead>
+            {isCrossProject && <TableHead className="w-[180px]">Project</TableHead>}
             <TableHead className="cursor-pointer w-[140px]" onClick={() => handleSort('published_at')}>
-              Date {getSortIcon('published_at')}
+              {t('articlesTable.columnDate')} {getSortIcon('published_at')}
             </TableHead>
-            <TableHead className="w-[100px]">Pin Count</TableHead>
+            <TableHead className="w-[100px]">{t('articlesTable.columnPinCount')}</TableHead>
             <TableHead className="cursor-pointer w-[200px]" onClick={() => handleSort('url')}>
-              URL {getSortIcon('url')}
+              {t('articlesTable.columnUrl')} {getSortIcon('url')}
             </TableHead>
-            {isArchived && <TableHead className="w-[140px]">Archived On</TableHead>}
+            {isArchived && <TableHead className="w-[140px]">{t('articlesTable.columnArchivedOn')}</TableHead>}
             <TableHead className="w-[60px]"></TableHead>
           </TableRow>
         </TableHeader>
@@ -164,12 +183,23 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
               <TableCell className="font-medium">
                 <Link
                   to="/projects/$projectId/articles/$articleId"
-                  params={{ projectId, articleId: article.id }}
+                  params={{ projectId: article.blog_project_id, articleId: article.id }}
                   className="text-blue-600 hover:text-blue-700 hover:underline max-w-[400px] block overflow-hidden text-ellipsis whitespace-nowrap"
                 >
                   {article.title}
                 </Link>
               </TableCell>
+              {isCrossProject && (
+                <TableCell>
+                  <Link
+                    to="/projects/$id"
+                    params={{ id: article.blog_project_id }}
+                    className="text-sm text-slate-600 hover:text-blue-600 hover:underline"
+                  >
+                    {projectMap.get(article.blog_project_id) || 'Unknown'}
+                  </Link>
+                </TableCell>
+              )}
               <TableCell>{formatDate(article.published_at)}</TableCell>
               <TableCell>
                 <Badge variant="secondary">0</Badge>
@@ -200,11 +230,11 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
                   <DropdownMenuContent align="end">
                     {isArchived ? (
                       <DropdownMenuItem onClick={() => handleRestore(article.id)}>
-                        Restore
+                        {t('articlesTable.restore')}
                       </DropdownMenuItem>
                     ) : (
                       <DropdownMenuItem onClick={() => handleArchive(article.id)}>
-                        Archive
+                        {t('articlesTable.archive')}
                       </DropdownMenuItem>
                     )}
                   </DropdownMenuContent>
@@ -217,11 +247,15 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
     )
   }
 
+  if (isCrossProject) {
+    return renderTableContent(articles, isLoading, error, false)
+  }
+
   return (
     <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'active' | 'archived')}>
       <TabsList className="mb-4">
-        <TabsTrigger value="active">Active</TabsTrigger>
-        <TabsTrigger value="archived">Archived</TabsTrigger>
+        <TabsTrigger value="active">{t('articlesTable.tabActive')}</TabsTrigger>
+        <TabsTrigger value="archived">{t('articlesTable.tabArchived')}</TabsTrigger>
       </TabsList>
 
       <TabsContent value="active">

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { useAllPins } from '@/lib/hooks/use-pins'
@@ -47,6 +48,7 @@ export const Route = createFileRoute('/_authed/calendar')({
 })
 
 function CalendarPage() {
+  const { t } = useTranslation()
   const navigate = useNavigate({ from: Route.fullPath })
   const searchParams = Route.useSearch()
 
@@ -147,7 +149,7 @@ function CalendarPage() {
 
   return (
     <>
-      <PageHeader title="Calendar" />
+      <PageHeader title={t('calendar.title')} />
       <PageLayout maxWidth="wide" className={cn(selectedPinId && "mr-[350px]")}>
         {/* Toolbar row */}
         <div className="flex items-center justify-between mb-6">
@@ -158,10 +160,10 @@ function CalendarPage() {
               onValueChange={handleProjectChange}
             >
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Projects" />
+                <SelectValue placeholder={t('calendar.allProjects')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
+                <SelectItem value="all">{t('calendar.allProjects')}</SelectItem>
                 {projects?.map((p) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.name}
@@ -181,7 +183,7 @@ function CalendarPage() {
                     : 'text-slate-600 hover:text-slate-900'
                 )}
               >
-                Calendar
+                {t('calendar.tabCalendar')}
               </button>
               <button
                 onClick={() => handleTabChange('unscheduled')}
@@ -192,7 +194,7 @@ function CalendarPage() {
                     : 'text-slate-600 hover:text-slate-900'
                 )}
               >
-                Unscheduled
+                {t('calendar.tabUnscheduled')}
               </button>
             </div>
           </div>
@@ -203,7 +205,7 @@ function CalendarPage() {
           {filterableStatuses.map((status) => {
             const isActive = statuses?.includes(status) || false
             const colorClasses = getStatusBadgeClasses(status)
-            const label = PIN_STATUS[status].label
+            const label = t('pinStatus.' + status)
 
             return (
               <button
@@ -227,7 +229,7 @@ function CalendarPage() {
           <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
             {/* Header skeleton */}
             <div className="grid grid-cols-7 border-b border-slate-200">
-              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+              {[t('calendar.dayMon'), t('calendar.dayTue'), t('calendar.dayWed'), t('calendar.dayThu'), t('calendar.dayFri'), t('calendar.daySat'), t('calendar.daySun')].map((day) => (
                 <div
                   key={day}
                   className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
@@ -255,10 +257,10 @@ function CalendarPage() {
               scheduledPins.length === 0 ? (
                 <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
                   <p className="text-slate-600">
-                    No scheduled pins match your filters.
+                    {t('calendar.emptyScheduled')}
                   </p>
                   <p className="text-sm text-slate-500 mt-2">
-                    Try adjusting your project or status filters.
+                    {t('calendar.emptyHint')}
                   </p>
                 </div>
               ) : (

@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
@@ -30,6 +31,7 @@ export const Route = createFileRoute('/_authed/dashboard')({
 })
 
 function Dashboard() {
+  const { t } = useTranslation()
   const { data: projects, isLoading: projectsLoading, error, refetch } = useBlogProjects()
   const { data: allPins, isLoading: pinsLoading } = useAllPins()
   const { data: allArticles, isLoading: articlesLoading } = useAllArticles()
@@ -84,7 +86,7 @@ function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Dashboard" />
+      <PageHeader title={t('dashboard.title')} />
       <PageLayout maxWidth="wide" isLoading={projectsLoading} error={error ?? null} onRetry={() => refetch()}>
         {/* Stats bar */}
         <StatsBar stats={globalStats} loading={statsLoading} />
@@ -92,10 +94,10 @@ function Dashboard() {
         {/* Header with create button */}
         {projects && projects.length > 0 && (
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Your Projects</h2>
+            <h2 className="text-2xl font-bold text-slate-900">{t('dashboard.yourProjects')}</h2>
             <Button onClick={handleCreateProject}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Project
+              {t('dashboard.createProject')}
             </Button>
           </div>
         )}

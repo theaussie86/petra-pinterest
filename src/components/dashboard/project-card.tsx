@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { Pencil, Trash2, ExternalLink } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
@@ -14,6 +15,7 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: ProjectCardProps) {
+  const { t } = useTranslation()
   const displayStats = stats ?? { articles: 0, scheduled: 0, published: 0 }
 
   return (
@@ -48,7 +50,7 @@ export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: 
                 ) : (
                   <span className="font-medium text-slate-900">{displayStats.articles}</span>
                 )}
-                <span className="text-slate-500 ml-1">articles</span>
+                <span className="text-slate-500 ml-1">{t('projectCard.articles')}</span>
               </div>
               <div>
                 {statsLoading ? (
@@ -56,7 +58,7 @@ export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: 
                 ) : (
                   <span className="font-medium text-slate-900">{displayStats.scheduled}</span>
                 )}
-                <span className="text-slate-500 ml-1">scheduled</span>
+                <span className="text-slate-500 ml-1">{t('projectCard.scheduled')}</span>
               </div>
               <div>
                 {statsLoading ? (
@@ -64,7 +66,7 @@ export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: 
                 ) : (
                   <span className="font-medium text-slate-900">{displayStats.published}</span>
                 )}
-                <span className="text-slate-500 ml-1">published</span>
+                <span className="text-slate-500 ml-1">{t('projectCard.published')}</span>
               </div>
             </div>
           </div>

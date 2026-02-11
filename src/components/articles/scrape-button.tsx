@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RefreshCw, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useScrapeBlog } from '@/lib/hooks/use-articles'
@@ -10,6 +11,7 @@ interface ScrapeButtonProps {
 }
 
 export function ScrapeButton({ blogProjectId, blogUrl, sitemapUrl }: ScrapeButtonProps) {
+  const { t } = useTranslation()
   const scrapeMutation = useScrapeBlog()
   const [showSuccess, setShowSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -30,11 +32,11 @@ export function ScrapeButton({ blogProjectId, blogUrl, sitemapUrl }: ScrapeButto
   // Handle error state
   useEffect(() => {
     if (scrapeMutation.isError) {
-      setErrorMessage('Failed to scrape blog. Check your blog URL and try again.')
+      setErrorMessage(t('scrapeButton.errorScrapeFailed'))
     } else {
       setErrorMessage(null)
     }
-  }, [scrapeMutation.isError])
+  }, [scrapeMutation.isError, t])
 
   const handleClick = () => {
     setErrorMessage(null)
@@ -47,7 +49,7 @@ export function ScrapeButton({ blogProjectId, blogUrl, sitemapUrl }: ScrapeButto
 
   const getResultSummary = () => {
     if (!scrapeMutation.data) return ''
-    return 'Scrape started'
+    return t('scrapeButton.scrapeStarted')
   }
 
   return (
@@ -62,7 +64,7 @@ export function ScrapeButton({ blogProjectId, blogUrl, sitemapUrl }: ScrapeButto
         {scrapeMutation.isPending && (
           <>
             <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
-            Scraping...
+            {t('scrapeButton.scraping')}
           </>
         )}
         {showSuccess && (
@@ -74,7 +76,7 @@ export function ScrapeButton({ blogProjectId, blogUrl, sitemapUrl }: ScrapeButto
         {!scrapeMutation.isPending && !showSuccess && (
           <>
             <RefreshCw className="h-4 w-4 mr-1" />
-            Scrape Blog
+            {t('scrapeButton.scrapeBlog')}
           </>
         )}
       </Button>

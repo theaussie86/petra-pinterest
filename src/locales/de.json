@@ -1,0 +1,447 @@
+{
+  "common": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "saving": "Speichern...",
+    "delete": "Loschen",
+    "deleting": "Loschen...",
+    "edit": "Bearbeiten",
+    "create": "Erstellen",
+    "update": "Aktualisieren",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "retry": "Erneut versuchen",
+    "signOut": "Abmelden",
+    "goHome": "Startseite",
+    "untitled": "Ohne Titel",
+    "notAssigned": "Nicht zugewiesen"
+  },
+  "meta": {
+    "title": "Pinterest Management",
+    "description": "Pinterest Management Plattform"
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Seite nicht gefunden"
+  },
+  "login": {
+    "heading": "Petra",
+    "subtitle": "Pinterest-Pins fur mehrere Blogs aus einer Kalenderansicht planen",
+    "signIn": "Mit Google anmelden",
+    "redirecting": "Weiterleitung...",
+    "errorSignIn": "Anmeldung mit Google fehlgeschlagen"
+  },
+  "authCallback": {
+    "loading": "Anmeldung..."
+  },
+  "pinterestCallback": {
+    "loading": "Pinterest wird verbunden..."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "articles": "Artikel",
+    "pins": "Pins",
+    "calendar": "Kalender"
+  },
+  "language": {
+    "label": "Sprache",
+    "de": "Deutsch",
+    "en": "English"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "yourProjects": "Deine Projekte",
+    "createProject": "Projekt erstellen",
+    "empty": {
+      "heading": "Hey! Lass uns dein erstes Blog einrichten.",
+      "message": "Erstelle ein Blog, um Pinterest-Pins zu planen und deinen Content zu verwalten.",
+      "button": "Erstes Blog erstellen"
+    }
+  },
+  "stats": {
+    "scheduled": "Geplant",
+    "published": "Veroffentlicht",
+    "pending": "Ausstehend"
+  },
+  "projectCard": {
+    "articles": "Artikel",
+    "scheduled": "geplant",
+    "published": "veroffentlicht"
+  },
+  "projectDialog": {
+    "titleEdit": "Projekt bearbeiten",
+    "titleCreate": "Projekt erstellen",
+    "fieldName": "Name *",
+    "placeholderName": "Mein Blog",
+    "fieldBlogUrl": "Blog-URL *",
+    "placeholderBlogUrl": "https://meinblog.de",
+    "fieldSitemapUrl": "Sitemap-URL",
+    "placeholderSitemapUrl": "https://meinblog.de/sitemap.xml",
+    "fieldFrequency": "Scraping-Haufigkeit",
+    "placeholderFrequency": "Haufigkeit wahlen",
+    "frequencyDaily": "Taglich",
+    "frequencyWeekly": "Wochentlich",
+    "frequencyManual": "Manuell",
+    "validationNameRequired": "Name ist erforderlich",
+    "validationNameTooLong": "Name zu lang",
+    "validationInvalidUrl": "Muss eine gultige URL sein"
+  },
+  "deleteProject": {
+    "title": "Projekt loschen",
+    "message": "Bist du sicher, dass du <strong>{{name}}</strong> loschen mochtest? Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "messageText": "Bist du sicher, dass du dieses Projekt loschen mochtest? Diese Aktion kann nicht ruckgangig gemacht werden."
+  },
+  "projectDetail": {
+    "breadcrumbDashboard": "Dashboard",
+    "breadcrumbProject": "Projekt",
+    "created": "Erstellt {{date}}",
+    "scraping": "Scraping:",
+    "sitemap": "Sitemap:",
+    "sitemapNotConfigured": "Nicht konfiguriert",
+    "articles": "Artikel",
+    "addArticle": "Artikel hinzufugen",
+    "pins": "Pins",
+    "createPin": "Pin erstellen",
+    "frequencyDaily": "Taglich",
+    "frequencyWeekly": "Wochentlich",
+    "frequencyManual": "Manuell"
+  },
+  "pinterestConnection": {
+    "title": "Pinterest-Verbindung",
+    "notConnected": "Kein Pinterest-Konto verbunden",
+    "connecting": "Verbinden...",
+    "connect": "Pinterest verbinden",
+    "needsAttention": "Verbindung erfordert Aufmerksamkeit: {{error}}",
+    "connectionFailed": "Verbindung fehlgeschlagen: {{error}}.",
+    "tryAgain": "Erneut versuchen",
+    "reconnecting": "Erneut verbinden...",
+    "reconnect": "Erneut verbinden",
+    "disconnect": "Trennen",
+    "disconnecting": "Trennen...",
+    "connected": "Verbunden als @{{username}}",
+    "tokenExpires": "Token lauft ab: {{date}}",
+    "disconnectTitle": "Pinterest trennen?",
+    "disconnectMessage": "Dies trennt @{{username}} von diesem Projekt. Geplante Pins werden nicht mehr automatisch veroffentlicht. Bist du sicher?"
+  },
+  "articlesTable": {
+    "columnTitle": "Titel",
+    "columnDate": "Datum",
+    "columnPinCount": "Pin-Anzahl",
+    "columnUrl": "URL",
+    "columnArchivedOn": "Archiviert am",
+    "noDate": "Kein Datum",
+    "errorLoadFailed": "Artikel konnten nicht geladen werden",
+    "emptyArchived": "Keine archivierten Artikel.",
+    "emptyActive": "Noch keine Artikel. Blog scrapen oder Artikel manuell hinzufugen.",
+    "tabActive": "Aktiv",
+    "tabArchived": "Archiviert",
+    "restore": "Wiederherstellen",
+    "archive": "Archivieren"
+  },
+  "scrapeButton": {
+    "scrapeBlog": "Blog scrapen",
+    "scraping": "Scrapen...",
+    "scrapeStarted": "Scrape gestartet",
+    "errorScrapeFailed": "Blog-Scraping fehlgeschlagen. Uberprufe die Blog-URL und versuche es erneut."
+  },
+  "addArticle": {
+    "title": "Artikel hinzufugen",
+    "fieldUrl": "Artikel-URL *",
+    "placeholderUrl": "https://beispiel.de/artikel",
+    "hint": "Gib die URL des Artikels ein, den du hinzufugen mochtest. Er wird automatisch gescrapt.",
+    "adding": "Hinzufugen...",
+    "addButton": "Artikel hinzufugen",
+    "validationUrlRequired": "URL ist erforderlich",
+    "validationInvalidUrl": "Muss eine gultige URL sein, die mit http:// oder https:// beginnt",
+    "errorAddFailed": "Artikel konnte nicht hinzugefugt werden. Bitte uberprufe die URL und versuche es erneut."
+  },
+  "pinStatus": {
+    "draft": "Entwurf",
+    "ready_for_generation": "Bereit fur Generierung",
+    "generate_metadata": "Metadaten generieren",
+    "generating_metadata": "Metadaten werden generiert",
+    "metadata_created": "Metadaten erstellt",
+    "ready_to_schedule": "Bereit zum Planen",
+    "publishing": "Wird veroffentlicht",
+    "published": "Veroffentlicht",
+    "error": "Fehler",
+    "deleted": "Geloscht"
+  },
+  "pinsList": {
+    "errorLoadFailed": "Pins konnten nicht geladen werden",
+    "all": "Alle",
+    "selectAll": "Alle auswahlen",
+    "selected": "{{count}} ausgewahlt",
+    "generate": "Generieren ({{count}})",
+    "schedule": "Planen ({{count}})",
+    "publish": "Veroffentlichen ({{count}})",
+    "changeStatus": "Status andern",
+    "sort": "Sortieren",
+    "sortTitle": "Titel",
+    "sortStatus": "Status",
+    "sortCreated": "Erstellt",
+    "sortUpdated": "Aktualisiert",
+    "sortAZ": "(A-Z)",
+    "sortZA": "(Z-A)",
+    "sortOldest": "(alteste)",
+    "sortNewest": "(neueste)",
+    "columnImage": "Bild",
+    "columnTitle": "Titel",
+    "columnArticle": "Artikel",
+    "columnStatus": "Status",
+    "columnScheduled": "Geplant",
+    "columnCreated": "Erstellt",
+    "unknownArticle": "Unbekannter Artikel",
+    "viewEdit": "Ansehen / Bearbeiten",
+    "emptyAll": "Noch keine Pins. Lade Bilder hoch, um Pins zu erstellen.",
+    "emptyStatus": "Keine Pins mit Status \"{{status}}\".",
+    "deletePinsTitle": "{{count}} Pin loschen",
+    "deletePinsTitle_plural": "{{count}} Pins loschen",
+    "deletePinsMessage": "Bist du sicher, dass du {{count}} ausgewahlte(n) Pin(s) loschen mochtest? Die zugehorigen Bilder werden ebenfalls aus dem Speicher entfernt. Diese Aktion kann nicht ruckgangig gemacht werden.",
+    "deleteSingleTitle": "Pin loschen",
+    "deleteSingleMessage": "Bist du sicher, dass du diesen Pin loschen mochtest? Das zugehorige Bild wird ebenfalls aus dem Speicher entfernt. Diese Aktion kann nicht ruckgangig gemacht werden."
+  },
+  "deletePin": {
+    "title": "Pin loschen",
+    "message": "Bist du sicher, dass du <strong>{{title}}</strong> loschen mochtest? Das zugehorige Bild wird ebenfalls aus dem Speicher entfernt. Diese Aktion kann nicht ruckgangig gemacht werden."
+  },
+  "createPin": {
+    "titleSingle": "Pin erstellen",
+    "titleMultiple": "{{count}} Pins erstellen",
+    "fieldArticle": "Artikel *",
+    "placeholderArticle": "Artikel auswahlen",
+    "noArticles": "Keine Artikel gefunden. Fuge zuerst Artikel zu diesem Projekt hinzu.",
+    "fieldBoard": "Board (optional)",
+    "placeholderBoard": "Board auswahlen (optional)",
+    "noBoards": "Noch keine Boards synchronisiert. Du kannst Boards spater zuweisen.",
+    "fieldImages": "Bilder *",
+    "uploading": "Hochladen...",
+    "createButton": "{{count}} Pin erstellen",
+    "createButton_plural": "{{count}} Pins erstellen",
+    "validationImageRequired": "Bitte wahle mindestens ein Bild aus",
+    "validationArticleRequired": "Bitte wahle einen Artikel aus",
+    "errorCreateFailed": "Pins konnten nicht erstellt werden. Bitte versuche es erneut."
+  },
+  "editPin": {
+    "title": "Pin bearbeiten",
+    "fieldTitle": "Titel",
+    "placeholderTitle": "Pin-Titel",
+    "fieldDescription": "Beschreibung",
+    "placeholderDescription": "Pin-Beschreibung",
+    "fieldAltText": "Alternativtext",
+    "placeholderAltText": "Beschreibe das Bild fur Barrierefreiheit",
+    "fieldBoard": "Board",
+    "placeholderBoard": "Board auswahlen",
+    "fieldStatus": "Status",
+    "validationTitleTooLong": "Titel zu lang",
+    "validationDescriptionTooLong": "Beschreibung zu lang",
+    "validationAltTextTooLong": "Alternativtext zu lang"
+  },
+  "imageUpload": {
+    "dropMessage": "Bilder hier ablegen oder ",
+    "browseFiles": "Dateien durchsuchen",
+    "hint": "Unterstutzt Drag-Drop, Dateiauswahl und Einfugen aus der Zwischenablage",
+    "count": "{{count}} Bild ausgewahlt",
+    "count_plural": "{{count}} Bilder ausgewahlt",
+    "warningAspectRatio": "Nicht 2:3"
+  },
+  "metadataHistory": {
+    "title": "Metadaten-Verlauf",
+    "empty": "Noch kein Generierungsverlauf",
+    "current": "Aktuell",
+    "feedback": "Feedback: {{feedback}}",
+    "useVersion": "Diese Version verwenden",
+    "fieldTitle": "Titel: ",
+    "fieldDescription": "Beschreibung: ",
+    "fieldAltText": "Alternativtext: "
+  },
+  "regenerateFeedback": {
+    "title": "Metadaten neu generieren",
+    "fieldFeedback": "Wie sollen die Metadaten verbessert werden?",
+    "placeholderFeedback": "z.B. kurzer machen, auf Back-Keywords fokussieren, mehr Dringlichkeit hinzufugen...",
+    "regenerating": "Neu generieren...",
+    "regenerate": "Neu generieren"
+  },
+  "bulkSchedule": {
+    "title": "Pins planen",
+    "description": "{{count}} Pins uber mehrere Termine verteilen",
+    "fieldStartDate": "Startdatum",
+    "placeholderDate": "Datum wahlen",
+    "fieldTime": "Uhrzeit",
+    "fieldInterval": "Tage zwischen Pins",
+    "previewTitle": "Vorschau:",
+    "previewItem": "Pin {{n}}: {{date}} um {{time}}",
+    "previewMore": "und {{count}} weitere...",
+    "scheduling": "Planen...",
+    "scheduleAll": "Alle planen"
+  },
+  "generateMetadata": {
+    "title": "KI-Metadaten",
+    "generating": "Metadaten werden generiert...",
+    "generatingButton": "Generieren...",
+    "generate": "Metadaten generieren",
+    "regenerateFeedback": "Mit Feedback neu generieren",
+    "viewHistory": "Verlauf anzeigen",
+    "regenerate": "Neu generieren"
+  },
+  "schedulePin": {
+    "title": "Zeitplan",
+    "noMetadata": "Generiere zuerst Metadaten, bevor du planst",
+    "fieldDate": "Datum",
+    "placeholderDate": "Datum wahlen",
+    "fieldTime": "Uhrzeit",
+    "schedule": "Planen",
+    "clearSchedule": "Zeitplan loschen"
+  },
+  "publishPin": {
+    "published": "Veroffentlicht",
+    "publishing": "Veroffentlichen...",
+    "retrying": "Erneut versuchen...",
+    "retryPublish": "Erneut veroffentlichen",
+    "publish": "Veroffentlichen",
+    "tooltipNoConnection": "Verbinde Pinterest in den Projekteinstellungen",
+    "tooltipNoBoard": "Weise zuerst ein Pinterest-Board zu"
+  },
+  "articlesPage": {
+    "title": "Artikel",
+    "allProjects": "Alle Projekte",
+    "addArticle": "Artikel hinzufugen",
+    "scrape": "Scrapen",
+    "selectProject": "Wahle zuerst ein Projekt",
+    "columnProject": "Projekt",
+    "unknown": "Unbekannt"
+  },
+  "pinsPage": {
+    "title": "Pins",
+    "allProjects": "Alle Projekte",
+    "createPin": "Pin erstellen",
+    "selectProject": "Wahle zuerst ein Projekt",
+    "columnProject": "Projekt",
+    "unknown": "Unbekannt"
+  },
+  "calendar": {
+    "title": "Kalender",
+    "allProjects": "Alle Projekte",
+    "tabCalendar": "Kalender",
+    "tabUnscheduled": "Ungeplant",
+    "emptyScheduled": "Keine geplanten Pins entsprechen deinen Filtern.",
+    "emptyHint": "Versuche, deine Projekt- oder Statusfilter anzupassen.",
+    "today": "Heute",
+    "viewMonth": "Monat",
+    "viewWeek": "Woche",
+    "dayMon": "Mo",
+    "dayTue": "Di",
+    "dayWed": "Mi",
+    "dayThu": "Do",
+    "dayFri": "Fr",
+    "daySat": "Sa",
+    "daySun": "So",
+    "allPinsFor": "Alle Pins fur {{date}}"
+  },
+  "unscheduledPins": {
+    "emptyMessage": "Keine ungeplanten Pins entsprechen deinen Filtern.",
+    "emptyHint": "Versuche, deine Projekt- oder Statusfilter anzupassen.",
+    "columnImage": "Bild",
+    "columnTitle": "Titel",
+    "columnProject": "Projekt",
+    "columnStatus": "Status",
+    "columnCreated": "Erstellt",
+    "unknownProject": "Unbekanntes Projekt",
+    "more": "+{{count}} weitere"
+  },
+  "pinSidebar": {
+    "title": "Pin-Details",
+    "saveChanges": "Anderungen speichern",
+    "viewOnPinterest": "Auf Pinterest ansehen",
+    "article": "Artikel",
+    "openFullDetail": "Vollansicht offnen"
+  },
+  "pinDetail": {
+    "breadcrumbDashboard": "Dashboard",
+    "breadcrumbProject": "Projekt",
+    "breadcrumbPin": "Pin",
+    "title": "Pin-Details",
+    "description": "Beschreibung",
+    "noDescription": "Keine Beschreibung",
+    "altText": "Alternativtext",
+    "noAltText": "Kein Alternativtext",
+    "status": "Status",
+    "article": "Artikel",
+    "board": "Board",
+    "created": "Erstellt",
+    "updated": "Aktualisiert",
+    "scheduled": "Geplant",
+    "errorTitle": "Fehler",
+    "unknownError": "Ein unbekannter Fehler ist aufgetreten.",
+    "resetStatus": "Status zurucksetzen",
+    "resetting": "Zurucksetzen..."
+  },
+  "articleDetail": {
+    "breadcrumbDashboard": "Dashboard",
+    "breadcrumbProject": "Projekt",
+    "breadcrumbArticle": "Artikel",
+    "viewOriginal": "Original ansehen",
+    "archive": "Archivieren",
+    "restore": "Wiederherstellen",
+    "published": "Veroffentlicht {{date}}",
+    "scraped": "Gescrapt {{date}}",
+    "pins": "{{count}} Pins",
+    "noContent": "Kein Inhalt verfugbar. Der Artikelinhalt konnte nicht gescrapt werden."
+  },
+  "toast": {
+    "project": {
+      "created": "Projekt erstellt",
+      "createFailed": "Projekt konnte nicht erstellt werden",
+      "updated": "Projekt aktualisiert",
+      "updateFailed": "Projekt konnte nicht aktualisiert werden",
+      "deleted": "Projekt geloscht",
+      "deleteFailed": "Projekt konnte nicht geloscht werden"
+    },
+    "article": {
+      "scrapeStarted": "Blog-Scraping gestartet. Artikel erscheinen in Kurze.",
+      "scrapeFailed": "Blog-Scraping fehlgeschlagen. Uberprufe die Blog-URL und versuche es erneut.",
+      "archived": "Artikel archiviert",
+      "archiveFailed": "Artikel konnte nicht archiviert werden",
+      "restored": "Artikel wiederhergestellt",
+      "restoreFailed": "Artikel konnte nicht wiederhergestellt werden",
+      "added": "Artikel erfolgreich hinzugefugt",
+      "addFailed": "Artikel konnte nicht hinzugefugt werden. Uberprufe die URL und versuche es erneut."
+    },
+    "pin": {
+      "created": "Pin erstellt",
+      "createFailed": "Pin konnte nicht erstellt werden: {{error}}",
+      "multipleCreated": "{{count}} Pins erstellt",
+      "multipleCreateFailed": "Pins konnten nicht erstellt werden: {{error}}",
+      "updated": "Pin aktualisiert",
+      "updateFailed": "Pin konnte nicht aktualisiert werden: {{error}}",
+      "deleted": "Pin geloscht",
+      "deleteFailed": "Pin konnte nicht geloscht werden: {{error}}",
+      "multipleDeleted": "{{count}} Pins geloscht",
+      "multipleDeleteFailed": "Pins konnten nicht geloscht werden: {{error}}",
+      "statusUpdated": "Status fur {{count}} Pins aktualisiert",
+      "statusUpdateFailed": "Pin-Status konnte nicht aktualisiert werden: {{error}}",
+      "scheduled": "{{count}} Pins geplant",
+      "scheduleFailed": "Pins konnten nicht geplant werden: {{error}}"
+    },
+    "metadata": {
+      "generated": "Metadaten generiert",
+      "generateFailed": "Metadaten konnten nicht generiert werden",
+      "regenerated": "Metadaten neu generiert",
+      "regenerateFailed": "Metadaten konnten nicht neu generiert werden",
+      "bulkStarted": "Metadaten-Generierung fur {{count}} Pins gestartet",
+      "bulkFailed": "Bulk-Metadaten-Generierung konnte nicht gestartet werden",
+      "restored": "Metadaten wiederhergestellt",
+      "restoreFailed": "Metadaten konnten nicht wiederhergestellt werden"
+    },
+    "publish": {
+      "published": "Pin auf Pinterest veroffentlicht!",
+      "failed": "Veroffentlichung fehlgeschlagen: {{error}}",
+      "bulkSuccess": "{{published}}/{{total}} Pins veroffentlicht",
+      "bulkFailed": "Bulk-Veroffentlichung fehlgeschlagen: {{error}}"
+    },
+    "pinterest": {
+      "connected": "Pinterest erfolgreich verbunden!",
+      "disconnected": "Pinterest getrennt"
+    }
+  }
+}
