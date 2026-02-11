@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { CalendarHeader } from './calendar-header'
 import { CalendarDayCell } from './calendar-day-cell'
+import { CalendarWeekGrid } from './calendar-week-grid'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
 
 interface CalendarGridProps {
@@ -59,21 +60,28 @@ export function CalendarGrid({
     return grouped
   }, [pins])
 
-  // Handle pin drop - reschedule to new date, keeping same time
+  // Handle pin drop - reschedule to new date
   const handlePinDrop = (pinId: string, targetDate: Date) => {
-    // Find the pin to get its existing scheduled_at time
-    const pin = pins.find((p) => p.id === pinId)
-    if (!pin || !pin.scheduled_at) return
+    if (view === 'week') {
+      // Week view: targetDate already has correct hour/minute from drop position
+      updatePin.mutate({
+        id: pinId,
+        scheduled_at: targetDate.toISOString(),
+      })
+    } else {
+      // Month view: keep existing time, change only the date
+      const pin = pins.find((p) => p.id === pinId)
+      if (!pin || !pin.scheduled_at) return
 
-    const existingDate = new Date(pin.scheduled_at)
-    const newDate = new Date(targetDate)
-    // Keep the same time, change the date
-    newDate.setHours(existingDate.getHours(), existingDate.getMinutes(), 0, 0)
+      const existingDate = new Date(pin.scheduled_at)
+      const newDate = new Date(targetDate)
+      newDate.setHours(existingDate.getHours(), existingDate.getMinutes(), 0, 0)
 
-    updatePin.mutate({
-      id: pinId,
-      scheduled_at: newDate.toISOString(),
-    })
+      updatePin.mutate({
+        id: pinId,
+        scheduled_at: newDate.toISOString(),
+      })
+    }
   }
 
   // Compute calendar grid days
@@ -115,22 +123,28 @@ export function CalendarGrid({
       />
 
       {/* Calendar grid */}
-      <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-        {/* Day of week header */}
-        <div className="grid grid-cols-7 border-b border-slate-200">
-          {DAYS_OF_WEEK.map((day) => (
-            <div
-              key={day}
-              className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
+      {view === 'week' ? (
+        <CalendarWeekGrid
+          pins={pins}
+          currentDate={currentDate}
+          onPinClick={onPinClick}
+          onPinDrop={handlePinDrop}
+        />
+      ) : (
+        <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+          {/* Day of week header */}
+          <div className="grid grid-cols-7 border-b border-slate-200">
+            {DAYS_OF_WEEK.map((day) => (
+              <div
+                key={day}
+                className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
+              >
+                {day}
+              </div>
+            ))}
+          </div>
 
-        {/* Calendar cells */}
-        {view === 'month' ? (
-          // Month view: 6 rows of 7 days
+          {/* Month view: 6 rows of 7 days */}
           <div className="grid grid-cols-7">
             {calendarDays.map((date) => {
               const dateKey = format(date, 'yyyy-MM-dd')
@@ -149,28 +163,8 @@ export function CalendarGrid({
               )
             })}
           </div>
-        ) : (
-          // Week view: 1 row of 7 days
-          <div className="grid grid-cols-7">
-            {calendarDays.map((date) => {
-              const dateKey = format(date, 'yyyy-MM-dd')
-              const dayPins = pinsByDate.get(dateKey) || []
-              return (
-                <CalendarDayCell
-                  key={dateKey}
-                  date={date}
-                  pins={dayPins}
-                  isCurrentMonth={true} // All days in week view are "current"
-                  isToday={isToday(date)}
-                  view={view}
-                  onPinClick={onPinClick}
-                  onPinDrop={handlePinDrop}
-                />
-              )
-            })}
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
