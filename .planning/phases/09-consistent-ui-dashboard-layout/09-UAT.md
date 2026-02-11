@@ -1,136 +1,85 @@
 ---
-status: complete
+status: diagnosed
 phase: 09-consistent-ui-dashboard-layout
-source: 09-01-SUMMARY.md, 09-02-SUMMARY.md, 09-03-SUMMARY.md, 09-04-SUMMARY.md, 09-05-SUMMARY.md
-started: 2026-02-10T22:00:00Z
-updated: 2026-02-10T22:15:00Z
+source: 09-06-SUMMARY.md, 09-07-SUMMARY.md
+started: 2026-02-10T23:00:00Z
+updated: 2026-02-10T23:20:00Z
 ---
 
 ## Current Test
-<!-- OVERWRITE each test - shows where we are -->
 
 [testing complete]
 
 ## Tests
 
-### 1. Sidebar Navigation Visible
-expected: On any authenticated page, a left sidebar shows "Petra" branding, Dashboard + Calendar nav items with active state highlighting, and user info (avatar, name, email) in the footer.
-result: issue
-reported: "The brand name should be PinMa which is short for Pinterest Management. I still miss a button that indicates toggling the sidebar width, although the functionality is there when clicking on the border. And the biggest problem is that the sidebar sits on top of the main content and hides the left side of the main content. It should be part of the main layout and the main content in the middle should adjust its size according to the width of the menu sidebar. And the menu items are not centered properly and the padding seem to be a bit off."
-severity: major
-
-### 2. Sidebar Collapse/Expand
-expected: Clicking the sidebar trigger button (hamburger/arrow icon in the page header area) collapses the sidebar. The main content area expands to fill the available space. Clicking again expands the sidebar back.
-result: issue
-reported: "pass for mobile. there is no button visible. it collapses clicking the border, which is okay. The main content doesn't adjust to the available space. The sidebar seems to be on top of the main content and not next to it in the layout flow."
-severity: major
-
-### 3. Sidebar User Menu
-expected: Clicking the user section in the sidebar footer opens a dropdown menu showing the user's email and a "Sign out" option.
+### 1. Sidebar In Layout Flow (Not Overlay)
+expected: On any authenticated page, the sidebar sits beside the main content in a flex layout — NOT overlapping it. All main content is fully visible with no left portion hidden behind the sidebar.
 result: pass
 
-### 4. Dashboard Uses PageLayout
-expected: The Dashboard page shows a "Dashboard" title in the page header area. Content is contained within a wide max-width container (not full-bleed). No old-style top navigation bar is visible.
+### 2. Sidebar Collapse Resizes Content
+expected: Collapsing the sidebar (clicking the border) causes the main content area to expand and fill the freed space. Expanding the sidebar shrinks the content area. No content is hidden during either state.
 result: pass
 
-### 5. Calendar Uses PageLayout
-expected: The Calendar page shows a "Calendar" title in the page header. Calendar filters, status chips, and grid render correctly within the layout. Opening the right pin sidebar does NOT conflict with the left app sidebar.
+### 3. Brand Name Shows "PinMa"
+expected: The sidebar header displays "PinMa" (not "Petra") as the brand name.
 result: issue
-reported: "pass. but the main content is still behind the app side bar and the left part is hidden."
-severity: major
-
-### 6. Project Detail Breadcrumbs
-expected: Navigating to a project detail page shows breadcrumbs: "Dashboard > [Project Name]". Clicking "Dashboard" in the breadcrumbs navigates back to the dashboard.
-result: pass
-
-### 7. Article Detail Breadcrumbs and Layout
-expected: Navigating to an article detail page shows breadcrumbs: "Dashboard > [Article Title]". Content uses a narrow container width suitable for reading.
-result: issue
-reported: "pass. but I wanted the breadcrumbs and url to match this pattern: /projects/[PROJ_ID/NAME]/articles/[ARTICLE_ID/NAME]"
+reported: "pass. but when the sidebar is shrinked PinMa doesn't shrink with it. Let's add the Logo + PinMa when the sidebar is big and Only the logo when the sidebar is shrinked."
 severity: minor
 
-### 8. Pin Detail Breadcrumbs and Layout
-expected: Navigating to a pin detail page shows breadcrumbs: "Dashboard > [Pin Title]". Pin actions (edit, delete, status, scheduling, metadata, publish) are visible in the page header area.
+### 4. Sidebar Menu Alignment
+expected: Sidebar navigation items (Dashboard, Calendar) and the user footer section are properly aligned with consistent padding. No items appear off-center or cramped.
 result: issue
-reported: "same as with articles. url and breadcrumbs should be /projects/[project]/pins/[pin]"
-severity: minor
+reported: "The sidebar navigation Items are too far to the left. and when shrinked the icon and the Avatar of the user look off."
+severity: major
 
-### 9. Compact Page Header
-expected: The page header on all pages uses compact spacing — it should not take up excessive vertical space. Title text is modestly sized (not overly large).
+### 5. Calendar Not Hidden by Sidebar
+expected: The Calendar page content (filters, status chips, grid) is fully visible and not hidden behind the sidebar. Opening the right pin sidebar does NOT conflict with the left app sidebar.
 result: pass
 
-### 10. No Content Overlap with Sidebar
-expected: When the sidebar is expanded, the main content area shifts to the right and does not hide behind the sidebar. All content remains visible and accessible.
-result: issue
-reported: "No, the content is still hidden behind the sidebar."
-severity: major
+### 6. Article Nested URL and Breadcrumbs
+expected: Navigating to an article detail page shows URL pattern /projects/{projectId}/articles/{articleId}. Breadcrumbs show "Dashboard > [Project Name] > [Article Title]". Clicking "Dashboard" navigates to dashboard, clicking project name navigates to project page.
+result: pass
+
+### 7. Pin Nested URL and Breadcrumbs
+expected: Navigating to a pin detail page shows URL pattern /projects/{projectId}/pins/{pinId}. Breadcrumbs show "Dashboard > [Project Name] > [Pin Title]". Clicking project name navigates to project page.
+result: pass
 
 ## Summary
 
-total: 10
-passed: 4
-issues: 6
+total: 7
+passed: 5
+issues: 2
 pending: 0
 skipped: 0
 
 ## Gaps
 
-- truth: "Sidebar is part of the main layout with proper branding, toggle button, centered menu items, and content area adjusts to sidebar width"
+- truth: "Sidebar header shows Logo + 'PinMa' when expanded, only Logo when collapsed"
   status: failed
-  reason: "User reported: The brand name should be PinMa which is short for Pinterest Management. I still miss a button that indicates toggling the sidebar width, although the functionality is there when clicking on the border. And the biggest problem is that the sidebar sits on top of the main content and hides the left side of the main content. It should be part of the main layout and the main content in the middle should adjust its size according to the width of the menu sidebar. And the menu items are not centered properly and the padding seem to be a bit off."
-  severity: major
-  test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
-
-- truth: "Sidebar collapse/expand causes main content area to adjust its width to fill available space"
-  status: failed
-  reason: "User reported: pass for mobile. there is no button visible. it collapses clicking the border, which is okay. The main content doesn't adjust to the available space. The sidebar seems to be on top of the main content and not next to it in the layout flow."
-  severity: major
-  test: 2
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
-
-- truth: "Calendar main content is fully visible and not hidden behind the app sidebar"
-  status: failed
-  reason: "User reported: pass. but the main content is still behind the app side bar and the left part is hidden."
-  severity: major
-  test: 5
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
-
-- truth: "Article breadcrumbs and URL follow nested pattern /projects/[project]/articles/[article]"
-  status: failed
-  reason: "User reported: pass. but I wanted the breadcrumbs and url to match this pattern: /projects/[PROJ_ID/NAME]/articles/[ARTICLE_ID/NAME]"
+  reason: "User reported: pass. but when the sidebar is shrinked PinMa doesn't shrink with it. Let's add the Logo + PinMa when the sidebar is big and Only the logo when the sidebar is shrinked."
   severity: minor
-  test: 7
-  root_cause: ""
-  artifacts: []
-  missing: []
+  test: 3
+  root_cause: "SidebarHeader in app-sidebar.tsx:54-56 renders static text 'PinMa' with no collapse-awareness. The useSidebar() hook is not imported or used, so the text never hides. Need to add a logo/icon element and conditionally show text only when state === 'expanded'."
+  artifacts:
+    - path: "src/components/layout/app-sidebar.tsx"
+      issue: "Header always shows 'PinMa' text regardless of sidebar state (line 54-56), no logo icon present, useSidebar() not imported"
+  missing:
+    - "Import useSidebar from sidebar.tsx"
+    - "Add a logo icon (e.g. Pin icon from lucide-react) that always shows"
+    - "Conditionally render 'PinMa' text only when sidebar is expanded"
   debug_session: ""
 
-- truth: "Pin breadcrumbs and URL follow nested pattern /projects/[project]/pins/[pin]"
+- truth: "Sidebar navigation items and user avatar are properly centered and aligned in both expanded and collapsed states"
   status: failed
-  reason: "User reported: same as with articles. url and breadcrumbs should be /projects/[project]/pins/[pin]"
-  severity: minor
-  test: 8
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
-
-- truth: "Main content area shifts right when sidebar is expanded, all content visible and accessible"
-  status: failed
-  reason: "User reported: No, the content is still hidden behind the sidebar."
+  reason: "User reported: The sidebar navigation Items are too far to the left. and when shrinked the icon and the Avatar of the user look off."
   severity: major
-  test: 10
-  root_cause: ""
-  artifacts: []
-  missing: []
+  test: 4
+  root_cause: "SidebarMenu is placed directly inside SidebarContent without a SidebarGroup wrapper (app-sidebar.tsx:58-75). SidebarGroup provides p-2 padding for proper alignment. Similarly, SidebarFooter menu lacks SidebarGroup. When collapsed, the icon-only mode (SidebarMenuButton gets !size-8 !p-2) needs items centered within the 3rem sidebar width, but without SidebarGroup padding the items sit at the left edge. The footer avatar (h-6 w-6) also needs centering adjustment in collapsed state."
+  artifacts:
+    - path: "src/components/layout/app-sidebar.tsx"
+      issue: "SidebarMenu not wrapped in SidebarGroup (lines 58-75), causing missing padding and alignment. Footer menu (lines 78-101) same issue."
+  missing:
+    - "Wrap SidebarMenu in SidebarGroup for proper padding in both expanded and collapsed states"
+    - "Wrap footer SidebarMenu in SidebarGroup"
+    - "Use size='lg' on footer SidebarMenuButton for proper collapsed centering of avatar"
   debug_session: ""

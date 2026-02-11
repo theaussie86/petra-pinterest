@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Calendar, LogOut, ChevronsUpDown, Pin } from "lucide-react";
+import { LayoutDashboard, Calendar, LogOut, ChevronsUpDown } from "lucide-react";
 import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
 import {
@@ -11,9 +11,10 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarRail,
-  useSidebar,
   SidebarGroup,
+  useSidebar,
 } from "@/components/ui/sidebar";
+import { Logo } from "@/components/ui/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +33,7 @@ const navItems = [
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const navigate = useNavigate();
-  const { state } = useSidebar();
+  const {state} = useSidebar();
 
   const handleSignOut = async () => {
     try {
@@ -58,12 +59,10 @@ export function AppSidebar({ user }: AppSidebarProps) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <Pin className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <Logo className="size-8! text-primary" />
+                {state === "expanded" ? <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">PinMa</span>
-                </div>
+                </div> : null}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -100,8 +99,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-medium text-white">
                       {initials}
                     </div>
-                    <span>{user.display_name}</span>
-                    <ChevronsUpDown className="ml-auto h-4 w-4" />
+                    {state === "expanded" ? (
+                      <>
+                        <span>{user.display_name}</span>
+                        <ChevronsUpDown className="ml-auto h-4 w-4" />
+                      </>
+                    ) : null}
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" side="top" className="w-56">
