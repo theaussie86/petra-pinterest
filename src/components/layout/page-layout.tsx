@@ -5,7 +5,7 @@ import { LoadingSpinner } from "./loading-spinner";
 import { ErrorState } from "./error-state";
 
 const containerVariants = cva(
-  "mx-auto px-4 sm:px-6 lg:px-8 py-8",
+  "w-full mx-auto px-4 sm:px-6 lg:px-8 py-8",
   {
     variants: {
       maxWidth: {
