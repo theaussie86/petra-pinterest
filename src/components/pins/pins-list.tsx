@@ -5,7 +5,6 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  MoreHorizontal,
   LayoutGrid,
   LayoutList,
   Trash2,
@@ -42,9 +41,8 @@ import {
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { PinCard } from '@/components/pins/pin-card'
 import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
-import { usePins, useAllPins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
-import { useArticles, useAllArticles } from '@/lib/hooks/use-articles'
-import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
+import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
+import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { getPinImageUrl } from '@/lib/api/pins'
@@ -54,7 +52,7 @@ import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
 type SortDirection = 'asc' | 'desc'
 
 interface PinsListProps {
-  projectId?: string
+  projectId: string
 }
 
 const STATUS_TABS = ['all', 'draft', 'ready_for_generation', 'error'] as const
@@ -71,25 +69,9 @@ export function PinsList({ projectId }: PinsListProps) {
   const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false)
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<string | null>(null)
 
-  // Always call both hooks; `enabled` inside controls which fires
-  const projectPinsQuery = usePins(projectId ?? '')
-  const allPinsQuery = useAllPins()
-  const pins = projectId ? projectPinsQuery.data : allPinsQuery.data
-  const isLoading = projectId ? projectPinsQuery.isLoading : allPinsQuery.isLoading
-  const error = projectId ? projectPinsQuery.error : allPinsQuery.error
+  const { data: pins, isLoading, error } = usePins(projectId)
+  const { data: articles } = useArticles(projectId)
 
-  const projectArticlesQuery = useArticles(projectId ?? '')
-  const allArticlesQuery = useAllArticles()
-  const articles = projectId ? projectArticlesQuery.data : allArticlesQuery.data
-
-  // Build project name lookup for cross-project mode
-  const { data: projects } = useBlogProjects()
-  const projectMap = useMemo(() => {
-    if (!projects) return new Map<string, string>()
-    return new Map(projects.map((p) => [p.id, p.name]))
-  }, [projects])
-
-  const isCrossProject = !projectId
   const bulkDeleteMutation = useBulkDeletePins()
   const bulkStatusMutation = useBulkUpdatePinStatus()
   const deletePinMutation = useDeletePin()
@@ -430,7 +412,6 @@ export function PinsList({ projectId }: PinsListProps) {
                       {t('pinsList.columnTitle')} {getSortIcon('title')}
                     </TableHead>
                     <TableHead className="w-[200px]">{t('pinsList.columnArticle')}</TableHead>
-                    {isCrossProject && <TableHead className="w-[180px]">Project</TableHead>}
                     <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
                       {t('pinsList.columnStatus')} {getSortIcon('status')}
                     </TableHead>
@@ -438,7 +419,7 @@ export function PinsList({ projectId }: PinsListProps) {
                     <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
                       {t('pinsList.columnCreated')} {getSortIcon('created_at')}
                     </TableHead>
-                    <TableHead className="w-[50px]" />
+                    <TableHead className="w-[100px]" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -479,17 +460,6 @@ export function PinsList({ projectId }: PinsListProps) {
                           {articleMap.get(pin.blog_article_id) || t('pinsList.unknownArticle')}
                         </span>
                       </TableCell>
-                      {isCrossProject && (
-                        <TableCell>
-                          <Link
-                            to="/projects/$id"
-                            params={{ id: pin.blog_project_id }}
-                            className="text-sm text-slate-600 hover:text-blue-600 hover:underline"
-                          >
-                            {projectMap.get(pin.blog_project_id) || 'Unknown'}
-                          </Link>
-                        </TableCell>
-                      )}
                       <TableCell>
                         <PinStatusBadge status={pin.status} />
                       </TableCell>
@@ -500,26 +470,21 @@ export function PinsList({ projectId }: PinsListProps) {
                         {formatDate(pin.created_at)}
                       </TableCell>
                       <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }}>
-                                {t('pinsList.viewEdit')}
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onClick={() => handleDeletePin(pin.id)}
-                            >
-                              {t('common.delete')}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }}>
+                              {t('pinsList.viewEdit')}
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeletePin(pin.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
