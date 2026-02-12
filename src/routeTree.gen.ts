@@ -18,6 +18,7 @@ import { Route as AuthedPinsRouteImport } from './routes/_authed/pins'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedCalendarRouteImport } from './routes/_authed/calendar'
 import { Route as AuthedArticlesRouteImport } from './routes/_authed/articles'
+import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed/projects/index'
 import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pinterest.callback'
 import { Route as AuthedProjectsIdRouteImport } from './routes/_authed/projects/$id'
 import { Route as AuthedProjectsProjectIdPinsPinIdRouteImport } from './routes/_authed/projects/$projectId/pins/$pinId'
@@ -67,6 +68,11 @@ const AuthedArticlesRoute = AuthedArticlesRouteImport.update({
   path: '/articles',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedProjectsIndexRoute = AuthedProjectsIndexRouteImport.update({
+  id: '/projects/',
+  path: '/projects/',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthPinterestCallbackRoute = AuthPinterestCallbackRouteImport.update({
   id: '/auth/pinterest/callback',
   path: '/auth/pinterest/callback',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/auth/callback': typeof AuthCallbackRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
+  '/projects/': typeof AuthedProjectsIndexRoute
   '/projects/$projectId/articles/$articleId': typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   '/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
 }
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/auth/callback': typeof AuthCallbackRoute
   '/projects/$id': typeof AuthedProjectsIdRoute
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
+  '/projects': typeof AuthedProjectsIndexRoute
   '/projects/$projectId/articles/$articleId': typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   '/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
 }
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/auth/callback': typeof AuthCallbackRoute
   '/_authed/projects/$id': typeof AuthedProjectsIdRoute
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
+  '/_authed/projects/': typeof AuthedProjectsIndexRoute
   '/_authed/projects/$projectId/articles/$articleId': typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   '/_authed/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
 }
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/projects/$id'
     | '/auth/pinterest/callback'
+    | '/projects/'
     | '/projects/$projectId/articles/$articleId'
     | '/projects/$projectId/pins/$pinId'
   fileRoutesByTo: FileRoutesByTo
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/projects/$id'
     | '/auth/pinterest/callback'
+    | '/projects'
     | '/projects/$projectId/articles/$articleId'
     | '/projects/$projectId/pins/$pinId'
   id:
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/auth/callback'
     | '/_authed/projects/$id'
     | '/auth/pinterest/callback'
+    | '/_authed/projects/'
     | '/_authed/projects/$projectId/articles/$articleId'
     | '/_authed/projects/$projectId/pins/$pinId'
   fileRoutesById: FileRoutesById
@@ -254,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedArticlesRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/projects/': {
+      id: '/_authed/projects/'
+      path: '/projects'
+      fullPath: '/projects/'
+      preLoaderRoute: typeof AuthedProjectsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/auth/pinterest/callback': {
       id: '/auth/pinterest/callback'
       path: '/auth/pinterest/callback'
@@ -291,6 +310,7 @@ interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedPinsRoute: typeof AuthedPinsRoute
   AuthedProjectsIdRoute: typeof AuthedProjectsIdRoute
+  AuthedProjectsIndexRoute: typeof AuthedProjectsIndexRoute
   AuthedProjectsProjectIdArticlesArticleIdRoute: typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   AuthedProjectsProjectIdPinsPinIdRoute: typeof AuthedProjectsProjectIdPinsPinIdRoute
 }
@@ -301,6 +321,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedPinsRoute: AuthedPinsRoute,
   AuthedProjectsIdRoute: AuthedProjectsIdRoute,
+  AuthedProjectsIndexRoute: AuthedProjectsIndexRoute,
   AuthedProjectsProjectIdArticlesArticleIdRoute:
     AuthedProjectsProjectIdArticlesArticleIdRoute,
   AuthedProjectsProjectIdPinsPinIdRoute: AuthedProjectsProjectIdPinsPinIdRoute,
