@@ -159,6 +159,17 @@
     "fieldTopicContext": "Themenkontext",
     "placeholderTopicContext": "Kontext zu den Blog-Themen"
   },
+  "geminiApiKey": {
+    "title": "Gemini API-Schlüssel",
+    "description": "Füge deinen Gemini API-Schlüssel hinzu, um KI-Metadaten-Generierung und Artikel-Scraping für dieses Projekt zu aktivieren.",
+    "placeholder": "Gemini API-Schlüssel eingeben",
+    "configured": "API-Schlüssel konfiguriert",
+    "replace": "Schlüssel ersetzen",
+    "remove": "Entfernen",
+    "replaceDescription": "Gib einen neuen API-Schlüssel ein, um den bestehenden zu ersetzen.",
+    "removeTitle": "Gemini API-Schlüssel entfernen?",
+    "removeMessage": "KI-Metadaten-Generierung und Artikel-Scraping funktionieren für dieses Projekt nicht mehr, bis ein neuer Schlüssel hinzugefügt wird. Bist du sicher?"
+  },
   "pinterestConnection": {
     "title": "Pinterest-Verbindung",
     "notConnected": "Kein Pinterest-Konto verbunden",
@@ -495,6 +506,12 @@
       "failed": "Veröffentlichung fehlgeschlagen: {{error}}",
       "bulkSuccess": "{{published}}/{{total}} Pins veröffentlicht",
       "bulkFailed": "Bulk-Veröffentlichung fehlgeschlagen: {{error}}"
+    },
+    "gemini": {
+      "saved": "Gemini API-Schlüssel gespeichert",
+      "saveFailed": "Gemini API-Schlüssel konnte nicht gespeichert werden",
+      "deleted": "Gemini API-Schlüssel entfernt",
+      "deleteFailed": "Gemini API-Schlüssel konnte nicht entfernt werden"
     },
     "pinterest": {
       "connected": "Pinterest erfolgreich verbunden!",

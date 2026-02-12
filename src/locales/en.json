@@ -159,6 +159,17 @@
     "fieldTopicContext": "Topic Context",
     "placeholderTopicContext": "Context about the blog's topics"
   },
+  "geminiApiKey": {
+    "title": "Gemini API Key",
+    "description": "Add your Gemini API key to enable AI metadata generation and article scraping for this project.",
+    "placeholder": "Enter your Gemini API key",
+    "configured": "API key configured",
+    "replace": "Replace Key",
+    "remove": "Remove",
+    "replaceDescription": "Enter a new API key to replace the existing one.",
+    "removeTitle": "Remove Gemini API Key?",
+    "removeMessage": "AI metadata generation and article scraping will stop working for this project until a new key is added. Are you sure?"
+  },
   "pinterestConnection": {
     "title": "Pinterest Connection",
     "notConnected": "No Pinterest account connected",
@@ -495,6 +506,12 @@
       "failed": "Publish failed: {{error}}",
       "bulkSuccess": "Published {{published}}/{{total}} pins",
       "bulkFailed": "Bulk publish failed: {{error}}"
+    },
+    "gemini": {
+      "saved": "Gemini API key saved",
+      "saveFailed": "Failed to save Gemini API key",
+      "deleted": "Gemini API key removed",
+      "deleteFailed": "Failed to remove Gemini API key"
     },
     "pinterest": {
       "connected": "Pinterest connected successfully!",

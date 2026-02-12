@@ -39,7 +39,7 @@ async function fetchHtml(url: string): Promise<string> {
 /**
  * Main function to scrape an article using standard fetch + Gemini extraction
  */
-export async function scrapeArticleWithGemini(url: string): Promise<ScrapedArticle & { url: string }> {
+export async function scrapeArticleWithGemini(url: string, apiKey: string): Promise<ScrapedArticle & { url: string }> {
     console.log(`[GeminiScraper] Fetching ${url}...`)
     const html = await fetchHtml(url)
 
@@ -47,7 +47,7 @@ export async function scrapeArticleWithGemini(url: string): Promise<ScrapedArtic
     const cleanedHtml = cleanHtml(html)
     console.log(`[GeminiScraper] Cleaned HTML (${cleanedHtml.length} chars). Sending to Gemini...`)
 
-    const article = await generateArticleFromHtml(cleanedHtml, url)
+    const article = await generateArticleFromHtml(cleanedHtml, url, apiKey)
     console.log(`[GeminiScraper] Successfully extracted: ${article.title}`)
 
     return {

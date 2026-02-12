@@ -1,6 +1,7 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { generatePinMetadata } from '../../../src/lib/gemini/client'
+import { getGeminiApiKeyFromVault } from '../../lib/vault-helpers'
 
 export const generateMetadataBulk = inngest.createFunction(
   { id: 'generate-metadata-bulk' },
@@ -16,6 +17,9 @@ export const generateMetadataBulk = inngest.createFunction(
 
     const results: Array<{ pin_id: string; success: boolean }> = []
 
+    // Cache API keys per project to avoid redundant Vault calls
+    const apiKeyCache = new Map<string, string>()
+
     // Process each pin_id sequentially
     for (const pin_id of pin_ids) {
       const result = await step.run(`generate-metadata-${pin_id}`, async () => {
@@ -23,12 +27,20 @@ export const generateMetadataBulk = inngest.createFunction(
           // Fetch pin + article
           const { data: pin, error: fetchError } = await supabase
             .from('pins')
-            .select('*, blog_articles(title, content)')
+            .select('*, blog_articles(title, content, blog_project_id)')
             .eq('id', pin_id)
             .single()
 
           if (fetchError || !pin) {
             throw new Error(`Pin not found: ${pin_id}`)
+          }
+
+          // Get Gemini API key (cached per project)
+          const projectId = pin.blog_articles.blog_project_id
+          let apiKey = apiKeyCache.get(projectId)
+          if (!apiKey) {
+            apiKey = await getGeminiApiKeyFromVault(supabase, projectId)
+            apiKeyCache.set(projectId, apiKey)
           }
 
           // Get pin image URL (construct manually for server-side)
@@ -38,7 +50,9 @@ export const generateMetadataBulk = inngest.createFunction(
           const metadata = await generatePinMetadata(
             pin.blog_articles.title,
             pin.blog_articles.content,
-            imageUrl
+            imageUrl,
+            undefined,
+            apiKey
           )
 
           // Insert generation history

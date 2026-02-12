@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start'
-import { getSupabaseServerClient } from './supabase'
+import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { getPinImageUrl } from '@/lib/api/pins'
 import { inngest } from '../../../server/inngest/client'
+import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
 
 /**
  * Server function: Generate metadata for a single pin (synchronous).
@@ -32,14 +33,18 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
         .update({ status: 'generating_metadata' })
         .eq('id', data.pin_id)
 
-      // Fetch pin with article data
+      // Fetch pin with article data and blog_project_id
       const { data: pin, error: fetchError } = await supabase
         .from('pins')
-        .select('*, blog_articles(title, content)')
+        .select('*, blog_articles(title, content, blog_project_id)')
         .eq('id', data.pin_id)
         .single()
 
       if (fetchError || !pin) throw new Error('Pin not found')
+
+      // Fetch Gemini API key from Vault
+      const serviceSupabase = getSupabaseServiceClient()
+      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_articles.blog_project_id)
 
       // Get pin image URL
       const imageUrl = getPinImageUrl(pin.image_path)
@@ -48,7 +53,9 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       const metadata = await generatePinMetadata(
         pin.blog_articles.title,
         pin.blog_articles.content,
-        imageUrl
+        imageUrl,
+        undefined,
+        apiKey
       )
 
       // Insert into pin_metadata_generations table
@@ -147,11 +154,15 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       // Fetch pin + article data
       const { data: pin, error: fetchError } = await supabase
         .from('pins')
-        .select('*, blog_articles(title, content)')
+        .select('*, blog_articles(title, content, blog_project_id)')
         .eq('id', data.pin_id)
         .single()
 
       if (fetchError || !pin) throw new Error('Pin not found')
+
+      // Fetch Gemini API key from Vault
+      const serviceSupabase = getSupabaseServiceClient()
+      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_articles.blog_project_id)
 
       // Get pin image URL
       const imageUrl = getPinImageUrl(pin.image_path)
@@ -166,7 +177,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
           description: previousGeneration.description,
           alt_text: previousGeneration.alt_text,
         },
-        data.feedback
+        data.feedback,
+        apiKey
       )
 
       // Store new generation in pin_metadata_generations WITH feedback text

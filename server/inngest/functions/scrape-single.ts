@@ -1,6 +1,7 @@
 import { inngest } from '../client'
 import { createClient } from '@supabase/supabase-js'
 import { scrapeArticleWithGemini } from '../../lib/gemini-scraper'
+import { getGeminiApiKeyFromVault } from '../../lib/vault-helpers'
 
 export const scrapeSingle = inngest.createFunction(
   { id: 'scrape-single-article' },
@@ -14,7 +15,8 @@ export const scrapeSingle = inngest.createFunction(
     )
 
     const result = await step.run('scrape-and-upsert', async () => {
-      const article = await scrapeArticleWithGemini(url)
+      const apiKey = await getGeminiApiKeyFromVault(supabase, blog_project_id)
+      const article = await scrapeArticleWithGemini(url, apiKey)
 
       const { error: upsertError } = await supabase
         .from('blog_articles')

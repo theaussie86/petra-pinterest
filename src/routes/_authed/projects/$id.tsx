@@ -6,6 +6,7 @@ import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
+import { GeminiApiKeyCard } from '@/components/projects/gemini-api-key-card'
 import { PinterestConnection } from '@/components/projects/pinterest-connection'
 import { ProjectSectionDialog, type FieldConfig } from '@/components/projects/project-section-dialog'
 import { Button } from '@/components/ui/button'
@@ -271,6 +272,9 @@ function ProjectDetail() {
             >
               <GenericSectionContent project={project} fields={aiInstructionsFields} />
             </SectionCard>
+
+            {/* Gemini API Key */}
+            <GeminiApiKeyCard blogProjectId={id} />
 
             {/* Pinterest Connection */}
             <PinterestConnection

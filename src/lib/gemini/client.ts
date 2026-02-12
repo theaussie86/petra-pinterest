@@ -8,14 +8,7 @@
 import { GoogleGenAI } from '@google/genai'
 import { PINTEREST_SEO_SYSTEM_PROMPT, ARTICLE_SCRAPER_SYSTEM_PROMPT } from './prompts'
 
-// Remove top-level init
-// const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-
-function getAiClient() {
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set')
-  }
+function getAiClient(apiKey: string) {
   return new GoogleGenAI({ apiKey })
 }
 
@@ -97,12 +90,13 @@ export async function generatePinMetadata(
   articleTitle: string,
   articleContent: string,
   pinImageUrl: string,
-  systemPrompt?: string
+  systemPrompt: string | undefined,
+  apiKey: string
 ): Promise<GeneratedMetadata> {
   const truncatedContent = articleContent.slice(0, 4000)
   const imageData = await fetchImageAsBase64(pinImageUrl)
 
-  const response = await getAiClient().models.generateContent({
+  const response = await getAiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: [
       { text: `Article Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}` },
@@ -144,12 +138,13 @@ export async function generatePinMetadataWithFeedback(
   articleContent: string,
   pinImageUrl: string,
   previousMetadata: GeneratedMetadata,
-  feedback: string
+  feedback: string,
+  apiKey: string
 ): Promise<GeneratedMetadata> {
   const truncatedContent = articleContent.slice(0, 4000)
   const imageData = await fetchImageAsBase64(pinImageUrl)
 
-  const chat = getAiClient().chats.create({
+  const chat = getAiClient(apiKey).chats.create({
     model: 'gemini-2.5-flash',
     config: {
       systemInstruction: PINTEREST_SEO_SYSTEM_PROMPT,
@@ -198,13 +193,14 @@ export async function generatePinMetadataWithFeedback(
  */
 export async function generateArticleFromHtml(
     htmlContent: string,
-    url: string
+    url: string,
+    apiKey: string
   ): Promise<ScrapedArticle> {
     // Truncate HTML if it's too large (Gemini 2.0 Flash has large context, but let's be safe/efficient)
     // 100k chars is usually enough for body content after cleaning
     const truncatedHtml = htmlContent.slice(0, 100000) 
   
-    const response = await getAiClient().models.generateContent({
+    const response = await getAiClient(apiKey).models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
         { text: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}` },
