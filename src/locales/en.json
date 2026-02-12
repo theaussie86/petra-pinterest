@@ -39,6 +39,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "projects": "Projects",
     "articles": "Articles",
     "pins": "Pins",
     "calendar": "Calendar"
@@ -301,6 +302,10 @@
     "publish": "Publish",
     "tooltipNoConnection": "Connect Pinterest in project settings",
     "tooltipNoBoard": "Assign a Pinterest board first"
+  },
+  "projectsPage": {
+    "title": "Projects",
+    "createProject": "Create Project"
   },
   "articlesPage": {
     "title": "Articles",

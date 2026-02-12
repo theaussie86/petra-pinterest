@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe } from "lucide-react";
+import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
@@ -34,6 +34,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   const navItems = [
     { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
+    { title: t("nav.projects"), url: "/projects", icon: FolderOpen },
     { title: t("nav.articles"), url: "/articles", icon: FileText },
     { title: t("nav.pins"), url: "/pins", icon: Pin },
     { title: t("nav.calendar"), url: "/calendar", icon: Calendar },
