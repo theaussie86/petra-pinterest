@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -21,9 +21,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
-import { AlertTriangle } from 'lucide-react'
+import { AlertTriangle, Check, ChevronsUpDown } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
 import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import {
@@ -52,6 +66,7 @@ interface EditPinDialogProps {
 
 export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDialogProps) {
   const { t } = useTranslation()
+  const [boardPopoverOpen, setBoardPopoverOpen] = useState(false)
   const updateMutation = useUpdatePin()
   const { data: connectionData } = usePinterestConnection(projectId)
   const isConnected = connectionData?.connected === true && connectionData?.connection?.is_active !== false
@@ -180,23 +195,71 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
                 </AlertDescription>
               </Alert>
             )}
-            <Select
-              value={currentBoardId}
-              onValueChange={(value) => setValue('pinterest_board_id', value)}
-              disabled={!isConnected || isSubmitting}
-            >
-              <SelectTrigger id="edit-board">
-                <SelectValue placeholder={t('editPin.placeholderBoard')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">{t('common.notAssigned')}</SelectItem>
-                {boards?.map((board) => (
-                  <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
-                    {board.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={boardPopoverOpen} onOpenChange={setBoardPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={boardPopoverOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={!isConnected || isSubmitting}
+                >
+                  {currentBoardId && currentBoardId !== '__none__' ? (
+                    <span className="truncate">
+                      {boards?.find((b) => b.pinterest_board_id === currentBoardId)?.name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {t('common.notAssigned')}
+                    </span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder={t('editPin.searchBoard')} />
+                  <CommandList>
+                    <CommandEmpty>{t('editPin.noBoardsFound')}</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value={t('common.notAssigned')}
+                        onSelect={() => {
+                          setValue('pinterest_board_id', '__none__')
+                          setBoardPopoverOpen(false)
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            currentBoardId === '__none__' ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        {t('common.notAssigned')}
+                      </CommandItem>
+                      {boards?.map((board) => (
+                        <CommandItem
+                          key={board.pinterest_board_id}
+                          value={board.name}
+                          onSelect={() => {
+                            setValue('pinterest_board_id', board.pinterest_board_id)
+                            setBoardPopoverOpen(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              currentBoardId === board.pinterest_board_id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          {board.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="space-y-2">

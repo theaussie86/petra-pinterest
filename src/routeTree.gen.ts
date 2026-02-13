@@ -18,6 +18,7 @@ import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed/projects/index'
 import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pinterest.callback'
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
+import { Route as AuthedProjectsProjectIdCreatePinRouteImport } from './routes/_authed/projects/$projectId/create-pin'
 import { Route as AuthedProjectsProjectIdCalendarRouteImport } from './routes/_authed/projects/$projectId/calendar'
 import { Route as AuthedProjectsProjectIdPinsIndexRouteImport } from './routes/_authed/projects/$projectId/pins/index'
 import { Route as AuthedProjectsProjectIdArticlesIndexRouteImport } from './routes/_authed/projects/$projectId/articles/index'
@@ -69,6 +70,12 @@ const AuthedProjectsProjectIdIndexRoute =
     path: '/projects/$projectId/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProjectsProjectIdCreatePinRoute =
+  AuthedProjectsProjectIdCreatePinRouteImport.update({
+    id: '/projects/$projectId/create-pin',
+    path: '/projects/$projectId/create-pin',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProjectsProjectIdCalendarRoute =
   AuthedProjectsProjectIdCalendarRouteImport.update({
     id: '/projects/$projectId/calendar',
@@ -109,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
   '/projects/': typeof AuthedProjectsIndexRoute
   '/projects/$projectId/calendar': typeof AuthedProjectsProjectIdCalendarRoute
+  '/projects/$projectId/create-pin': typeof AuthedProjectsProjectIdCreatePinRoute
   '/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
   '/projects/$projectId/articles/$articleId': typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   '/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
   '/projects': typeof AuthedProjectsIndexRoute
   '/projects/$projectId/calendar': typeof AuthedProjectsProjectIdCalendarRoute
+  '/projects/$projectId/create-pin': typeof AuthedProjectsProjectIdCreatePinRoute
   '/projects/$projectId': typeof AuthedProjectsProjectIdIndexRoute
   '/projects/$projectId/articles/$articleId': typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   '/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
@@ -141,6 +150,7 @@ export interface FileRoutesById {
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
   '/_authed/projects/': typeof AuthedProjectsIndexRoute
   '/_authed/projects/$projectId/calendar': typeof AuthedProjectsProjectIdCalendarRoute
+  '/_authed/projects/$projectId/create-pin': typeof AuthedProjectsProjectIdCreatePinRoute
   '/_authed/projects/$projectId/': typeof AuthedProjectsProjectIdIndexRoute
   '/_authed/projects/$projectId/articles/$articleId': typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   '/_authed/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
@@ -158,6 +168,7 @@ export interface FileRouteTypes {
     | '/auth/pinterest/callback'
     | '/projects/'
     | '/projects/$projectId/calendar'
+    | '/projects/$projectId/create-pin'
     | '/projects/$projectId/'
     | '/projects/$projectId/articles/$articleId'
     | '/projects/$projectId/pins/$pinId'
@@ -173,6 +184,7 @@ export interface FileRouteTypes {
     | '/auth/pinterest/callback'
     | '/projects'
     | '/projects/$projectId/calendar'
+    | '/projects/$projectId/create-pin'
     | '/projects/$projectId'
     | '/projects/$projectId/articles/$articleId'
     | '/projects/$projectId/pins/$pinId'
@@ -189,6 +201,7 @@ export interface FileRouteTypes {
     | '/auth/pinterest/callback'
     | '/_authed/projects/'
     | '/_authed/projects/$projectId/calendar'
+    | '/_authed/projects/$projectId/create-pin'
     | '/_authed/projects/$projectId/'
     | '/_authed/projects/$projectId/articles/$articleId'
     | '/_authed/projects/$projectId/pins/$pinId'
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsProjectIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/projects/$projectId/create-pin': {
+      id: '/_authed/projects/$projectId/create-pin'
+      path: '/projects/$projectId/create-pin'
+      fullPath: '/projects/$projectId/create-pin'
+      preLoaderRoute: typeof AuthedProjectsProjectIdCreatePinRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/projects/$projectId/calendar': {
       id: '/_authed/projects/$projectId/calendar'
       path: '/projects/$projectId/calendar'
@@ -312,6 +332,7 @@ interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedProjectsIndexRoute: typeof AuthedProjectsIndexRoute
   AuthedProjectsProjectIdCalendarRoute: typeof AuthedProjectsProjectIdCalendarRoute
+  AuthedProjectsProjectIdCreatePinRoute: typeof AuthedProjectsProjectIdCreatePinRoute
   AuthedProjectsProjectIdIndexRoute: typeof AuthedProjectsProjectIdIndexRoute
   AuthedProjectsProjectIdArticlesArticleIdRoute: typeof AuthedProjectsProjectIdArticlesArticleIdRoute
   AuthedProjectsProjectIdPinsPinIdRoute: typeof AuthedProjectsProjectIdPinsPinIdRoute
@@ -323,6 +344,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedProjectsIndexRoute: AuthedProjectsIndexRoute,
   AuthedProjectsProjectIdCalendarRoute: AuthedProjectsProjectIdCalendarRoute,
+  AuthedProjectsProjectIdCreatePinRoute: AuthedProjectsProjectIdCreatePinRoute,
   AuthedProjectsProjectIdIndexRoute: AuthedProjectsProjectIdIndexRoute,
   AuthedProjectsProjectIdArticlesArticleIdRoute:
     AuthedProjectsProjectIdArticlesArticleIdRoute,

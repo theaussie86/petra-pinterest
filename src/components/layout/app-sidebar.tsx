@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, ChevronDown } from "lucide-react";
+import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, ChevronDown, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
@@ -40,6 +40,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
 
   // Detect which project-scoped section the user is currently on
   const getCurrentSection = (): string | undefined => {
+    if (location.pathname.includes('/create-pin')) return 'create-pin';
     if (location.pathname.includes('/articles')) return 'articles';
     if (location.pathname.includes('/pins')) return 'pins';
     if (location.pathname.includes('/calendar')) return 'calendar';
@@ -57,6 +58,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     ? [
         { title: t("nav.articles"), url: `/projects/${activeProjectId}/articles`, icon: FileText, section: 'articles' },
         { title: t("nav.pins"), url: `/projects/${activeProjectId}/pins`, icon: Pin, section: 'pins' },
+        { title: t("nav.createPin"), url: `/projects/${activeProjectId}/create-pin`, icon: PlusCircle, section: 'create-pin' },
         { title: t("nav.calendar"), url: `/projects/${activeProjectId}/calendar`, icon: Calendar, section: 'calendar' },
       ]
     : [];

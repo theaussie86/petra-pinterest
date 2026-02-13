@@ -1,13 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Loader2 } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
+import { PageLayout } from '@/components/layout/page-layout'
+import { PageHeader } from '@/components/layout/page-header'
 import {
   Select,
   SelectContent,
@@ -26,19 +22,13 @@ import { uploadPinImage } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
 import { toast } from 'sonner'
 
-interface CreatePinDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  projectId: string
-  preselectedArticleId?: string
-}
+export const Route = createFileRoute('/_authed/projects/$projectId/create-pin')({
+  component: CreatePinPage,
+})
 
-export function CreatePinDialog({
-  open,
-  onOpenChange,
-  projectId,
-  preselectedArticleId,
-}: CreatePinDialogProps) {
+function CreatePinPage() {
+  const { projectId } = Route.useParams()
+  const navigate = useNavigate()
   const { t } = useTranslation()
   const [files, setFiles] = useState<File[]>([])
   const [selectedArticleId, setSelectedArticleId] = useState<string>('')
@@ -51,18 +41,7 @@ export function CreatePinDialog({
   const { data: boards = [] } = usePinterestBoards(projectId)
   const createPinsMutation = useCreatePins()
 
-  // Reset form when dialog opens/closes
-  useEffect(() => {
-    if (open) {
-      setFiles([])
-      setSelectedArticleId(preselectedArticleId || '')
-      setSelectedBoardId('')
-      setIsUploading(false)
-    }
-  }, [open, preselectedArticleId])
-
   const handleSubmit = async () => {
-    // Validation
     if (files.length === 0) {
       toast.error(t('createPin.validationImageRequired'))
       return
@@ -75,17 +54,14 @@ export function CreatePinDialog({
     setIsUploading(true)
 
     try {
-      // Get tenant_id for storage upload
       const { tenant_id } = await ensureProfile()
 
-      // Upload all images
       const imagePaths: string[] = []
       for (const file of files) {
         const path = await uploadPinImage(file, tenant_id)
         imagePaths.push(path)
       }
 
-      // Create pin rows (one per image)
       const selectedBoard = boards.find((b) => b.pinterest_board_id === selectedBoardId)
       await createPinsMutation.mutateAsync(
         imagePaths.map((imagePath) => ({
@@ -97,7 +73,7 @@ export function CreatePinDialog({
         }))
       )
 
-      onOpenChange(false)
+      navigate({ to: '/projects/$projectId/pins', params: { projectId } })
     } catch (error) {
       console.error('Failed to create pins:', error)
       toast.error(t('createPin.errorCreateFailed'))
@@ -114,15 +90,10 @@ export function CreatePinDialog({
       : t('createPin.createButton_plural', { count: pinCount })
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {pinCount <= 1 ? t('createPin.titleSingle') : t('createPin.titleMultiple', { count: pinCount })}
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-5">
+    <>
+      <PageHeader title={pinCount <= 1 ? t('createPin.titleSingle') : t('createPin.titleMultiple', { count: pinCount })} />
+      <PageLayout maxWidth="medium">
+        <div className="space-y-6">
           {/* Article selector */}
           <div className="space-y-2">
             <Label>{t('createPin.fieldArticle')}</Label>
@@ -197,27 +168,28 @@ export function CreatePinDialog({
               disabled={isUploading}
             />
           </div>
-        </div>
 
-        <DialogFooter className="mt-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isUploading}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isUploading || files.length === 0 || !selectedArticleId}
-          >
-            {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {submitLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate({ to: '/projects/$projectId/pins', params: { projectId } })}
+              disabled={isUploading}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isUploading || files.length === 0 || !selectedArticleId}
+            >
+              {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {submitLabel}
+            </Button>
+          </div>
+        </div>
+      </PageLayout>
+    </>
   )
 }

@@ -42,6 +42,7 @@
     "projects": "Projects",
     "articles": "Articles",
     "pins": "Pins",
+    "createPin": "Create Pin",
     "calendar": "Calendar",
     "selectProject": "Select project",
     "noProjects": "No projects yet",
@@ -295,7 +296,9 @@
     "validationImageRequired": "Please select at least one image",
     "validationArticleRequired": "Please select an article",
     "errorCreateFailed": "Failed to create pins. Please try again.",
-    "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board."
+    "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board.",
+    "searchArticle": "Search articles...",
+    "searchBoard": "Search boards..."
   },
   "editPin": {
     "title": "Edit Pin",
@@ -311,7 +314,9 @@
     "validationTitleTooLong": "Title too long",
     "validationDescriptionTooLong": "Description too long",
     "validationAltTextTooLong": "Alt text too long",
-    "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board."
+    "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board.",
+    "searchBoard": "Search boards...",
+    "noBoardsFound": "No boards found."
   },
   "imageUpload": {
     "dropMessage": "Drop images here or ",
