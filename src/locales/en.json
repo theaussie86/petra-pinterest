@@ -454,7 +454,14 @@
     "published": "Published {{date}}",
     "scraped": "Scraped {{date}}",
     "pins": "{{count}} pins",
-    "noContent": "No content available. The article content could not be scraped."
+    "noContent": "No content available. The article content could not be scraped.",
+    "editContent": "Edit Content",
+    "cancelEdit": "Cancel",
+    "saveContent": "Save",
+    "saving": "Saving...",
+    "confirmSaveTitle": "Save edited content?",
+    "confirmSaveDescription": "This will overwrite the scraped content with your edits. The original content cannot be recovered.",
+    "confirmSaveButton": "Save"
   },
   "toast": {
     "project": {
@@ -473,7 +480,9 @@
       "restored": "Article restored",
       "restoreFailed": "Failed to restore article",
       "added": "Article added successfully",
-      "addFailed": "Failed to add article. Check the URL and try again."
+      "addFailed": "Failed to add article. Check the URL and try again.",
+      "contentUpdated": "Article content updated",
+      "contentUpdateFailed": "Failed to update article content"
     },
     "pin": {
       "created": "Pin created",

@@ -454,7 +454,14 @@
     "published": "Veröffentlicht {{date}}",
     "scraped": "Gescrapt {{date}}",
     "pins": "{{count}} Pins",
-    "noContent": "Kein Inhalt verfügbar. Der Artikelinhalt konnte nicht gescrapt werden."
+    "noContent": "Kein Inhalt verfügbar. Der Artikelinhalt konnte nicht gescrapt werden.",
+    "editContent": "Inhalt bearbeiten",
+    "cancelEdit": "Abbrechen",
+    "saveContent": "Speichern",
+    "saving": "Speichern...",
+    "confirmSaveTitle": "Bearbeiteten Inhalt speichern?",
+    "confirmSaveDescription": "Dies überschreibt den gescrapten Inhalt mit deinen Änderungen. Der ursprüngliche Inhalt kann nicht wiederhergestellt werden.",
+    "confirmSaveButton": "Speichern"
   },
   "toast": {
     "project": {
@@ -473,7 +480,9 @@
       "restored": "Artikel wiederhergestellt",
       "restoreFailed": "Artikel konnte nicht wiederhergestellt werden",
       "added": "Artikel erfolgreich hinzugefügt",
-      "addFailed": "Artikel konnte nicht hinzugefügt werden. Überprüfe die URL und versuche es erneut."
+      "addFailed": "Artikel konnte nicht hinzugefügt werden. Überprüfe die URL und versuche es erneut.",
+      "contentUpdated": "Artikelinhalt aktualisiert",
+      "contentUpdateFailed": "Artikelinhalt konnte nicht aktualisiert werden"
     },
     "pin": {
       "created": "Pin erstellt",

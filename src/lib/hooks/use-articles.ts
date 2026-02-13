@@ -8,6 +8,7 @@ import {
   getArchivedArticles,
   archiveArticle,
   restoreArticle,
+  updateArticleContent,
   scrapeBlog,
   addArticleManually
 } from '@/lib/api/articles'
@@ -86,6 +87,22 @@ export function useRestoreArticle() {
     },
     onError: () => {
       toast.error(i18n.t('toast.article.restoreFailed'))
+    }
+  })
+}
+
+export function useUpdateArticleContent() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, content }: { id: string; content: string }) =>
+      updateArticleContent(id, content),
+    onSuccess: () => {
+      toast.success(i18n.t('toast.article.contentUpdated'))
+      queryClient.invalidateQueries({ queryKey: ['articles'] })
+    },
+    onError: () => {
+      toast.error(i18n.t('toast.article.contentUpdateFailed'))
     }
   })
 }

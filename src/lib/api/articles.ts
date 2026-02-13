@@ -76,6 +76,18 @@ export async function scrapeBlog(request: ScrapeRequest) {
   return await scrapeBlogFn({ data: request })
 }
 
+export async function updateArticleContent(id: string, content: string): Promise<Article> {
+  const { data, error } = await supabase
+    .from('blog_articles')
+    .update({ content })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
 export async function addArticleManually(projectId: string, url: string): Promise<ScrapeResponse> {
   return await scrapeSingleFn({ data: { blog_project_id: projectId, url } })
 }
