@@ -25,8 +25,8 @@
     "message": "Page not found"
   },
   "login": {
-    "heading": "Petra",
-    "subtitle": "Schedule Pinterest pins for multiple blogs from a single calendar view",
+    "heading": "PinMa",
+    "subtitle": "Your Pinterest dashboard for content planning, AI metadata, and automated publishing",
     "signIn": "Sign in with Google",
     "redirecting": "Redirecting...",
     "errorSignIn": "Failed to sign in with Google"

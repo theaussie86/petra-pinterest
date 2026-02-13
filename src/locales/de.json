@@ -25,8 +25,8 @@
     "message": "Seite nicht gefunden"
   },
   "login": {
-    "heading": "Petra",
-    "subtitle": "Pinterest-Pins für mehrere Blogs aus einer Kalenderansicht planen",
+    "heading": "PinMa",
+    "subtitle": "Dein Pinterest-Dashboard für Content-Planung, KI-Metadaten und automatisches Publishing",
     "signIn": "Mit Google anmelden",
     "redirecting": "Weiterleitung...",
     "errorSignIn": "Anmeldung mit Google fehlgeschlagen"
