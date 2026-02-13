@@ -158,7 +158,7 @@ export async function updatePinsStatus(
   if (error) throw error
 }
 
-export async function uploadPinImage(
+export async function uploadPinMedia(
   file: File,
   tenantId: string
 ): Promise<string> {

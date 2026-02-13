@@ -45,7 +45,7 @@ import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import { PIN_STATUS, ACTIVE_STATUSES } from '@/types/pins'
 import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
 
@@ -478,12 +478,7 @@ export function PinsList({ projectId }: PinsListProps) {
                       </TableCell>
                       <TableCell>
                         <div className="h-12 w-12 overflow-hidden rounded bg-slate-100">
-                          <img
-                            src={getPinImageUrl(pin.image_path)}
-                            alt={pin.title || 'Pin thumbnail'}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
+                          <PinMediaPreview pin={pin} />
                         </div>
                       </TableCell>
                       <TableCell className="font-medium">
@@ -542,7 +537,6 @@ export function PinsList({ projectId }: PinsListProps) {
                     pin={pin}
                     selected={selectedIds.has(pin.id)}
                     onToggleSelect={toggleSelect}
-                    imageUrl={getPinImageUrl(pin.image_path)}
                   />
                 ))}
               </div>

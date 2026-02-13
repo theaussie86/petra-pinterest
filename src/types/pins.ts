@@ -38,6 +38,7 @@ export interface Pin {
   pinterest_board_id: string | null
   pinterest_board_name: string | null
   image_path: string
+  media_type: 'image' | 'video'
   title: string | null
   description: string | null
   alt_text: string | null
@@ -56,6 +57,7 @@ export interface PinInsert {
   blog_project_id: string
   blog_article_id: string
   image_path: string
+  media_type?: 'image' | 'video'
   pinterest_board_id?: string | null
   pinterest_board_name?: string | null
   title?: string | null

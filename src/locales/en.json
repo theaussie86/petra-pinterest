@@ -289,11 +289,11 @@
     "fieldBoard": "Board (optional)",
     "placeholderBoard": "Select a board (optional)",
     "noBoards": "No boards synced yet. You can assign boards later.",
-    "fieldImages": "Images *",
+    "fieldMedia": "Media *",
     "uploading": "Uploading...",
     "createButton": "Create {{count}} Pin",
     "createButton_plural": "Create {{count}} Pins",
-    "validationImageRequired": "Please select at least one image",
+    "validationMediaRequired": "Please select at least one image or video",
     "validationArticleRequired": "Please select an article",
     "errorCreateFailed": "Failed to create pins. Please try again.",
     "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board.",
@@ -319,12 +319,13 @@
     "noBoardsFound": "No boards found."
   },
   "imageUpload": {
-    "dropMessage": "Drop images here or ",
+    "dropMessage": "Drop files here or ",
     "browseFiles": "browse files",
-    "hint": "Supports drag-drop, file picker, and clipboard paste",
-    "count": "{{count}} image selected",
-    "count_plural": "{{count}} images selected",
-    "warningAspectRatio": "Not 2:3"
+    "hint": "Images and videos (MP4, MOV, WebM)",
+    "count": "{{count}} file selected",
+    "count_plural": "{{count}} files selected",
+    "warningAspectRatio": "Not 2:3",
+    "videoBadge": "Video"
   },
   "metadataHistory": {
     "title": "Metadata History",

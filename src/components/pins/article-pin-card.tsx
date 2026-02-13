@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import type { Pin } from '@/types/pins'
 
 interface ArticlePinCardProps {
@@ -33,12 +33,7 @@ export function ArticlePinCard({ pin, projectId }: ArticlePinCardProps) {
       className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/50"
     >
       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-slate-100">
-        <img
-          src={getPinImageUrl(pin.image_path)}
-          alt={pin.title || 'Pin image'}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
+        <PinMediaPreview pin={pin} />
       </div>
       <div className="min-w-0 flex-1">
         <p className={cn('text-sm font-medium truncate', !pin.title && 'italic text-muted-foreground')}>

@@ -3,7 +3,7 @@ import { useState, memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import { useDateLocale } from '@/lib/date-locale'
 import { cn } from '@/lib/utils'
 import {
@@ -54,7 +54,7 @@ const CalendarDayCellComponent = ({
 
   // Determine thumbnail size and max visible count based on view
   const thumbnailSize = view === 'month' ? 32 : 48
-  const maxVisible = view === 'month' ? 3 : 6
+  const maxVisible = view === 'month' ? 6 : 6
 
   const visiblePins = pins.slice(0, maxVisible)
   const overflowCount = pins.length - maxVisible
@@ -127,7 +127,9 @@ const CalendarDayCellComponent = ({
       </div>
 
       {/* Pin thumbnails */}
-      <div className="space-y-1">
+      <div className={cn(
+          view === 'month' ? 'grid grid-cols-3 gap-1' : 'space-y-1'
+        )}>
         {visiblePins.map((pin) => (
           <div
             key={pin.id}
@@ -138,12 +140,9 @@ const CalendarDayCellComponent = ({
             className="cursor-pointer"
             title={pin.title || t('common.untitled')}
           >
-            <img
-              src={getPinImageUrl(pin.image_path)}
-              alt={pin.title || 'Pin'}
-              loading="lazy"
+            <div
               className={cn(
-                'rounded border-2 object-cover transition-opacity',
+                'rounded border-2 overflow-hidden transition-opacity',
                 getStatusBorderClass(pin.status),
                 draggingPinId === pin.id && 'opacity-50'
               )}
@@ -151,7 +150,9 @@ const CalendarDayCellComponent = ({
                 width: `${thumbnailSize}px`,
                 height: `${thumbnailSize}px`,
               }}
-            />
+            >
+              <PinMediaPreview pin={pin} />
+            </div>
           </div>
         ))}
 
@@ -159,7 +160,10 @@ const CalendarDayCellComponent = ({
         {overflowCount > 0 && (
           <Popover>
             <PopoverTrigger asChild>
-              <button className="inline-flex items-center rounded-full bg-slate-100 text-slate-600 text-xs px-2 py-0.5 font-medium hover:bg-slate-200 transition-colors">
+              <button className={cn(
+                'inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs px-2 py-0.5 font-medium hover:bg-slate-200 transition-colors',
+                view === 'month' && 'col-span-3 w-full rounded-md'
+              )}>
                 {t('unscheduledPins.more', { count: overflowCount })}
               </button>
             </PopoverTrigger>
@@ -175,14 +179,12 @@ const CalendarDayCellComponent = ({
                       onClick={() => onPinClick(pin.id)}
                       className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer transition-colors"
                     >
-                      <img
-                        src={getPinImageUrl(pin.image_path)}
-                        alt={pin.title || 'Pin'}
-                        className={cn(
-                          'w-6 h-6 rounded border object-cover',
+                      <div className={cn(
+                          'w-6 h-6 rounded border overflow-hidden shrink-0',
                           getStatusBorderClass(pin.status)
-                        )}
-                      />
+                        )}>
+                        <PinMediaPreview pin={pin} />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-slate-900 truncate">
                           {pin.title || t('common.untitled')}

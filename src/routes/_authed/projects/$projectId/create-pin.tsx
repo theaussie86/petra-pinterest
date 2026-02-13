@@ -21,11 +21,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ImageUploadZone } from '@/components/pins/image-upload-zone'
+import { MediaUploadZone } from '@/components/pins/media-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useCreatePins } from '@/lib/hooks/use-pins'
 import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
-import { uploadPinImage } from '@/lib/api/pins'
+import { uploadPinMedia } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
 import { toast } from 'sonner'
 
@@ -52,7 +52,7 @@ function CreatePinPage() {
 
   const handleSubmit = async () => {
     if (files.length === 0) {
-      toast.error(t('createPin.validationImageRequired'))
+      toast.error(t('createPin.validationMediaRequired'))
       return
     }
     if (!selectedArticleId) {
@@ -65,18 +65,22 @@ function CreatePinPage() {
     try {
       const { tenant_id } = await ensureProfile()
 
-      const imagePaths: string[] = []
+      const uploadedFiles: { path: string; mediaType: 'image' | 'video' }[] = []
       for (const file of files) {
-        const path = await uploadPinImage(file, tenant_id)
-        imagePaths.push(path)
+        const path = await uploadPinMedia(file, tenant_id)
+        uploadedFiles.push({
+          path,
+          mediaType: file.type.startsWith('video/') ? 'video' : 'image',
+        })
       }
 
       const selectedBoard = boards.find((b) => b.pinterest_board_id === selectedBoardId)
       await createPinsMutation.mutateAsync(
-        imagePaths.map((imagePath) => ({
+        uploadedFiles.map(({ path, mediaType }) => ({
           blog_project_id: projectId,
           blog_article_id: selectedArticleId,
-          image_path: imagePath,
+          image_path: path,
+          media_type: mediaType,
           pinterest_board_id: selectedBoardId || null,
           pinterest_board_name: selectedBoard?.name || null,
         }))
@@ -237,10 +241,10 @@ function CreatePinPage() {
             )}
           </div>
 
-          {/* Image upload zone */}
+          {/* Media upload zone */}
           <div className="space-y-2">
-            <Label>{t('createPin.fieldImages')}</Label>
-            <ImageUploadZone
+            <Label>{t('createPin.fieldMedia')}</Label>
+            <MediaUploadZone
               files={files}
               onFilesChange={setFiles}
               disabled={isUploading}

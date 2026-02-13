@@ -289,11 +289,11 @@
     "fieldBoard": "Board (optional)",
     "placeholderBoard": "Board auswählen (optional)",
     "noBoards": "Noch keine Boards synchronisiert. Du kannst Boards später zuweisen.",
-    "fieldImages": "Bilder *",
+    "fieldMedia": "Medien *",
     "uploading": "Hochladen...",
     "createButton": "{{count}} Pin erstellen",
     "createButton_plural": "{{count}} Pins erstellen",
-    "validationImageRequired": "Bitte wahle mindestens ein Bild aus",
+    "validationMediaRequired": "Bitte wähle mindestens ein Bild oder Video aus",
     "validationArticleRequired": "Bitte wahle einen Artikel aus",
     "errorCreateFailed": "Pins konnten nicht erstellt werden. Bitte versuche es erneut.",
     "pinterestNotConnected": "Pinterest ist nicht verknüpft. Verbinde Pinterest in den Projekteinstellungen, um ein Board auszuwählen.",
@@ -319,12 +319,13 @@
     "noBoardsFound": "Keine Boards gefunden."
   },
   "imageUpload": {
-    "dropMessage": "Bilder hier ablegen oder ",
+    "dropMessage": "Dateien hier ablegen oder ",
     "browseFiles": "Dateien durchsuchen",
-    "hint": "Unterstützt Drag-Drop, Dateiauswahl und Einfügen aus der Zwischenablage",
-    "count": "{{count}} Bild ausgewählt",
-    "count_plural": "{{count}} Bilder ausgewählt",
-    "warningAspectRatio": "Nicht 2:3"
+    "hint": "Bilder und Videos (MP4, MOV, WebM)",
+    "count": "{{count}} Datei ausgewählt",
+    "count_plural": "{{count}} Dateien ausgewählt",
+    "warningAspectRatio": "Nicht 2:3",
+    "videoBadge": "Video"
   },
   "metadataHistory": {
     "title": "Metadaten-Verlauf",
