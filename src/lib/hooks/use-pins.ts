@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
   getPinsByProject,
+  getPinsByArticle,
   getAllPins,
   getPin,
   createPin,
@@ -20,6 +21,15 @@ export function usePins(projectId: string) {
     queryKey: ['pins', projectId],
     queryFn: () => getPinsByProject(projectId),
     enabled: !!projectId,
+    staleTime: 30000,
+  })
+}
+
+export function useArticlePins(articleId: string) {
+  return useQuery({
+    queryKey: ['pins', 'article', articleId],
+    queryFn: () => getPinsByArticle(articleId),
+    enabled: !!articleId,
     staleTime: 30000,
   })
 }

@@ -20,10 +20,12 @@ export function useProjectStats() {
 
   const globalStats = useMemo(() => {
     const pins = allPins ?? []
+    const now = new Date()
     return {
       scheduled: pins.filter((p) => p.scheduled_at != null && !PUBLISHED_STATUSES.includes(p.status)).length,
       published: pins.filter((p) => PUBLISHED_STATUSES.includes(p.status)).length,
       pending: pins.filter((p) => PENDING_STATUSES.includes(p.status)).length,
+      overdue: pins.filter((p) => p.scheduled_at != null && new Date(p.scheduled_at) < now && !PUBLISHED_STATUSES.includes(p.status)).length,
     }
   }, [allPins])
 

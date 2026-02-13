@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { Clock, CheckCircle, AlertCircle } from 'lucide-react'
+import { Clock, CheckCircle, AlertCircle, CircleDashed } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface StatsBarProps {
-  stats: { scheduled: number; published: number; pending: number }
+  stats: { scheduled: number; published: number; pending: number; overdue: number }
   loading?: boolean
 }
 
@@ -25,15 +25,21 @@ export function StatsBar({ stats, loading }: StatsBarProps) {
       color: 'text-green-600',
     },
     {
+      label: t('stats.overdue'),
+      count: stats.overdue,
+      icon: AlertCircle,
+      color: 'text-red-600',
+    },
+    {
       label: t('stats.pending'),
       count: stats.pending,
-      icon: AlertCircle,
-      color: 'text-orange-600',
+      icon: CircleDashed,
+      color: 'text-amber-500',
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       {items.map((stat) => (
         <Card
           key={stat.label}

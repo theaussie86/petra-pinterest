@@ -6,6 +6,8 @@ import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { useArticle, useArchiveArticle, useUpdateArticleContent } from '@/lib/hooks/use-articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
+import { useArticlePins } from '@/lib/hooks/use-pins'
+import { ArticlePinCard } from '@/components/pins/article-pin-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
@@ -28,6 +30,7 @@ function ArticleDetail() {
   const { projectId, articleId } = Route.useParams()
   const { data: article, isLoading, error } = useArticle(articleId)
   const { data: project } = useBlogProject(projectId)
+  const { data: articlePins } = useArticlePins(articleId)
   const archiveMutation = useArchiveArticle()
   const updateContentMutation = useUpdateArticleContent()
   const navigate = useNavigate()
@@ -35,6 +38,7 @@ function ArticleDetail() {
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState('')
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false)
+  const [visiblePins, setVisiblePins] = useState(5)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(i18n.language === 'de' ? 'de-DE' : 'en-US', {
@@ -118,9 +122,32 @@ function ArticleDetail() {
                 )}
                 <span>{t('articleDetail.scraped', { date: formatDate(article.scraped_at) })}</span>
                 <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                  {t('articleDetail.pins', { count: 0 })}
+                  {t('articleDetail.pins', { count: articlePins?.length ?? 0 })}
                 </span>
               </div>
+            </div>
+
+            {/* Linked Pins */}
+            <div className="mb-8">
+              <h2 className="mb-3 text-lg font-semibold">{t('articleDetail.linkedPins')}</h2>
+              {articlePins && articlePins.length > 0 ? (
+                <div className="space-y-2">
+                  {articlePins.slice(0, visiblePins).map((pin) => (
+                    <ArticlePinCard key={pin.id} pin={pin} projectId={projectId} />
+                  ))}
+                  {articlePins.length > visiblePins && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setVisiblePins((v) => v + 5)}
+                    >
+                      {t('articleDetail.loadMore')}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">{t('articleDetail.noPins')}</p>
+              )}
             </div>
 
             {/* Article content */}

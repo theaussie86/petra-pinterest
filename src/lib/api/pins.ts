@@ -13,6 +13,18 @@ export async function getPinsByProject(projectId: string): Promise<Pin[]> {
   return data
 }
 
+export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
+  const { data, error } = await supabase
+    .from('pins')
+    .select('*')
+    .eq('blog_article_id', articleId)
+    .order('scheduled_at', { ascending: false, nullsFirst: false })
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
 export async function getAllPins(): Promise<Pin[]> {
   const { data, error } = await supabase
     .from('pins')

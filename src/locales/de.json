@@ -65,7 +65,8 @@
   "stats": {
     "scheduled": "Geplant",
     "published": "Veröffentlicht",
-    "pending": "Ausstehend"
+    "pending": "Ausstehend",
+    "overdue": "Überfällig"
   },
   "projectCard": {
     "articles": "Artikel",
@@ -470,7 +471,12 @@
     "saving": "Speichern...",
     "confirmSaveTitle": "Bearbeiteten Inhalt speichern?",
     "confirmSaveDescription": "Dies überschreibt den gescrapten Inhalt mit deinen Änderungen. Der ursprüngliche Inhalt kann nicht wiederhergestellt werden.",
-    "confirmSaveButton": "Speichern"
+    "confirmSaveButton": "Speichern",
+    "linkedPins": "Verknüpfte Pins",
+    "loadMore": "Mehr anzeigen",
+    "noPins": "Noch keine Pins für diesen Artikel",
+    "scheduledAt": "Geplant: {{date}}",
+    "publishedAt": "Veröffentlicht: {{date}}"
   },
   "toast": {
     "project": {

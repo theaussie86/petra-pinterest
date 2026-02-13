@@ -65,7 +65,8 @@
   "stats": {
     "scheduled": "Scheduled",
     "published": "Published",
-    "pending": "Pending"
+    "pending": "Pending",
+    "overdue": "Overdue"
   },
   "projectCard": {
     "articles": "articles",
@@ -470,7 +471,12 @@
     "saving": "Saving...",
     "confirmSaveTitle": "Save edited content?",
     "confirmSaveDescription": "This will overwrite the scraped content with your edits. The original content cannot be recovered.",
-    "confirmSaveButton": "Save"
+    "confirmSaveButton": "Save",
+    "linkedPins": "Linked Pins",
+    "loadMore": "Load more",
+    "noPins": "No pins for this article yet",
+    "scheduledAt": "Scheduled: {{date}}",
+    "publishedAt": "Published: {{date}}"
   },
   "toast": {
     "project": {
