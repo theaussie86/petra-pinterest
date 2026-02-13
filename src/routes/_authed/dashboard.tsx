@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
@@ -11,20 +11,8 @@ import { ProjectDialog } from '@/components/projects/project-dialog'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
 import { Button } from '@/components/ui/button'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
-import { useAllPins } from '@/lib/hooks/use-pins'
-import { useAllArticles } from '@/lib/hooks/use-articles'
+import { useProjectStats } from '@/lib/hooks/use-project-stats'
 import type { BlogProject } from '@/types/blog-projects'
-import type { PinStatus } from '@/types/pins'
-
-const SCHEDULED_STATUSES: PinStatus[] = ['ready_to_schedule']
-const PUBLISHED_STATUSES: PinStatus[] = ['published']
-const PENDING_STATUSES: PinStatus[] = [
-  'draft',
-  'ready_for_generation',
-  'generate_metadata',
-  'generating_metadata',
-  'metadata_created',
-]
 
 export const Route = createFileRoute('/_authed/dashboard')({
   component: Dashboard,
@@ -33,44 +21,11 @@ export const Route = createFileRoute('/_authed/dashboard')({
 function Dashboard() {
   const { t } = useTranslation()
   const { data: projects, isLoading: projectsLoading, error, refetch } = useBlogProjects()
-  const { data: allPins, isLoading: pinsLoading } = useAllPins()
-  const { data: allArticles, isLoading: articlesLoading } = useAllArticles()
+  const { globalStats, projectStatsMap, loading: statsLoading } = useProjectStats()
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [editProject, setEditProject] = useState<BlogProject | null>(null)
   const [deleteProject, setDeleteProject] = useState<BlogProject | null>(null)
-
-  const statsLoading = pinsLoading || articlesLoading
-
-  const globalStats = useMemo(() => {
-    const pins = allPins ?? []
-    return {
-      scheduled: pins.filter((p) => SCHEDULED_STATUSES.includes(p.status)).length,
-      published: pins.filter((p) => PUBLISHED_STATUSES.includes(p.status)).length,
-      pending: pins.filter((p) => PENDING_STATUSES.includes(p.status)).length,
-    }
-  }, [allPins])
-
-  const projectStatsMap = useMemo(() => {
-    const pins = allPins ?? []
-    const articles = allArticles ?? []
-    const map = new Map<string, { articles: number; scheduled: number; published: number }>()
-
-    for (const article of articles) {
-      const entry = map.get(article.blog_project_id) ?? { articles: 0, scheduled: 0, published: 0 }
-      entry.articles++
-      map.set(article.blog_project_id, entry)
-    }
-
-    for (const pin of pins) {
-      const entry = map.get(pin.blog_project_id) ?? { articles: 0, scheduled: 0, published: 0 }
-      if (SCHEDULED_STATUSES.includes(pin.status)) entry.scheduled++
-      if (PUBLISHED_STATUSES.includes(pin.status)) entry.published++
-      map.set(pin.blog_project_id, entry)
-    }
-
-    return map
-  }, [allPins, allArticles])
 
   const handleCreateProject = () => {
     setCreateDialogOpen(true)
