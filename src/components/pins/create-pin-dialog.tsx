@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Loader2 } from 'lucide-react'
+import { AlertTriangle, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -15,12 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { ImageUploadZone } from '@/components/pins/image-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useCreatePins } from '@/lib/hooks/use-pins'
-import { usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
+import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { uploadPinImage } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
 import { toast } from 'sonner'
@@ -45,6 +46,8 @@ export function CreatePinDialog({
   const [isUploading, setIsUploading] = useState(false)
 
   const { data: articles = [] } = useArticles(projectId)
+  const { data: connectionData } = usePinterestConnection(projectId)
+  const isConnected = connectionData?.connected === true && connectionData?.connection?.is_active !== false
   const { data: boards = [] } = usePinterestBoards(projectId)
   const createPinsMutation = useCreatePins()
 
@@ -154,10 +157,18 @@ export function CreatePinDialog({
           {/* Board selector (optional) */}
           <div className="space-y-2">
             <Label>{t('createPin.fieldBoard')}</Label>
+            {!isConnected && (
+              <Alert variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  {t('createPin.pinterestNotConnected')}
+                </AlertDescription>
+              </Alert>
+            )}
             <Select
               value={selectedBoardId}
               onValueChange={setSelectedBoardId}
-              disabled={isUploading}
+              disabled={!isConnected || isUploading}
             >
               <SelectTrigger>
                 <SelectValue placeholder={t('createPin.placeholderBoard')} />
@@ -170,7 +181,7 @@ export function CreatePinDialog({
                 ))}
               </SelectContent>
             </Select>
-            {boards.length === 0 && (
+            {isConnected && boards.length === 0 && (
               <p className="text-xs text-slate-500">
                 {t('createPin.noBoards')}
               </p>

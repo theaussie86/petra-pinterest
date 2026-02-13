@@ -21,9 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
+import { AlertTriangle } from 'lucide-react'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
-import { usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
+import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import {
   PIN_STATUS,
   ACTIVE_STATUSES,
@@ -51,6 +53,8 @@ interface EditPinDialogProps {
 export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDialogProps) {
   const { t } = useTranslation()
   const updateMutation = useUpdatePin()
+  const { data: connectionData } = usePinterestConnection(projectId)
+  const isConnected = connectionData?.connected === true && connectionData?.connection?.is_active !== false
   const { data: boards } = usePinterestBoards(projectId)
 
   const form = useForm<EditPinFormData>({
@@ -168,10 +172,18 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
 
           <div className="space-y-2">
             <Label htmlFor="edit-board">{t('editPin.fieldBoard')}</Label>
+            {!isConnected && (
+              <Alert variant="warning">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  {t('editPin.pinterestNotConnected')}
+                </AlertDescription>
+              </Alert>
+            )}
             <Select
               value={currentBoardId}
               onValueChange={(value) => setValue('pinterest_board_id', value)}
-              disabled={isSubmitting}
+              disabled={!isConnected || isSubmitting}
             >
               <SelectTrigger id="edit-board">
                 <SelectValue placeholder={t('editPin.placeholderBoard')} />

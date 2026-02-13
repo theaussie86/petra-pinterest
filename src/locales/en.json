@@ -294,7 +294,8 @@
     "createButton_plural": "Create {{count}} Pins",
     "validationImageRequired": "Please select at least one image",
     "validationArticleRequired": "Please select an article",
-    "errorCreateFailed": "Failed to create pins. Please try again."
+    "errorCreateFailed": "Failed to create pins. Please try again.",
+    "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board."
   },
   "editPin": {
     "title": "Edit Pin",
@@ -309,7 +310,8 @@
     "fieldStatus": "Status",
     "validationTitleTooLong": "Title too long",
     "validationDescriptionTooLong": "Description too long",
-    "validationAltTextTooLong": "Alt text too long"
+    "validationAltTextTooLong": "Alt text too long",
+    "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board."
   },
   "imageUpload": {
     "dropMessage": "Drop images here or ",

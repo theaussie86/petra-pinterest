@@ -294,7 +294,8 @@
     "createButton_plural": "{{count}} Pins erstellen",
     "validationImageRequired": "Bitte wahle mindestens ein Bild aus",
     "validationArticleRequired": "Bitte wahle einen Artikel aus",
-    "errorCreateFailed": "Pins konnten nicht erstellt werden. Bitte versuche es erneut."
+    "errorCreateFailed": "Pins konnten nicht erstellt werden. Bitte versuche es erneut.",
+    "pinterestNotConnected": "Pinterest ist nicht verknüpft. Verbinde Pinterest in den Projekteinstellungen, um ein Board auszuwählen."
   },
   "editPin": {
     "title": "Pin bearbeiten",
@@ -309,7 +310,8 @@
     "fieldStatus": "Status",
     "validationTitleTooLong": "Titel zu lang",
     "validationDescriptionTooLong": "Beschreibung zu lang",
-    "validationAltTextTooLong": "Alternativtext zu lang"
+    "validationAltTextTooLong": "Alternativtext zu lang",
+    "pinterestNotConnected": "Pinterest ist nicht verknüpft. Verbinde Pinterest in den Projekteinstellungen, um ein Board auszuwählen."
   },
   "imageUpload": {
     "dropMessage": "Bilder hier ablegen oder ",
