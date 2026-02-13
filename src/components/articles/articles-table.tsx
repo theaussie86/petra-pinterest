@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import { ArrowUp, ArrowDown, ArrowUpDown, ExternalLink } from 'lucide-react'
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useArticles, useArchivedArticles, useArchiveArticle, useRestoreArticle } from '@/lib/hooks/use-articles'
+import { usePins } from '@/lib/hooks/use-pins'
 import type { Article } from '@/types/articles'
 import type { ArticleSortField, SortDirection } from '@/types/articles'
 
@@ -29,6 +30,16 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
 
   const { data: articles, isLoading, error } = useArticles(projectId)
   const { data: archivedArticles, isLoading: archivedLoading, error: archivedError } = useArchivedArticles(projectId)
+  const { data: pins } = usePins(projectId)
+
+  const pinCountByArticle = useMemo(() => {
+    if (!pins) return {}
+    const counts: Record<string, number> = {}
+    for (const pin of pins) {
+      counts[pin.blog_article_id] = (counts[pin.blog_article_id] || 0) + 1
+    }
+    return counts
+  }, [pins])
 
   const archiveMutation = useArchiveArticle()
   const restoreMutation = useRestoreArticle()
@@ -69,6 +80,9 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
       } else if (sortField === 'url') {
         aValue = a.url
         bValue = b.url
+      } else if (sortField === 'pin_count') {
+        aValue = pinCountByArticle[a.id] || 0
+        bValue = pinCountByArticle[b.id] || 0
       }
 
       if (aValue === null || aValue === '') return 1
@@ -147,7 +161,9 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
             <TableHead className="cursor-pointer w-[140px]" onClick={() => handleSort('published_at')}>
               {t('articlesTable.columnDate')} {getSortIcon('published_at')}
             </TableHead>
-            <TableHead className="w-[100px]">{t('articlesTable.columnPinCount')}</TableHead>
+            <TableHead className="cursor-pointer w-[100px]" onClick={() => handleSort('pin_count')}>
+              {t('articlesTable.columnPinCount')} {getSortIcon('pin_count')}
+            </TableHead>
             <TableHead className="cursor-pointer w-[200px]" onClick={() => handleSort('url')}>
               {t('articlesTable.columnUrl')} {getSortIcon('url')}
             </TableHead>
@@ -167,9 +183,9 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
                   {article.title}
                 </Link>
               </TableCell>
-              <TableCell>{formatDate(article.published_at)}</TableCell>
+              <TableCell>{formatDate(article.published_at || article.scraped_at)}</TableCell>
               <TableCell>
-                <Badge variant="secondary">0</Badge>
+                <Badge variant="secondary">{pinCountByArticle[article.id] || 0}</Badge>
               </TableCell>
               <TableCell>
                 <a

@@ -36,5 +36,5 @@ export interface ScrapeResponse {
 }
 
 // Sort options for the articles table
-export type ArticleSortField = 'title' | 'published_at' | 'scraped_at' | 'url'
+export type ArticleSortField = 'title' | 'published_at' | 'scraped_at' | 'url' | 'pin_count'
 export type SortDirection = 'asc' | 'desc'
