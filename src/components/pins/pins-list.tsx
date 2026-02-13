@@ -55,8 +55,27 @@ interface PinsListProps {
   projectId: string
 }
 
-const STATUS_TABS = ['all', 'draft', 'ready_for_generation', 'error'] as const
+const STATUS_TABS = ['all', 'draft', 'generation', 'metadata_created', 'scheduled', 'published', 'error'] as const
 type StatusTab = (typeof STATUS_TABS)[number]
+
+const STATUS_TAB_GROUPS: Record<Exclude<StatusTab, 'all'>, PinStatus[]> = {
+  draft: ['draft'],
+  generation: ['ready_for_generation', 'generate_metadata', 'generating_metadata'],
+  metadata_created: ['metadata_created'],
+  scheduled: ['ready_to_schedule'],
+  published: ['publishing', 'published'],
+  error: ['error'],
+}
+
+const TAB_LABEL_KEYS: Record<StatusTab, string> = {
+  all: 'pinsList.all',
+  draft: 'pinsList.tab_draft',
+  generation: 'pinsList.tab_generation',
+  metadata_created: 'pinsList.tab_metadata_created',
+  scheduled: 'pinsList.tab_scheduled',
+  published: 'pinsList.tab_published',
+  error: 'pinsList.tab_error',
+}
 
 export function PinsList({ projectId }: PinsListProps) {
   const { t, i18n } = useTranslation()
@@ -84,11 +103,30 @@ export function PinsList({ projectId }: PinsListProps) {
     return new Map(articles.map((a) => [a.id, a.title]))
   }, [articles])
 
+  // Compute per-tab counts
+  const tabCounts = useMemo(() => {
+    const counts: Record<StatusTab, number> = {
+      all: 0, draft: 0, generation: 0, metadata_created: 0,
+      scheduled: 0, published: 0, error: 0,
+    }
+    if (!pins) return counts
+    counts.all = pins.length
+    for (const pin of pins) {
+      for (const [tab, statuses] of Object.entries(STATUS_TAB_GROUPS)) {
+        if (statuses.includes(pin.status)) {
+          counts[tab as StatusTab]++
+        }
+      }
+    }
+    return counts
+  }, [pins])
+
   // Filter pins by status tab
   const filteredPins = useMemo(() => {
     if (!pins) return []
     if (activeTab === 'all') return pins
-    return pins.filter((pin) => pin.status === activeTab)
+    const statuses = STATUS_TAB_GROUPS[activeTab]
+    return pins.filter((pin) => statuses.includes(pin.status))
   }, [pins, activeTab])
 
   // Sort pins
@@ -256,10 +294,16 @@ export function PinsList({ projectId }: PinsListProps) {
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="all">{t('pinsList.all')}</TabsTrigger>
-          <TabsTrigger value="draft">{t('pinStatus.draft')}</TabsTrigger>
-          <TabsTrigger value="ready_for_generation">{t('pinStatus.ready_for_generation')}</TabsTrigger>
-          <TabsTrigger value="error">{t('pinStatus.error')}</TabsTrigger>
+          {STATUS_TABS.map((tab) => (
+            <TabsTrigger key={tab} value={tab}>
+              {t(TAB_LABEL_KEYS[tab])}
+              {tabCounts[tab] > 0 && (
+                <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs font-medium leading-none">
+                  {tabCounts[tab]}
+                </span>
+              )}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         {/* Toolbar row */}
@@ -563,7 +607,7 @@ function EmptyState({ tab }: { tab: StatusTab }) {
   const message =
     tab === 'all'
       ? t('pinsList.emptyAll')
-      : t('pinsList.emptyStatus', { status: t('pinStatus.' + tab) })
+      : t('pinsList.emptyStatus', { status: t(TAB_LABEL_KEYS[tab]) })
 
   return (
     <div className="flex flex-col items-center justify-center py-16 space-y-3">

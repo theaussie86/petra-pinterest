@@ -234,6 +234,12 @@
   "pinsList": {
     "errorLoadFailed": "Pins konnten nicht geladen werden",
     "all": "Alle",
+    "tab_draft": "Entwurf",
+    "tab_generation": "Generierung",
+    "tab_metadata_created": "Metadaten erstellt",
+    "tab_scheduled": "Geplant",
+    "tab_published": "Veröffentlicht",
+    "tab_error": "Fehler",
     "selectAll": "Alle auswählen",
     "selected": "{{count}} ausgewählt",
     "generate": "Generieren ({{count}})",
