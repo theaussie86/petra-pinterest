@@ -9,11 +9,12 @@ import { DeleteDialog } from '@/components/projects/delete-dialog'
 import { GeminiApiKeyCard } from '@/components/projects/gemini-api-key-card'
 import { PinterestConnection } from '@/components/projects/pinterest-connection'
 import { ProjectSectionDialog, type FieldConfig } from '@/components/projects/project-section-dialog'
+import { clearStoredProjectId } from '@/lib/hooks/use-active-project'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { BlogProject } from '@/types/blog-projects'
 
-export const Route = createFileRoute('/_authed/projects/$id')({
+export const Route = createFileRoute('/_authed/projects/$projectId/')({
   validateSearch: (search: Record<string, unknown>) => ({
     pinterest_connected: (search.pinterest_connected as string) || undefined,
     pinterest_error: (search.pinterest_error as string) || undefined,
@@ -200,15 +201,20 @@ function GenericSectionContent({ project, fields }: { project: BlogProject; fiel
 
 function ProjectDetail() {
   const { t } = useTranslation()
-  const { id } = Route.useParams()
+  const { projectId } = Route.useParams()
   const search = Route.useSearch()
-  const { data: project, isLoading, error } = useBlogProject(id)
+  const { data: project, isLoading, error } = useBlogProject(projectId)
   const navigate = useNavigate()
 
   const [editSection, setEditSection] = useState<SectionKey | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const activeSection = SECTIONS.find((s) => s.key === editSection)
+
+  const handleDeleted = () => {
+    clearStoredProjectId()
+    navigate({ to: '/dashboard' })
+  }
 
   return (
     <>
@@ -274,11 +280,11 @@ function ProjectDetail() {
             </SectionCard>
 
             {/* Gemini API Key */}
-            <GeminiApiKeyCard blogProjectId={id} />
+            <GeminiApiKeyCard blogProjectId={projectId} />
 
             {/* Pinterest Connection */}
             <PinterestConnection
-              blogProjectId={id}
+              blogProjectId={projectId}
               pinterestConnected={search.pinterest_connected === 'true'}
               pinterestError={search.pinterest_error}
             />
@@ -305,7 +311,7 @@ function ProjectDetail() {
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
           project={project}
-          onDeleted={() => navigate({ to: '/dashboard' })}
+          onDeleted={handleDeleted}
         />
       )}
     </>

@@ -3,17 +3,9 @@ import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { useAllPins } from '@/lib/hooks/use-pins'
-import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
+import { usePins } from '@/lib/hooks/use-pins'
 import { PIN_STATUS, getStatusBadgeClasses } from '@/types/pins'
 import type { PinStatus } from '@/types/pins'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
@@ -21,16 +13,14 @@ import { UnscheduledPinsList } from '@/components/calendar/unscheduled-pins-list
 
 // Search params validation schema
 type CalendarSearch = {
-  project?: string
   statuses?: string[]
   tab?: 'calendar' | 'unscheduled'
   view?: 'month' | 'week'
 }
 
-export const Route = createFileRoute('/_authed/calendar')({
+export const Route = createFileRoute('/_authed/projects/$projectId/calendar')({
   validateSearch: (search: Record<string, unknown>): CalendarSearch => {
     return {
-      project: typeof search.project === 'string' ? search.project : undefined,
       statuses: Array.isArray(search.statuses)
         ? search.statuses.filter((s): s is string => typeof s === 'string')
         : undefined,
@@ -50,34 +40,26 @@ export const Route = createFileRoute('/_authed/calendar')({
 function CalendarPage() {
   const { t } = useTranslation()
   const navigate = useNavigate({ from: Route.fullPath })
+  const { projectId } = Route.useParams()
   const searchParams = Route.useSearch()
 
-  const { data: allPins, isLoading: pinsLoading } = useAllPins()
-  const { data: projects, isLoading: projectsLoading } = useBlogProjects()
+  const { data: pins, isLoading } = usePins(projectId)
 
-  const { project, statuses, tab, view } = searchParams
+  const { statuses, tab, view } = searchParams
 
   // Sidebar state
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
 
-  // Client-side filtering
+  // Filter by statuses
   const filteredPins = useMemo(() => {
-    if (!allPins) return []
+    if (!pins) return []
 
-    let filtered = allPins
-
-    // Filter by project
-    if (project) {
-      filtered = filtered.filter((pin) => pin.blog_project_id === project)
-    }
-
-    // Filter by statuses
     if (statuses && statuses.length > 0) {
-      filtered = filtered.filter((pin) => statuses.includes(pin.status))
+      return pins.filter((pin) => statuses.includes(pin.status))
     }
 
-    return filtered
-  }, [allPins, project, statuses])
+    return pins
+  }, [pins, statuses])
 
   // Split into scheduled and unscheduled
   const scheduledPins = useMemo(
@@ -89,16 +71,6 @@ function CalendarPage() {
     () => filteredPins.filter((pin) => pin.scheduled_at === null),
     [filteredPins]
   )
-
-  // Handle project filter change
-  const handleProjectChange = (value: string) => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        project: value === 'all' ? undefined : value,
-      }),
-    })
-  }
 
   // Handle status chip toggle
   const handleStatusToggle = (status: PinStatus) => {
@@ -140,8 +112,6 @@ function CalendarPage() {
     setSelectedPinId(pinId)
   }
 
-  const isLoading = pinsLoading || projectsLoading
-
   // Get filterable statuses (exclude 'deleted')
   const filterableStatuses = Object.keys(PIN_STATUS).filter(
     (status) => status !== 'deleted'
@@ -154,24 +124,6 @@ function CalendarPage() {
         {/* Toolbar row */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            {/* Project dropdown */}
-            <Select
-              value={project || 'all'}
-              onValueChange={handleProjectChange}
-            >
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder={t('calendar.allProjects')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('calendar.allProjects')}</SelectItem>
-                {projects?.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
             {/* Tab toggle */}
             <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
               <button

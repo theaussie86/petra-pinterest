@@ -19,7 +19,7 @@ export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: 
   const displayStats = stats ?? { articles: 0, scheduled: 0, published: 0 }
 
   return (
-    <Link to="/projects/$id" params={{ id: project.id }}>
+    <Link to="/projects/$projectId" params={{ projectId: project.id }}>
       <Card className="cursor-pointer transition-all hover:shadow-lg">
         <CardHeader>
           <CardTitle className="flex items-start justify-between">

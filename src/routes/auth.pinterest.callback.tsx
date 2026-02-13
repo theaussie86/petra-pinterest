@@ -28,8 +28,8 @@ export const Route = createFileRoute('/auth/pinterest/callback')({
       if (result.success && result.blog_project_id) {
         // Success: redirect to project page with success indicator
         throw redirect({
-          to: '/projects/$id',
-          params: { id: result.blog_project_id },
+          to: '/projects/$projectId',
+          params: { projectId: result.blog_project_id },
           search: { pinterest_connected: 'true' },
         })
       } else {

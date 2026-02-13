@@ -42,7 +42,10 @@
     "projects": "Projekte",
     "articles": "Artikel",
     "pins": "Pins",
-    "calendar": "Kalender"
+    "calendar": "Kalender",
+    "selectProject": "Projekt wählen",
+    "noProjects": "Noch keine Projekte",
+    "manageProjects": "Projekte verwalten"
   },
   "language": {
     "label": "Sprache",

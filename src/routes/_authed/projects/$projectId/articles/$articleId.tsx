@@ -47,7 +47,7 @@ function ArticleDetail() {
   const handleArchive = async () => {
     archiveMutation.mutate(article!.id, {
       onSuccess: () => {
-        navigate({ to: '/projects/$id', params: { id: article!.blog_project_id }, search: { pinterest_connected: undefined, pinterest_error: undefined } })
+        navigate({ to: '/projects/$projectId', params: { projectId: article!.blog_project_id } })
       }
     })
   }

@@ -19,6 +19,7 @@ import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
 import { PublishPinButton } from '@/components/pins/publish-pin-button'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/pins/$pinId')({
@@ -36,6 +37,7 @@ function PinDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
+  const [imageDialogOpen, setImageDialogOpen] = useState(false)
 
   // Fetch Pinterest connection status for the pin's project
   const { data: connectionData } = usePinterestConnection(pin?.blog_project_id || '')
@@ -74,19 +76,8 @@ function PinDetail() {
 
             {/* Two-column layout */}
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-              {/* Left column - Image */}
-              <div className="lg:col-span-2">
-                <div className="overflow-hidden rounded-lg shadow-sm bg-white">
-                  <img
-                    src={getPinImageUrl(pin.image_path)}
-                    alt={pin.title || 'Pin image'}
-                    className="w-full h-auto object-contain"
-                  />
-                </div>
-              </div>
-
-              {/* Right column - Metadata */}
-              <div className="lg:col-span-1 space-y-6">
+              {/* Left column - Metadata */}
+              <div className="lg:col-span-2 space-y-6">
                 {/* Pin info card */}
                 <Card>
                   <CardContent className="pt-6 space-y-4">
@@ -152,13 +143,6 @@ function PinDetail() {
                   </CardContent>
                 </Card>
 
-                {/* AI Metadata generation */}
-                <GenerateMetadataButton
-                  pin={pin}
-                  onHistoryOpen={() => setHistoryDialogOpen(true)}
-                  onRegenerateOpen={() => setFeedbackDialogOpen(true)}
-                />
-
                 {/* Pin scheduling */}
                 <SchedulePinSection pin={pin} />
 
@@ -184,6 +168,28 @@ function PinDetail() {
                   )}
                 </div>
               </div>
+
+              {/* Right column - Image + AI Metadata */}
+              <div className="lg:col-span-1 space-y-6">
+                <button
+                  type="button"
+                  className="overflow-hidden rounded-lg shadow-sm bg-white cursor-pointer w-full"
+                  onClick={() => setImageDialogOpen(true)}
+                >
+                  <img
+                    src={getPinImageUrl(pin.image_path)}
+                    alt={pin.title || 'Pin image'}
+                    className="w-full h-auto object-contain"
+                  />
+                </button>
+
+                {/* AI Metadata generation */}
+                <GenerateMetadataButton
+                  pin={pin}
+                  onHistoryOpen={() => setHistoryDialogOpen(true)}
+                  onRegenerateOpen={() => setFeedbackDialogOpen(true)}
+                />
+              </div>
             </div>
           </>
         )}
@@ -202,7 +208,7 @@ function PinDetail() {
             open={deleteDialogOpen}
             onOpenChange={setDeleteDialogOpen}
             pin={pin}
-            onDeleted={() => navigate({ to: '/projects/$id', params: { id: pin.blog_project_id }, search: { pinterest_connected: undefined, pinterest_error: undefined } })}
+            onDeleted={() => navigate({ to: '/projects/$projectId', params: { projectId: pin.blog_project_id } })}
           />
           <MetadataHistoryDialog
             pinId={pinId}
@@ -214,6 +220,16 @@ function PinDetail() {
             open={feedbackDialogOpen}
             onOpenChange={setFeedbackDialogOpen}
           />
+          <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+            <DialogContent className="max-w-4xl p-0 overflow-hidden">
+              <DialogTitle className="sr-only">{pin.title || 'Pin image'}</DialogTitle>
+              <img
+                src={getPinImageUrl(pin.image_path)}
+                alt={pin.title || 'Pin image'}
+                className="w-full h-auto object-contain"
+              />
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </>
