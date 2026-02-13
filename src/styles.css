@@ -72,3 +72,9 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Calendar cell sizing — CSS variables for react-day-picker */
+[data-slot="calendar"] {
+  --cell-size: 2.5rem;
+  --cell-radius: var(--radius-default);
+}

@@ -39,6 +39,7 @@ export function BulkScheduleDialog({
 }: BulkScheduleDialogProps) {
   const { t } = useTranslation()
   const locale = useDateLocale()
+  const [dateOpen, setDateOpen] = useState(false)
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [time, setTime] = useState<string>('')
   const [intervalDays, setIntervalDays] = useState<number>(2)
@@ -91,7 +92,7 @@ export function BulkScheduleDialog({
           {/* Date Picker */}
           <div>
             <label className="text-sm font-medium mb-2 block">{t('bulkSchedule.fieldStartDate')}</label>
-            <Popover>
+            <Popover open={dateOpen} onOpenChange={setDateOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -101,14 +102,18 @@ export function BulkScheduleDialog({
                   {startDate ? format(startDate, 'PPP', { locale }) : t('bulkSchedule.placeholderDate')}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={startDate}
-                  onSelect={setStartDate}
+                  defaultMonth={startDate}
+                  captionLayout="dropdown"
+                  onSelect={(d) => {
+                    setStartDate(d)
+                    setDateOpen(false)
+                  }}
                   disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                   locale={locale}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -137,11 +142,11 @@ export function BulkScheduleDialog({
             </div>
 
             {/* Custom Time Input */}
-            <input
+            <Input
               type="time"
               value={time}
               onChange={(e) => setTime(e.target.value)}
-              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
             />
           </div>
 

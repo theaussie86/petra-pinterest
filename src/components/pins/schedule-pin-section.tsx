@@ -5,6 +5,7 @@ import { CalendarIcon, Clock, X } from 'lucide-react'
 import { useDateLocale } from '@/lib/date-locale'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
 import { Calendar } from '@/components/ui/calendar'
+import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -29,6 +30,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
   const hasMetadata = !!pin.title && !!pin.description
   const existingDate = pin.scheduled_at ? new Date(pin.scheduled_at) : undefined
 
+  const [dateOpen, setDateOpen] = useState(false)
   const [date, setDate] = useState<Date | undefined>(existingDate)
   const [time, setTime] = useState<string>(
     existingDate ? format(existingDate, 'HH:mm') : ''
@@ -73,7 +75,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
             {/* Date Picker */}
             <div>
               <label className="text-sm font-medium mb-2 block">{t('schedulePin.fieldDate')}</label>
-              <Popover>
+              <Popover open={dateOpen} onOpenChange={setDateOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -83,14 +85,18 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
                     {date ? format(date, 'PPP', { locale }) : t('schedulePin.placeholderDate')}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    defaultMonth={date}
+                    captionLayout="dropdown"
+                    onSelect={(d) => {
+                      setDate(d)
+                      setDateOpen(false)
+                    }}
                     disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                     locale={locale}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -119,11 +125,11 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
               </div>
 
               {/* Custom Time Input */}
-              <input
+              <Input
                 type="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
-                className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
               />
             </div>
 
