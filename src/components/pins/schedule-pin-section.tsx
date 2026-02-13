@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { CalendarIcon, Clock, X } from 'lucide-react'
+import { useDateLocale } from '@/lib/date-locale'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -24,6 +25,7 @@ const PRESET_TIMES = [
 
 export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
   const { t } = useTranslation()
+  const locale = useDateLocale()
   const hasMetadata = !!pin.title && !!pin.description
   const existingDate = pin.scheduled_at ? new Date(pin.scheduled_at) : undefined
 
@@ -78,7 +80,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
                     className="w-full justify-start text-left font-normal"
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, 'PPP') : t('schedulePin.placeholderDate')}
+                    {date ? format(date, 'PPP', { locale }) : t('schedulePin.placeholderDate')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
@@ -87,6 +89,7 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
                     selected={date}
                     onSelect={setDate}
                     disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    locale={locale}
                     initialFocus
                   />
                 </PopoverContent>

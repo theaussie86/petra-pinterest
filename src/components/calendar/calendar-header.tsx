@@ -2,6 +2,7 @@ import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
+import { useDateLocale } from '@/lib/date-locale'
 import { cn } from '@/lib/utils'
 
 interface CalendarHeaderProps {
@@ -18,12 +19,13 @@ export function CalendarHeader({
   onViewChange,
 }: CalendarHeaderProps) {
   const { t } = useTranslation()
+  const locale = useDateLocale()
 
   // Format the current period label
   const periodLabel =
     view === 'month'
-      ? format(currentDate, 'MMMM yyyy')
-      : format(currentDate, 'MMM d, yyyy')
+      ? format(currentDate, 'MMMM yyyy', { locale })
+      : format(currentDate, 'MMM d, yyyy', { locale })
 
   return (
     <div className="flex items-center justify-between mb-6 bg-white rounded-lg border border-slate-200 p-4">

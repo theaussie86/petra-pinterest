@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
 import { getPinImageUrl } from '@/lib/api/pins'
+import { useDateLocale } from '@/lib/date-locale'
 import { cn } from '@/lib/utils'
 import {
   Popover,
@@ -49,6 +50,7 @@ const CalendarDayCellComponent = ({
   onPinDrop,
 }: CalendarDayCellProps) => {
   const { t } = useTranslation()
+  const locale = useDateLocale()
 
   // Determine thumbnail size and max visible count based on view
   const thumbnailSize = view === 'month' ? 32 : 48
@@ -164,7 +166,7 @@ const CalendarDayCellComponent = ({
             <PopoverContent className="w-80 p-3" align="start">
               <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-900 mb-3">
-                  {t('calendar.allPinsFor', { date: format(date, 'MMM d, yyyy') })}
+                  {t('calendar.allPinsFor', { date: format(date, 'MMM d, yyyy', { locale }) })}
                 </p>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {pins.map((pin) => (

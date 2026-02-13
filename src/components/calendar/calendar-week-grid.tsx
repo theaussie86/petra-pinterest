@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
 import { getPinImageUrl } from '@/lib/api/pins'
+import { useDateLocale } from '@/lib/date-locale'
 import { cn } from '@/lib/utils'
 
 interface CalendarWeekGridProps {
@@ -78,6 +79,7 @@ export function CalendarWeekGrid({
   onPinDrop,
 }: CalendarWeekGridProps) {
   const { t } = useTranslation()
+  const locale = useDateLocale()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [nowOffset, setNowOffset] = useState<number | null>(null)
   const [dragOverState, setDragOverState] = useState<{
@@ -197,9 +199,9 @@ export function CalendarWeekGrid({
     return Array.from({ length: TOTAL_HOURS }, (_, i) => {
       const date = new Date()
       date.setHours(START_HOUR + i, 0, 0, 0)
-      return { hour: START_HOUR + i, label: format(date, 'h a') }
+      return { hour: START_HOUR + i, label: format(date, 'h a', { locale }) }
     })
-  }, [])
+  }, [locale])
 
   // Drag handlers for day columns
   const handleColumnDragOver = useCallback(
@@ -284,7 +286,7 @@ export function CalendarWeekGrid({
               )}
             >
               <div className="text-xs font-medium text-slate-500 uppercase">
-                {format(day, 'EEE')}
+                {format(day, 'EEE', { locale })}
               </div>
               <div
                 className={cn(
@@ -371,7 +373,7 @@ export function CalendarWeekGrid({
                   const widthPercent = 100 / pp.overlapCount
                   const leftPercent = pp.overlapIndex * widthPercent
                   const pinTime = pp.pin.scheduled_at
-                    ? format(new Date(pp.pin.scheduled_at), 'h:mm a')
+                    ? format(new Date(pp.pin.scheduled_at), 'h:mm a', { locale })
                     : ''
 
                   return (

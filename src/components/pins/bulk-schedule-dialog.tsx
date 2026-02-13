@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format, addDays } from 'date-fns'
 import { CalendarIcon, Clock } from 'lucide-react'
+import { useDateLocale } from '@/lib/date-locale'
 import { useBulkSchedulePins } from '@/lib/hooks/use-pins'
 import { Calendar } from '@/components/ui/calendar'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -37,6 +38,7 @@ export function BulkScheduleDialog({
   onOpenChange,
 }: BulkScheduleDialogProps) {
   const { t } = useTranslation()
+  const locale = useDateLocale()
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [time, setTime] = useState<string>('')
   const [intervalDays, setIntervalDays] = useState<number>(2)
@@ -69,7 +71,7 @@ export function BulkScheduleDialog({
   const previewDates = startDate
     ? pinIds.slice(0, 3).map((_, index) => {
         const date = addDays(startDate, index * intervalDays)
-        return format(date, 'PPP')
+        return format(date, 'PPP', { locale })
       })
     : []
 
@@ -96,7 +98,7 @@ export function BulkScheduleDialog({
                   className="w-full justify-start text-left font-normal"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, 'PPP') : t('bulkSchedule.placeholderDate')}
+                  {startDate ? format(startDate, 'PPP', { locale }) : t('bulkSchedule.placeholderDate')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -105,6 +107,7 @@ export function BulkScheduleDialog({
                   selected={startDate}
                   onSelect={setStartDate}
                   disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                  locale={locale}
                   initialFocus
                 />
               </PopoverContent>
