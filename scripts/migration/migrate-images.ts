@@ -1,7 +1,10 @@
 #!/usr/bin/env tsx
 /**
- * Brand Kit Migration Script
- * Downloads brand kit files from Airtable and uploads them to Supabase Storage.
+ * Brand Kit Migration Script (LEGACY / STANDALONE)
+ *
+ * NOTE: Brand kit migration is now integrated into migrate-projects.ts.
+ * This script is kept for standalone/manual brand kit re-uploads only.
+ * Prefer running: npx tsx scripts/migration/migrate-projects.ts [--force-brand-kit]
  *
  * Usage: npx tsx scripts/migration/migrate-images.ts [--force] [--dry-run]
  *

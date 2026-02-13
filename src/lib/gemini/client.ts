@@ -2,35 +2,41 @@
  * Gemini Client
  *
  * Singleton Gemini client instance for AI metadata generation.
- * Uses Gemini 2.0 Flash with vision capabilities to analyze pin images and article content.
+ * Uses Gemini 2.5 Flash with vision capabilities to analyze pin images and article content.
+ * All calls use structured output (responseJsonSchema) for reliable JSON parsing.
  */
 
 import { GoogleGenAI } from '@google/genai'
+import { z } from 'zod'
 import { PINTEREST_SEO_SYSTEM_PROMPT, ARTICLE_SCRAPER_SYSTEM_PROMPT } from './prompts'
 
 function getAiClient(apiKey: string) {
   return new GoogleGenAI({ apiKey })
 }
 
-/**
- * Generated metadata structure from Gemini
- */
-export interface GeneratedMetadata {
-  title: string
-  description: string
-  alt_text: string
-}
+// --- Zod schemas ---
 
-/**
- * Scraped article structure from Gemini
- */
-export interface ScrapedArticle {
-  title: string
-  content: string
-  published_at?: string
-  author?: string
-  excerpt?: string
-}
+const generatedMetadataSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  alt_text: z.string(),
+})
+
+const scrapedArticleSchema = z.object({
+  title: z.string(),
+  content: z.string(),
+  published_at: z.string().optional(),
+  author: z.string().optional(),
+  excerpt: z.string().optional(),
+})
+
+export type GeneratedMetadata = z.infer<typeof generatedMetadataSchema>
+export type ScrapedArticle = z.infer<typeof scrapedArticleSchema>
+
+// --- JSON schemas for Gemini structured output ---
+
+const metadataJsonSchema = z.toJSONSchema(generatedMetadataSchema)
+const articleJsonSchema = z.toJSONSchema(scrapedArticleSchema)
 
 /**
  * Fetch an image URL and return it as base64 for Gemini inline data.
@@ -44,46 +50,9 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
 }
 
 /**
- * Parse a Gemini response that should contain JSON.
- * Strips markdown code fences if present and validates required fields.
- */
-function parseMetadataResponse(responseContent: string): GeneratedMetadata {
-  const cleaned = responseContent
-    .replace(/```json\n?/g, '')
-    .replace(/```\n?/g, '')
-    .trim()
-
-  const metadata = JSON.parse(cleaned) as GeneratedMetadata
-
-  if (!metadata.title || !metadata.description || !metadata.alt_text) {
-    throw new Error('Gemini response missing required fields (title, description, alt_text)')
-  }
-
-  return metadata
-}
-
-/**
- * Parse a Gemini response for Scraped Article.
- */
-function parseScraperResponse(responseContent: string): ScrapedArticle {
-    const cleaned = responseContent
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim()
-  
-    const article = JSON.parse(cleaned) as ScrapedArticle
-  
-    if (!article.title || !article.content) {
-      throw new Error('Gemini response missing required fields (title, content)')
-    }
-  
-    return article
-  }
-
-/**
  * Generate Pinterest-optimized metadata for a pin
  *
- * Uses Gemini 2.0 Flash with vision to analyze both the article content and pin image
+ * Uses Gemini 2.5 Flash with vision to analyze both the article content and pin image
  * to generate SEO-optimized title, description, and alt text.
  */
 export async function generatePinMetadata(
@@ -106,25 +75,16 @@ export async function generatePinMetadata(
       systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
       maxOutputTokens: 500,
       temperature: 0.7,
+      responseMimeType: 'application/json',
+      responseJsonSchema: metadataJsonSchema,
     },
   })
 
-  const responseContent = response.text
-
-  if (!responseContent) {
+  if (!response.text) {
     throw new Error('Gemini returned empty response')
   }
 
-  try {
-    return parseMetadataResponse(responseContent)
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new Error(
-        `Failed to parse Gemini response as JSON. Response: ${responseContent.slice(0, 200)}`
-      )
-    }
-    throw error
-  }
+  return generatedMetadataSchema.parse(JSON.parse(response.text))
 }
 
 /**
@@ -150,6 +110,8 @@ export async function generatePinMetadataWithFeedback(
       systemInstruction: PINTEREST_SEO_SYSTEM_PROMPT,
       maxOutputTokens: 500,
       temperature: 0.7,
+      responseMimeType: 'application/json',
+      responseJsonSchema: metadataJsonSchema,
     },
     history: [
       {
@@ -170,22 +132,11 @@ export async function generatePinMetadataWithFeedback(
     message: `Please regenerate the metadata with this feedback: ${feedback}`,
   })
 
-  const responseContent = response.text
-
-  if (!responseContent) {
+  if (!response.text) {
     throw new Error('Gemini returned empty response')
   }
 
-  try {
-    return parseMetadataResponse(responseContent)
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      throw new Error(
-        `Failed to parse Gemini response as JSON. Response: ${responseContent.slice(0, 200)}`
-      )
-    }
-    throw error
-  }
+  return generatedMetadataSchema.parse(JSON.parse(response.text))
 }
 
 /**
@@ -196,10 +147,8 @@ export async function generateArticleFromHtml(
     url: string,
     apiKey: string
   ): Promise<ScrapedArticle> {
-    // Truncate HTML if it's too large (Gemini 2.0 Flash has large context, but let's be safe/efficient)
-    // 100k chars is usually enough for body content after cleaning
-    const truncatedHtml = htmlContent.slice(0, 100000) 
-  
+    const truncatedHtml = htmlContent.slice(0, 100000)
+
     const response = await getAiClient(apiKey).models.generateContent({
       model: 'gemini-2.5-flash',
       contents: [
@@ -207,24 +156,15 @@ export async function generateArticleFromHtml(
       ],
       config: {
         systemInstruction: ARTICLE_SCRAPER_SYSTEM_PROMPT,
-        temperature: 0.1, // Lower temperature for more deterministic extraction
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+        responseJsonSchema: articleJsonSchema,
       },
     })
-  
-    const responseContent = response.text
-  
-    if (!responseContent) {
+
+    if (!response.text) {
       throw new Error('Gemini returned empty response')
     }
-  
-    try {
-      return parseScraperResponse(responseContent)
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new Error(
-          `Failed to parse Gemini response as JSON. Response: ${responseContent.slice(0, 200)}...`
-        )
-      }
-      throw error
-    }
+
+    return scrapedArticleSchema.parse(JSON.parse(response.text))
   }

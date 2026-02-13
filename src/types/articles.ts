@@ -23,7 +23,6 @@ export interface ScrapeRequest {
   blog_project_id: string
   blog_url: string
   sitemap_url?: string | null
-  rss_url?: string | null
 }
 
 // Scrape response from server function
@@ -32,7 +31,7 @@ export interface ScrapeResponse {
   articles_found: number
   articles_created: number
   articles_updated: number
-  method: 'firecrawl-map' | 'firecrawl' | 'single'
+  method: 'gemini-fetch' | 'single'
   errors: string[]
 }
 
