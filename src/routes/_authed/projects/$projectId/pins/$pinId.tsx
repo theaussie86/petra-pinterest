@@ -8,7 +8,7 @@ import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import { EditPinDialog } from '@/components/pins/edit-pin-dialog'
 import { DeletePinDialog } from '@/components/pins/delete-pin-dialog'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
@@ -176,11 +176,7 @@ function PinDetail() {
                   className="overflow-hidden rounded-lg shadow-sm bg-white cursor-pointer w-full"
                   onClick={() => setImageDialogOpen(true)}
                 >
-                  <img
-                    src={getPinImageUrl(pin.image_path)}
-                    alt={pin.title || 'Pin image'}
-                    className="w-full h-auto object-contain"
-                  />
+                  <PinMediaPreview pin={pin} className="w-full h-auto object-contain" />
                 </button>
 
                 {/* AI Metadata generation */}
@@ -222,12 +218,8 @@ function PinDetail() {
           />
           <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
             <DialogContent className="max-w-4xl p-0 overflow-hidden">
-              <DialogTitle className="sr-only">{pin.title || 'Pin image'}</DialogTitle>
-              <img
-                src={getPinImageUrl(pin.image_path)}
-                alt={pin.title || 'Pin image'}
-                className="w-full h-auto object-contain"
-              />
+              <DialogTitle className="sr-only">{pin.title || 'Pin media'}</DialogTitle>
+              <PinMediaPreview pin={pin} controls className="w-full h-auto object-contain" />
             </DialogContent>
           </Dialog>
         </>

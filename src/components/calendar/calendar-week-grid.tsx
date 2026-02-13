@@ -3,7 +3,7 @@ import { startOfWeek, addDays, format, isToday, isSameWeek } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import { useDateLocale } from '@/lib/date-locale'
 import { cn } from '@/lib/utils'
 
@@ -395,12 +395,9 @@ export function CalendarWeekGrid({
                       title={pp.pin.title || t('common.untitled')}
                     >
                       <div className="flex items-center gap-1.5 h-full min-w-0">
-                        <img
-                          src={getPinImageUrl(pp.pin.image_path)}
-                          alt={pp.pin.title || 'Pin'}
-                          loading="lazy"
-                          className="w-6 h-6 rounded object-cover shrink-0"
-                        />
+                        <div className="w-6 h-6 rounded overflow-hidden shrink-0">
+                          <PinMediaPreview pin={pp.pin} />
+                        </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-slate-900 truncate leading-tight">
                             {pp.pin.title || t('common.untitled')}

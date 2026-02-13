@@ -26,7 +26,7 @@ import {
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import type { Pin, PinSortField } from '@/types/pins'
 
 type SortDirection = 'asc' | 'desc'
@@ -241,12 +241,7 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
                 </TableCell>
                 <TableCell>
                   <div className="h-10 w-10 overflow-hidden rounded bg-slate-100">
-                    <img
-                      src={getPinImageUrl(pin.image_path)}
-                      alt={pin.title || 'Pin thumbnail'}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
+                    <PinMediaPreview pin={pin} />
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
