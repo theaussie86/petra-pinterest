@@ -1,19 +1,26 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
-import { AlertTriangle, Loader2 } from 'lucide-react'
+import { AlertTriangle, Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 import { ImageUploadZone } from '@/components/pins/image-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useCreatePins } from '@/lib/hooks/use-pins'
@@ -34,6 +41,8 @@ function CreatePinPage() {
   const [selectedArticleId, setSelectedArticleId] = useState<string>('')
   const [selectedBoardId, setSelectedBoardId] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
+  const [articlePopoverOpen, setArticlePopoverOpen] = useState(false)
+  const [boardPopoverOpen, setBoardPopoverOpen] = useState(false)
 
   const { data: articles = [] } = useArticles(projectId)
   const { data: connectionData } = usePinterestConnection(projectId)
@@ -97,27 +106,62 @@ function CreatePinPage() {
           {/* Article selector */}
           <div className="space-y-2">
             <Label>{t('createPin.fieldArticle')}</Label>
-            <Select
-              value={selectedArticleId}
-              onValueChange={setSelectedArticleId}
-              disabled={isUploading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('createPin.placeholderArticle')} />
-              </SelectTrigger>
-              <SelectContent>
-                {articles.map((article) => (
-                  <SelectItem key={article.id} value={article.id}>
-                    <div className="flex flex-col">
-                      <span className="truncate max-w-[400px]">{article.title}</span>
-                      <span className="text-xs text-slate-400 truncate max-w-[400px]">
-                        {article.url}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={articlePopoverOpen} onOpenChange={setArticlePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={articlePopoverOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={isUploading}
+                >
+                  {selectedArticleId ? (
+                    <span className="truncate">
+                      {articles.find((a) => a.id === selectedArticleId)?.title}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {t('createPin.placeholderArticle')}
+                    </span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder={t('createPin.searchArticle')} />
+                  <CommandList>
+                    <CommandEmpty>{t('createPin.noArticles')}</CommandEmpty>
+                    <CommandGroup>
+                      {articles.map((article) => (
+                        <CommandItem
+                          key={article.id}
+                          value={article.title || article.id}
+                          keywords={[article.url]}
+                          onSelect={() => {
+                            setSelectedArticleId(article.id)
+                            setArticlePopoverOpen(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              selectedArticleId === article.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <span className="truncate">{article.title}</span>
+                            <span className="text-xs text-muted-foreground truncate">
+                              {article.url}
+                            </span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             {articles.length === 0 && (
               <p className="text-xs text-slate-500">
                 {t('createPin.noArticles')}
@@ -136,22 +180,56 @@ function CreatePinPage() {
                 </AlertDescription>
               </Alert>
             )}
-            <Select
-              value={selectedBoardId}
-              onValueChange={setSelectedBoardId}
-              disabled={!isConnected || isUploading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={t('createPin.placeholderBoard')} />
-              </SelectTrigger>
-              <SelectContent>
-                {boards.map((board) => (
-                  <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
-                    {board.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={boardPopoverOpen} onOpenChange={setBoardPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={boardPopoverOpen}
+                  className="w-full justify-between font-normal"
+                  disabled={!isConnected || isUploading}
+                >
+                  {selectedBoardId ? (
+                    <span className="truncate">
+                      {boards.find((b) => b.pinterest_board_id === selectedBoardId)?.name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {t('createPin.placeholderBoard')}
+                    </span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder={t('createPin.searchBoard')} />
+                  <CommandList>
+                    <CommandEmpty>{t('createPin.noBoards')}</CommandEmpty>
+                    <CommandGroup>
+                      {boards.map((board) => (
+                        <CommandItem
+                          key={board.pinterest_board_id}
+                          value={board.name}
+                          onSelect={() => {
+                            setSelectedBoardId(board.pinterest_board_id)
+                            setBoardPopoverOpen(false)
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              selectedBoardId === board.pinterest_board_id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          {board.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             {isConnected && boards.length === 0 && (
               <p className="text-xs text-slate-500">
                 {t('createPin.noBoards')}
