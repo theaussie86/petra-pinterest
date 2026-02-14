@@ -2,7 +2,6 @@ import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { getPinImageUrl } from '@/lib/api/pins'
-import { inngest } from '../../../server/inngest/client'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
 
 /**
@@ -234,8 +233,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Server function: Trigger bulk metadata generation via Inngest (async).
- * Authenticates via cookies, sends Inngest event.
+ * Server function: Trigger bulk metadata generation via edge functions (async).
+ * Authenticates via cookies, invokes generate-metadata-single for each pin.
  */
 export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_ids: string[] }) => data)
@@ -260,14 +259,20 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
       .update({ status: 'generating_metadata' })
       .in('id', data.pin_ids)
 
-    // Send Inngest event
-    await inngest.send({
-      name: 'pin/metadata.bulk-requested',
-      data: {
-        pin_ids: data.pin_ids,
-        tenant_id: profile.tenant_id,
-      },
-    })
+    // Invoke edge function for each pin (batched, concurrency 5)
+    const serviceClient = getSupabaseServiceClient()
+    const results: PromiseSettledResult<unknown>[] = []
+    for (let i = 0; i < data.pin_ids.length; i += 5) {
+      const batch = data.pin_ids.slice(i, i + 5)
+      const batchResults = await Promise.allSettled(
+        batch.map((pin_id) =>
+          serviceClient.functions.invoke('generate-metadata-single', {
+            body: { pin_id, tenant_id: profile.tenant_id },
+          }),
+        ),
+      )
+      results.push(...batchResults)
+    }
 
     return { success: true, pins_queued: data.pin_ids.length }
   })
