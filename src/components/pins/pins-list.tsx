@@ -44,6 +44,7 @@ import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { PinMediaPreview } from '@/components/pins/pin-media-preview'
+import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { PIN_STATUS, ACTIVE_STATUSES } from '@/types/pins'
 import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
 
@@ -82,6 +83,12 @@ export function PinsList({ projectId }: PinsListProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<string | null>(null)
+
+  useRealtimeInvalidation(
+    `pins:${projectId}`,
+    { event: 'UPDATE', table: 'pins', filter: `blog_project_id=eq.${projectId}` },
+    [['pins', projectId]],
+  )
 
   const { data: pins, isLoading, error } = usePins(projectId)
   const { data: articles } = useArticles(projectId)

@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { toast } from 'sonner'
 
 interface PinterestConnectionProps {
@@ -31,6 +32,12 @@ export function PinterestConnection({
   pinterestError,
 }: PinterestConnectionProps) {
   const { t, i18n } = useTranslation()
+  useRealtimeInvalidation(
+    `pinterest-connection:${blogProjectId}`,
+    { event: 'UPDATE', table: 'pinterest_connections' },
+    [['pinterest-connection', blogProjectId]],
+  )
+
   const { data, isLoading } = usePinterestConnection(blogProjectId)
   const connectMutation = useConnectPinterest()
   const disconnectMutation = useDisconnectPinterest()

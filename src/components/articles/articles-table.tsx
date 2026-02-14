@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useArticles, useArchivedArticles, useArchiveArticle, useRestoreArticle } from '@/lib/hooks/use-articles'
+import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { usePins } from '@/lib/hooks/use-pins'
 import type { Article } from '@/types/articles'
 import type { ArticleSortField, SortDirection } from '@/types/articles'
@@ -27,6 +28,12 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
   const [sortField, setSortField] = useState<ArticleSortField>('published_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active')
+
+  useRealtimeInvalidation(
+    `articles:${projectId}`,
+    { event: 'INSERT', table: 'blog_articles', filter: `blog_project_id=eq.${projectId}` },
+    [['articles', projectId]],
+  )
 
   const { data: articles, isLoading, error } = useArticles(projectId)
   const { data: archivedArticles, isLoading: archivedLoading, error: archivedError } = useArchivedArticles(projectId)

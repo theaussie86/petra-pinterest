@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
 import { UnscheduledPinsList } from '@/components/calendar/unscheduled-pins-list'
+import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 
 // Search params validation schema
 type CalendarSearch = {
@@ -42,6 +43,12 @@ function CalendarPage() {
   const navigate = useNavigate({ from: Route.fullPath })
   const { projectId } = Route.useParams()
   const searchParams = Route.useSearch()
+
+  useRealtimeInvalidation(
+    `calendar-pins:${projectId}`,
+    { event: 'UPDATE', table: 'pins', filter: `blog_project_id=eq.${projectId}` },
+    [['pins', projectId]],
+  )
 
   const { data: pins, isLoading } = usePins(projectId)
 
