@@ -12,7 +12,6 @@ import {
   deletePin,
   deletePins,
   updatePinsStatus,
-  schedulePinsBulk,
 } from '@/lib/api/pins'
 import type { PinStatus } from '@/types/pins'
 
@@ -137,31 +136,6 @@ export function useBulkUpdatePinStatus() {
     },
     onError: (error: Error) => {
       toast.error(i18n.t('toast.pin.statusUpdateFailed', { error: error.message }))
-    },
-  })
-}
-
-export function useBulkSchedulePins() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({
-      pin_ids,
-      start_date,
-      interval_days,
-      time,
-    }: {
-      pin_ids: string[]
-      start_date: Date
-      interval_days: number
-      time: string
-    }) => schedulePinsBulk(pin_ids, start_date, interval_days, time),
-    onSuccess: (_data, { pin_ids }) => {
-      toast.success(i18n.t('toast.pin.scheduled', { count: pin_ids.length }))
-      queryClient.invalidateQueries({ queryKey: ['pins'] })
-    },
-    onError: (error: Error) => {
-      toast.error(i18n.t('toast.pin.scheduleFailed', { error: error.message }))
     },
   })
 }

@@ -24,7 +24,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
-import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
 import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import type { Pin, PinSortField } from '@/types/pins'
@@ -39,7 +38,6 @@ interface UnscheduledPinsListProps {
 export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListProps) {
   const { t } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false)
   const [sortField, setSortField] = useState<PinSortField>('created_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
 
@@ -100,10 +98,6 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
     }
   }, [selectedIds.size, sortedPins])
 
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set())
-  }, [])
-
   // Sort handler
   const handleSort = (field: PinSortField) => {
     if (sortField === field) {
@@ -123,10 +117,6 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
     ) : (
       <ArrowDown className="ml-1 h-3 w-3 inline" />
     )
-  }
-
-  const handleBulkSchedule = () => {
-    setBulkScheduleOpen(true)
   }
 
   const formatDate = (dateString: string) => {
@@ -170,14 +160,6 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Bulk schedule button */}
-          {hasSelection && (
-            <Button variant="outline" size="sm" onClick={handleBulkSchedule}>
-              <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-              {t('pinsList.schedule', { count: selectedIds.size })}
-            </Button>
-          )}
-
           {/* Sort dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -273,15 +255,6 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
         </Table>
       </div>
 
-      {/* Bulk schedule dialog */}
-      <BulkScheduleDialog
-        pinIds={Array.from(selectedIds)}
-        open={bulkScheduleOpen}
-        onOpenChange={(open) => {
-          setBulkScheduleOpen(open)
-          if (!open) clearSelection()
-        }}
-      />
     </div>
   )
 }

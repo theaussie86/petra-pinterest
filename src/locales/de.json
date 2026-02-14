@@ -226,12 +226,10 @@
   },
   "pinStatus": {
     "draft": "Entwurf",
-    "ready_for_generation": "Bereit für Generierung",
     "generate_metadata": "Metadaten generieren",
     "generating_metadata": "Metadaten werden generiert",
     "metadata_created": "Metadaten erstellt",
-    "ready_to_schedule": "Bereit zum Planen",
-    "publishing": "Wird veröffentlicht",
+    "publish_pin": "Wird veröffentlicht",
     "published": "Veröffentlicht",
     "error": "Fehler",
     "deleted": "Gelöscht"
@@ -242,7 +240,6 @@
     "tab_draft": "Entwurf",
     "tab_generation": "Generierung",
     "tab_metadata_created": "Metadaten erstellt",
-    "tab_scheduled": "Geplant",
     "tab_published": "Veröffentlicht",
     "tab_error": "Fehler",
     "selectAll": "Alle auswählen",
@@ -264,7 +261,6 @@
     "columnTitle": "Titel",
     "columnArticle": "Artikel",
     "columnStatus": "Status",
-    "columnScheduled": "Geplant",
     "columnCreated": "Erstellt",
     "unknownArticle": "Unbekannter Artikel",
     "viewEdit": "Ansehen / Bearbeiten",
@@ -343,19 +339,6 @@
     "placeholderFeedback": "z.B. kürzer machen, auf Back-Keywords fokussieren, mehr Dringlichkeit hinzufügen...",
     "regenerating": "Neu generieren...",
     "regenerate": "Neu generieren"
-  },
-  "bulkSchedule": {
-    "title": "Pins planen",
-    "description": "{{count}} Pins über mehrere Termine verteilen",
-    "fieldStartDate": "Startdatum",
-    "placeholderDate": "Datum wählen",
-    "fieldTime": "Uhrzeit",
-    "fieldInterval": "Tage zwischen Pins",
-    "previewTitle": "Vorschau:",
-    "previewItem": "Pin {{n}}: {{date}} um {{time}}",
-    "previewMore": "und {{count}} weitere...",
-    "scheduling": "Planen...",
-    "scheduleAll": "Alle planen"
   },
   "generateMetadata": {
     "title": "KI-Metadaten",
@@ -456,7 +439,6 @@
     "board": "Board",
     "created": "Erstellt",
     "updated": "Aktualisiert",
-    "scheduled": "Geplant",
     "errorTitle": "Fehler",
     "unknownError": "Ein unbekannter Fehler ist aufgetreten.",
     "resetStatus": "Status zurücksetzen",
@@ -519,9 +501,7 @@
       "multipleDeleted": "{{count}} Pins gelöscht",
       "multipleDeleteFailed": "Pins konnten nicht gelöscht werden: {{error}}",
       "statusUpdated": "Status für {{count}} Pins aktualisiert",
-      "statusUpdateFailed": "Pin-Status konnte nicht aktualisiert werden: {{error}}",
-      "scheduled": "{{count}} Pins geplant",
-      "scheduleFailed": "Pins konnten nicht geplant werden: {{error}}"
+      "statusUpdateFailed": "Pin-Status konnte nicht aktualisiert werden: {{error}}"
     },
     "metadata": {
       "generated": "Metadaten generiert",

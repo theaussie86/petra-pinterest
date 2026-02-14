@@ -3,10 +3,9 @@ import { useAllPins } from './use-pins'
 import { useAllArticles } from './use-articles'
 import type { PinStatus } from '@/types/pins'
 
-const PUBLISHED_STATUSES: PinStatus[] = ['published', 'publishing']
+const PUBLISHED_STATUSES: PinStatus[] = ['published', 'publish_pin']
 const PENDING_STATUSES: PinStatus[] = [
   'draft',
-  'ready_for_generation',
   'generate_metadata',
   'generating_metadata',
   'metadata_created',

@@ -10,7 +10,6 @@ import {
   Trash2,
   ImageIcon,
   Sparkles,
-  CalendarIcon,
   Send,
 } from 'lucide-react'
 import {
@@ -40,7 +39,6 @@ import {
 } from '@/components/ui/dialog'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { PinCard } from '@/components/pins/pin-card'
-import { BulkScheduleDialog } from '@/components/pins/bulk-schedule-dialog'
 import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
@@ -55,15 +53,14 @@ interface PinsListProps {
   projectId: string
 }
 
-const STATUS_TABS = ['all', 'draft', 'generation', 'metadata_created', 'scheduled', 'published', 'error'] as const
+const STATUS_TABS = ['all', 'draft', 'generation', 'metadata_created', 'published', 'error'] as const
 type StatusTab = (typeof STATUS_TABS)[number]
 
 const STATUS_TAB_GROUPS: Record<Exclude<StatusTab, 'all'>, PinStatus[]> = {
   draft: ['draft'],
-  generation: ['ready_for_generation', 'generate_metadata', 'generating_metadata'],
+  generation: ['generate_metadata', 'generating_metadata'],
   metadata_created: ['metadata_created'],
-  scheduled: ['ready_to_schedule'],
-  published: ['publishing', 'published'],
+  published: ['publish_pin', 'published'],
   error: ['error'],
 }
 
@@ -72,7 +69,6 @@ const TAB_LABEL_KEYS: Record<StatusTab, string> = {
   draft: 'pinsList.tab_draft',
   generation: 'pinsList.tab_generation',
   metadata_created: 'pinsList.tab_metadata_created',
-  scheduled: 'pinsList.tab_scheduled',
   published: 'pinsList.tab_published',
   error: 'pinsList.tab_error',
 }
@@ -85,7 +81,6 @@ export function PinsList({ projectId }: PinsListProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
-  const [bulkScheduleOpen, setBulkScheduleOpen] = useState(false)
   const [singleDeleteTarget, setSingleDeleteTarget] = useState<string | null>(null)
 
   const { data: pins, isLoading, error } = usePins(projectId)
@@ -107,7 +102,7 @@ export function PinsList({ projectId }: PinsListProps) {
   const tabCounts = useMemo(() => {
     const counts: Record<StatusTab, number> = {
       all: 0, draft: 0, generation: 0, metadata_created: 0,
-      scheduled: 0, published: 0, error: 0,
+      published: 0, error: 0,
     }
     if (!pins) return counts
     counts.all = pins.length
@@ -225,10 +220,6 @@ export function PinsList({ projectId }: PinsListProps) {
   const handleBulkGenerateMetadata = () => {
     triggerBulkMetadata.mutate({ pin_ids: Array.from(selectedIds) })
     clearSelection()
-  }
-
-  const handleBulkSchedule = () => {
-    setBulkScheduleOpen(true)
   }
 
   const handleBulkPublish = async () => {
@@ -363,15 +354,6 @@ export function PinsList({ projectId }: PinsListProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleBulkSchedule}
-                >
-                  <CalendarIcon className="mr-1 h-3.5 w-3.5" />
-                  {t('pinsList.schedule', { count: selectedIds.size })}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
                   onClick={handleBulkPublish}
                   disabled={publishBulkMutation.isPending}
                 >
@@ -459,7 +441,6 @@ export function PinsList({ projectId }: PinsListProps) {
                     <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
                       {t('pinsList.columnStatus')} {getSortIcon('status')}
                     </TableHead>
-                    <TableHead className="w-[120px]">{t('pinsList.columnScheduled')}</TableHead>
                     <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
                       {t('pinsList.columnCreated')} {getSortIcon('created_at')}
                     </TableHead>
@@ -501,9 +482,6 @@ export function PinsList({ projectId }: PinsListProps) {
                       </TableCell>
                       <TableCell>
                         <PinStatusBadge status={pin.status} />
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-500">
-                        {pin.scheduled_at ? formatDate(pin.scheduled_at) : '\u2014'}
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">
                         {formatDate(pin.created_at)}
@@ -585,12 +563,6 @@ export function PinsList({ projectId }: PinsListProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk schedule dialog */}
-      <BulkScheduleDialog
-        pinIds={Array.from(selectedIds)}
-        open={bulkScheduleOpen}
-        onOpenChange={setBulkScheduleOpen}
-      />
     </div>
   )
 }

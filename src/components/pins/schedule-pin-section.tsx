@@ -48,7 +48,6 @@ export function SchedulePinSection({ pin }: SchedulePinSectionProps) {
     updatePin.mutate({
       id: pin.id,
       scheduled_at: scheduledDate.toISOString(),
-      status: 'ready_to_schedule',
     })
   }
 

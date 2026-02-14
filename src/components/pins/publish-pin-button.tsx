@@ -60,7 +60,7 @@ export function PublishPinButton({
   }
 
   // Publishing state: show loading spinner
-  if (pinStatus === 'publishing') {
+  if (pinStatus === 'publish_pin') {
     return (
       <Button variant={variant} size={size} disabled>
         <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

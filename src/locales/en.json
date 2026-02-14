@@ -226,12 +226,10 @@
   },
   "pinStatus": {
     "draft": "Draft",
-    "ready_for_generation": "Ready for Generation",
     "generate_metadata": "Generate Metadata",
     "generating_metadata": "Generating Metadata",
     "metadata_created": "Metadata Created",
-    "ready_to_schedule": "Ready to Schedule",
-    "publishing": "Publishing",
+    "publish_pin": "Publishing",
     "published": "Published",
     "error": "Error",
     "deleted": "Deleted"
@@ -242,7 +240,6 @@
     "tab_draft": "Draft",
     "tab_generation": "Generation",
     "tab_metadata_created": "Metadata Created",
-    "tab_scheduled": "Scheduled",
     "tab_published": "Published",
     "tab_error": "Error",
     "selectAll": "Select all",
@@ -264,7 +261,6 @@
     "columnTitle": "Title",
     "columnArticle": "Article",
     "columnStatus": "Status",
-    "columnScheduled": "Scheduled",
     "columnCreated": "Created",
     "unknownArticle": "Unknown article",
     "viewEdit": "View / Edit",
@@ -343,19 +339,6 @@
     "placeholderFeedback": "e.g., make it shorter, focus on baking keywords, add more urgency...",
     "regenerating": "Regenerating...",
     "regenerate": "Regenerate"
-  },
-  "bulkSchedule": {
-    "title": "Schedule Pins",
-    "description": "Schedule {{count}} pins across dates",
-    "fieldStartDate": "Start Date",
-    "placeholderDate": "Pick a date",
-    "fieldTime": "Time",
-    "fieldInterval": "Days between pins",
-    "previewTitle": "Preview:",
-    "previewItem": "Pin {{n}}: {{date}} at {{time}}",
-    "previewMore": "and {{count}} more...",
-    "scheduling": "Scheduling...",
-    "scheduleAll": "Schedule All"
   },
   "generateMetadata": {
     "title": "AI Metadata",
@@ -456,7 +439,6 @@
     "board": "Board",
     "created": "Created",
     "updated": "Updated",
-    "scheduled": "Scheduled",
     "errorTitle": "Error",
     "unknownError": "An unknown error occurred.",
     "resetStatus": "Reset Status",
@@ -519,9 +501,7 @@
       "multipleDeleted": "{{count}} pins deleted",
       "multipleDeleteFailed": "Failed to delete pins: {{error}}",
       "statusUpdated": "Status updated for {{count}} pins",
-      "statusUpdateFailed": "Failed to update pin status: {{error}}",
-      "scheduled": "{{count}} pins scheduled",
-      "scheduleFailed": "Failed to schedule pins: {{error}}"
+      "statusUpdateFailed": "Failed to update pin status: {{error}}"
     },
     "metadata": {
       "generated": "Metadata generated",

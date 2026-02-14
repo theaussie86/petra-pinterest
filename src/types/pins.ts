@@ -1,12 +1,10 @@
 // Pin status constants with badge colors (labels come from i18n)
 export const PIN_STATUS = {
   draft: { color: 'slate' },
-  ready_for_generation: { color: 'blue' },
   generate_metadata: { color: 'violet' },
   generating_metadata: { color: 'violet' },
   metadata_created: { color: 'teal' },
-  ready_to_schedule: { color: 'green' },
-  publishing: { color: 'amber' },
+  publish_pin: { color: 'green' },
   published: { color: 'emerald' },
   error: { color: 'red' },
   deleted: { color: 'gray' },
@@ -14,19 +12,17 @@ export const PIN_STATUS = {
 
 export type PinStatus = keyof typeof PIN_STATUS
 
-// Active statuses (editable in UI for Phase 5)
+// Active statuses (editable in UI)
 export const ACTIVE_STATUSES: PinStatus[] = [
   'draft',
-  'ready_for_generation',
   'generate_metadata',
   'metadata_created',
-  'ready_to_schedule',
 ]
 
 // System-managed statuses (visible but not user-selectable)
 export const SYSTEM_MANAGED_STATUSES: PinStatus[] = [
   'generating_metadata',
-  'publishing',
+  'publish_pin',
   'published',
 ]
 
@@ -95,11 +91,9 @@ export type PinViewMode = 'table' | 'grid'
 export function getStatusBadgeClasses(status: PinStatus): string {
   const colorMap: Record<string, string> = {
     slate: 'bg-slate-100 text-slate-700',
-    blue: 'bg-blue-100 text-blue-700',
     violet: 'bg-violet-100 text-violet-700',
     teal: 'bg-teal-100 text-teal-700',
     green: 'bg-green-100 text-green-700',
-    amber: 'bg-amber-100 text-amber-700',
     emerald: 'bg-emerald-100 text-emerald-700',
     red: 'bg-red-100 text-red-700',
     gray: 'bg-gray-100 text-gray-500',
