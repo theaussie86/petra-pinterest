@@ -442,7 +442,8 @@
     "errorTitle": "Fehler",
     "unknownError": "Ein unbekannter Fehler ist aufgetreten.",
     "resetStatus": "Status zurücksetzen",
-    "resetting": "Zurücksetzen..."
+    "resetting": "Zurücksetzen...",
+    "scheduledAt": "Geplant"
   },
   "articleDetail": {
     "breadcrumbDashboard": "Dashboard",

@@ -26,6 +26,7 @@ import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { DeletePinDialog } from '@/components/pins/delete-pin-dialog'
 import { PublishPinButton } from '@/components/pins/publish-pin-button'
+import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
 import {
   PIN_STATUS,
   ACTIVE_STATUSES,
@@ -224,6 +225,11 @@ function PinSidebarForm({
           {isSubmitting ? t('common.saving') : t('pinSidebar.saveChanges')}
         </Button>
       </form>
+
+      {/* Scheduling */}
+      <div className="pt-4 border-t">
+        <SchedulePinSection pin={pin} />
+      </div>
 
       {/* AI Metadata section */}
       <div className="pt-4 border-t">

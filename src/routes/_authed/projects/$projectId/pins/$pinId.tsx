@@ -16,6 +16,7 @@ import { GenerateMetadataButton } from '@/components/pins/generate-metadata-butt
 import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { PublishPinButton } from '@/components/pins/publish-pin-button'
+import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -122,6 +123,12 @@ function PinDetail() {
 
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                      {pin.scheduled_at && (
+                        <div className="col-span-2">
+                          <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.scheduledAt')}</h3>
+                          <p className="text-sm text-slate-700 font-medium">{formatDateTime(pin.scheduled_at, i18n.language)}</p>
+                        </div>
+                      )}
                       <div>
                         <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.created')}</h3>
                         <p className="text-sm text-slate-700">{formatDate(pin.created_at, i18n.language)}</p>
@@ -134,6 +141,9 @@ function PinDetail() {
 
                   </CardContent>
                 </Card>
+
+                {/* Scheduling */}
+                <SchedulePinSection pin={pin} />
 
                 {/* Pinterest publishing */}
                 <div className="space-y-2">

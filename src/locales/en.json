@@ -442,7 +442,8 @@
     "errorTitle": "Error",
     "unknownError": "An unknown error occurred.",
     "resetStatus": "Reset Status",
-    "resetting": "Resetting..."
+    "resetting": "Resetting...",
+    "scheduledAt": "Scheduled"
   },
   "articleDetail": {
     "breadcrumbDashboard": "Dashboard",
