@@ -1,8 +1,20 @@
-import { publishSinglePin } from './pinterest-publishing'
+import { publishSinglePin, publishPinFn, publishPinsBulkFn } from './pinterest-publishing'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
-const { mockCreatePinterestPin } = vi.hoisted(() => ({
+const { mockCreatePinterestPin, mockServerClient, mockServiceClient } = vi.hoisted(() => ({
   mockCreatePinterestPin: vi.fn().mockResolvedValue({ id: 'pinterest-pin-123' }),
+  mockServerClient: {
+    from: vi.fn(),
+    auth: {
+      getUser: vi.fn().mockResolvedValue({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      }),
+    },
+  },
+  mockServiceClient: {
+    rpc: vi.fn(),
+  },
 }))
 
 vi.mock('@tanstack/react-start', () => ({
@@ -11,6 +23,11 @@ vi.mock('@tanstack/react-start', () => ({
       handler: (handler: any) => (input: any) => handler({ data: validator(input.data) }),
     }),
   }),
+}))
+
+vi.mock('./supabase', () => ({
+  getSupabaseServerClient: () => mockServerClient,
+  getSupabaseServiceClient: () => mockServiceClient,
 }))
 
 vi.mock('./pinterest-api', () => ({
@@ -194,5 +211,133 @@ describe('publishSinglePin()', () => {
     expect(payload.title).toHaveLength(100)
     expect(payload.description).toHaveLength(800)
     expect(payload.alt_text).toHaveLength(500)
+  })
+})
+
+// ─── publishPinFn ────────────────────────────────────────────────
+
+describe('publishPinFn', () => {
+  it('authenticates and publishes a single pin', async () => {
+    // Pin access check
+    const pinAccessQb = createMockQueryBuilder({ data: { id: 'pin-1' } })
+    // publishSinglePin internal calls: fetch pin, status update, success update
+    const pin = buildPinWithRelations()
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const statusQb = createMockQueryBuilder({ data: null })
+    const successQb = createMockQueryBuilder({ data: null })
+
+    mockServerClient.from
+      .mockReturnValueOnce(pinAccessQb as any)
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(statusQb as any)
+      .mockReturnValueOnce(successQb as any)
+
+    mockServiceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    const result = await publishPinFn({ data: { pin_id: 'pin-1' } })
+
+    expect(result).toEqual({ success: true, pinterest_pin_id: 'pinterest-pin-123' })
+  })
+
+  it('throws when not authenticated', async () => {
+    mockServerClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: null,
+    })
+
+    await expect(publishPinFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
+      'Not authenticated',
+    )
+  })
+
+  it('throws when pin not found', async () => {
+    const pinAccessQb = createMockQueryBuilder({ data: null, error: { message: 'Not found' } })
+    mockServerClient.from.mockReturnValueOnce(pinAccessQb as any)
+
+    await expect(publishPinFn({ data: { pin_id: 'bad-pin' } })).rejects.toThrow(
+      'Pin not found or access denied',
+    )
+  })
+})
+
+// ─── publishPinsBulkFn ──────────────────────────────────────────
+
+describe('publishPinsBulkFn', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('publishes multiple pins sequentially with delays', async () => {
+    // Pin access check — both pins exist
+    const pinsAccessQb = createMockQueryBuilder({ data: [{ id: 'pin-1' }, { id: 'pin-2' }] })
+
+    // publishSinglePin calls for pin-1
+    const pin1 = buildPinWithRelations({ id: 'pin-1' })
+    const fetch1 = createMockQueryBuilder({ data: pin1 })
+    const status1 = createMockQueryBuilder({ data: null })
+    const success1 = createMockQueryBuilder({ data: null })
+
+    // publishSinglePin calls for pin-2
+    const pin2 = buildPinWithRelations({ id: 'pin-2' })
+    const fetch2 = createMockQueryBuilder({ data: pin2 })
+    const status2 = createMockQueryBuilder({ data: null })
+    const success2 = createMockQueryBuilder({ data: null })
+
+    mockServerClient.from
+      .mockReturnValueOnce(pinsAccessQb as any)
+      .mockReturnValueOnce(fetch1 as any)
+      .mockReturnValueOnce(status1 as any)
+      .mockReturnValueOnce(success1 as any)
+      .mockReturnValueOnce(fetch2 as any)
+      .mockReturnValueOnce(status2 as any)
+      .mockReturnValueOnce(success2 as any)
+
+    mockServiceClient.rpc
+      .mockResolvedValueOnce({ data: 'token', error: null })
+      .mockResolvedValueOnce({ data: 'token', error: null })
+
+    const promise = publishPinsBulkFn({
+      data: { pin_ids: ['pin-1', 'pin-2'] },
+    })
+
+    // Advance past the 10s delay between pins
+    await vi.advanceTimersByTimeAsync(15000)
+
+    const result = await promise
+
+    expect(result).toEqual({
+      total: 2,
+      published: 2,
+      failed: 0,
+      results: [
+        { id: 'pin-1', success: true },
+        { id: 'pin-2', success: true },
+      ],
+    })
+  })
+
+  it('throws when not authenticated', async () => {
+    mockServerClient.auth.getUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: null,
+    })
+
+    await expect(
+      publishPinsBulkFn({ data: { pin_ids: ['pin-1'] } }),
+    ).rejects.toThrow('Not authenticated')
+  })
+
+  it('throws when some pins are not found', async () => {
+    // Return only 1 pin when 2 were requested
+    const pinsAccessQb = createMockQueryBuilder({ data: [{ id: 'pin-1' }] })
+    mockServerClient.from.mockReturnValueOnce(pinsAccessQb as any)
+
+    await expect(
+      publishPinsBulkFn({ data: { pin_ids: ['pin-1', 'pin-2'] } }),
+    ).rejects.toThrow('Some pins not found')
   })
 })

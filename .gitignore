@@ -27,3 +27,6 @@ supabase/.temp/
 
 # Migration data (contains Airtable-to-Supabase ID mappings)
 scripts/migration/data/
+
+# Coverage
+coverage
