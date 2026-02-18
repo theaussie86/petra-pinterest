@@ -1,8 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
-import { getPinImageUrl } from '@/lib/api/pins'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
+
+function getPinImageUrl(imagePath: string): string {
+  return `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${imagePath}`
+}
 
 /**
  * Server function: Generate metadata for a single pin (synchronous).

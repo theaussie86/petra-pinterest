@@ -3,7 +3,7 @@
  * Pin Migration Script
  * Migrates pins from Airtable to Supabase with image upload to Supabase Storage
  *
- * Usage: npx tsx scripts/migration/migrate-pins.ts [--force-images] [--dry-run] [--delete-excess]
+ * Usage: npx tsx scripts/migration/migrate-pins.ts [--force-images] [--dry-run] [--delete-excess] [--purge-published]
  *
  * Prerequisites:
  * - migrate-projects.ts and migrate-articles.ts must have run first
@@ -44,6 +44,7 @@ const ID_MAPS_PATH = path.join(__dirname, 'data', 'id-maps.json')
 const FORCE_IMAGES = process.argv.includes('--force-images')
 const DRY_RUN = process.argv.includes('--dry-run')
 const DELETE_EXCESS = process.argv.includes('--delete-excess')
+const PURGE_PUBLISHED = process.argv.includes('--purge-published')
 
 /**
  * Load ID mapping file
@@ -254,6 +255,10 @@ async function migratePins() {
 
   if (DELETE_EXCESS) {
     console.log('DELETE EXCESS MODE - Will remove pins not in import set\n')
+  }
+
+  if (PURGE_PUBLISHED) {
+    console.log('PURGE PUBLISHED MODE - Will remove published-in-the-past pins from Supabase\n')
   }
 
   const stats = {
@@ -505,7 +510,16 @@ async function migratePins() {
       }
     }
 
-    // Delete excess pins (in Supabase but not in imported set)
+    // For excess detection, include ALL Airtable pins (including published)
+    // so published pins aren't falsely considered excess.
+    // Only truly orphaned pins (deleted from Airtable) will be removed.
+    if (DELETE_EXCESS) {
+      for (const record of allAirtableRecords) {
+        importedAirtableIds.add(record.id)
+      }
+    }
+
+    // Delete excess pins (in Supabase but not in Airtable)
     let excessDeleted = 0
     let excessImagesDeleted = 0
     if (DELETE_EXCESS) {
@@ -612,6 +626,116 @@ async function migratePins() {
       }
     }
 
+    // Purge published pins from Supabase (published in Airtable + scheduled in the past)
+    let publishedPurged = 0
+    let publishedImagesPurged = 0
+    if (PURGE_PUBLISHED) {
+      console.log('\n--- Purging published pins from Supabase ---\n')
+
+      const now = new Date()
+      const publishedAirtablePins = allAirtableRecords.filter((r) => {
+        if (r.fields['Status'] !== 'Veröffentlicht') return false
+        const scheduledAt = r.fields['Veröffentlichungsdatum']
+        if (!scheduledAt) return true // no date = assume already done
+        return new Date(scheduledAt) < now
+      })
+
+      // Find which of these have Supabase records
+      const purgeIds: string[] = []
+      for (const record of publishedAirtablePins) {
+        const supabaseId = idMaps.pins[record.id]
+        if (supabaseId) purgeIds.push(supabaseId)
+      }
+
+      console.log(`Found ${purgeIds.length} published pin IDs mapped in id-maps`)
+
+      if (purgeIds.length === 0) {
+        console.log('No published pins found in Supabase to purge')
+      } else {
+        // Check which actually exist in Supabase (batch queries to avoid URL length limits)
+        const existingPins: { id: string; image_path: string | null }[] = []
+        let fetchFailed = false
+        for (let i = 0; i < purgeIds.length; i += 100) {
+          const batch = purgeIds.slice(i, i + 100)
+          const { data, error: fetchErr } = await supabaseAdmin
+            .from('pins')
+            .select('id, image_path')
+            .in('id', batch)
+
+          if (fetchErr) {
+            console.error(`Failed to fetch pins for purge (batch ${Math.floor(i / 100) + 1}): ${fetchErr.message}`)
+            fetchFailed = true
+            break
+          }
+          if (data) existingPins.push(...data)
+        }
+
+        if (fetchFailed) {
+          // skip purge
+        } else if (existingPins.length > 0) {
+          console.log(`Found ${existingPins.length} published pins in Supabase to purge`)
+
+          const imagePaths = existingPins
+            .map((p) => p.image_path)
+            .filter((p): p is string => p !== null)
+
+          if (DRY_RUN) {
+            console.log(`[DRY RUN] Would purge ${existingPins.length} published pins`)
+            console.log(`[DRY RUN] Would delete ${imagePaths.length} images from Storage`)
+            existingPins.slice(0, 10).forEach((pin) => {
+              console.log(`  - ${pin.id} (image: ${pin.image_path || 'none'})`)
+            })
+            if (existingPins.length > 10) {
+              console.log(`  ... and ${existingPins.length - 10} more`)
+            }
+          } else {
+            // Delete images from Storage in batches
+            if (imagePaths.length > 0) {
+              for (let i = 0; i < imagePaths.length; i += 100) {
+                const batch = imagePaths.slice(i, i + 100)
+                const { error: storageError } = await supabaseAdmin.storage
+                  .from('pin-images')
+                  .remove(batch)
+
+                if (storageError) {
+                  console.error(`Storage purge error (batch ${Math.floor(i / 100) + 1}):`, storageError)
+                } else {
+                  publishedImagesPurged += batch.length
+                }
+              }
+              console.log(`Purged ${publishedImagesPurged} images from Storage`)
+            }
+
+            // Delete pin records in batches
+            const existingIds = existingPins.map((p) => p.id)
+            for (let i = 0; i < existingIds.length; i += 100) {
+              const batch = existingIds.slice(i, i + 100)
+              const { error: deleteError } = await supabaseAdmin
+                .from('pins')
+                .delete()
+                .in('id', batch)
+
+              if (deleteError) {
+                console.error(`DB purge error (batch ${Math.floor(i / 100) + 1}):`, deleteError)
+              } else {
+                publishedPurged += batch.length
+              }
+            }
+            console.log(`Purged ${publishedPurged} published pins from DB`)
+
+            // Remove from id-maps
+            for (const record of publishedAirtablePins) {
+              if (idMaps.pins[record.id]) {
+                delete idMaps.pins[record.id]
+              }
+            }
+          }
+        } else {
+          console.log('No published pins found in Supabase to purge')
+        }
+      }
+    }
+
     if (!DRY_RUN) {
       // Save updated ID mappings
       saveIdMaps(idMaps)
@@ -628,6 +752,10 @@ async function migratePins() {
     if (DELETE_EXCESS) {
       console.log(`Excess pins deleted: ${excessDeleted}`)
       console.log(`Excess images deleted: ${excessImagesDeleted}`)
+    }
+    if (PURGE_PUBLISHED) {
+      console.log(`Published pins purged: ${publishedPurged}`)
+      console.log(`Published images purged: ${publishedImagesPurged}`)
     }
 
     if (stats.errors.length > 0) {

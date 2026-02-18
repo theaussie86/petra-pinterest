@@ -73,7 +73,7 @@ export async function generatePinMetadata(
     ],
     config: {
       systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-      maxOutputTokens: 500,
+      maxOutputTokens: 2048,
       temperature: 0.7,
       responseMimeType: 'application/json',
       responseJsonSchema: metadataJsonSchema,
@@ -108,7 +108,7 @@ export async function generatePinMetadataWithFeedback(
     model: 'gemini-2.5-flash',
     config: {
       systemInstruction: PINTEREST_SEO_SYSTEM_PROMPT,
-      maxOutputTokens: 500,
+      maxOutputTokens: 2048,
       temperature: 0.7,
       responseMimeType: 'application/json',
       responseJsonSchema: metadataJsonSchema,

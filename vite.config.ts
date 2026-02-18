@@ -18,21 +18,7 @@ export default defineConfig(({ mode }) => {
       tsConfigPaths(),
       devtools(),
       tanstackStart(),
-      nitro({
-        preset: 'vercel',
-        rollupConfig: {
-          output: {
-            // Polyfill `require` for ESM modules on Vercel's serverless runtime.
-            // ulid (inngest dep) uses require("crypto") which fails in pure ESM.
-            // Vercel launches the function as ESM directly, unlike local dev which
-            // uses CJS→ESM dynamic import where require leaks through.
-            banner: [
-              'import { createRequire as __polyfill_createRequire } from "node:module";',
-              'if(typeof globalThis.require==="undefined"){globalThis.require=__polyfill_createRequire(import.meta.url);}',
-            ].join('\n'),
-          },
-        },
-      }),
+      nitro({ preset: 'vercel' }),
       tailwindcss(),
     ],
   }

@@ -63,7 +63,7 @@ export function useGenerateMetadataWithFeedback() {
 
 /**
  * Mutation hook: Trigger bulk metadata generation for multiple pins.
- * Sends Inngest event for async processing.
+ * Triggers async processing via Edge Functions.
  */
 export function useTriggerBulkMetadata() {
   const queryClient = useQueryClient()

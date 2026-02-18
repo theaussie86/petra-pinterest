@@ -11,7 +11,7 @@ interface PublishResult {
 
 /**
  * Core publish logic shared by manual and bulk operations
- * Exported for use by Inngest cron functions
+ * Exported for use by Edge Functions
  */
 export async function publishSinglePin(
   supabase: ReturnType<typeof getSupabaseServerClient | typeof getSupabaseServiceClient>,

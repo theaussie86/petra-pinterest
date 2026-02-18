@@ -27,7 +27,7 @@ export function getSupabaseServerClient() {
 /**
  * Service-role client that bypasses RLS.
  * Use for server-side writes where the user's session isn't available
- * (e.g. Inngest callbacks, background jobs).
+ * (e.g. Edge Functions, background jobs).
  */
 export function getSupabaseServiceClient() {
   return createClient(

@@ -83,16 +83,10 @@ RLS is enabled on all tables. Application-level checks provide defense-in-depth.
 ### Server Functions (Scraping)
 
 Scraping operations use `createServerFn` from TanStack Start (`src/lib/server/scraping.ts`). These run server-side with cookie-based auth — no Bearer tokens or manual `fetch()` needed. The client calls them like regular async functions:
-- `scrapeBlogFn` — dispatches to Inngest for async background processing
+- `scrapeBlogFn` — dispatches to Supabase Edge Functions for async background processing
 - `scrapeSingleFn` — synchronous single-URL scrape with immediate DB upsert
 
 Shared scraping logic (RSS/HTML parsing) lives in `server/lib/scraping.ts`.
-
-### Background Jobs (Inngest)
-
-Inngest webhook endpoint is a TanStack Start file-based server route at `src/routes/api/inngest.ts`, using the `inngest/edge` adapter. Functions are defined in `server/inngest/functions/` and registered in `server/inngest/index.ts`.
-
-Event-to-function mapping: each function declares the event name it listens to via `{ event: 'blog/scrape.requested' }` in `createFunction()`. When an event is sent (`inngest.send({ name: '...', data: {...} })`), Inngest matches the event name to registered functions and calls back into `/api/inngest` to execute them. Multiple functions can listen to the same event (fan-out).
 
 ### Database Migrations
 
