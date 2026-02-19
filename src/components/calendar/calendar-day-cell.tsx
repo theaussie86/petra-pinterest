@@ -78,8 +78,13 @@ const CalendarDayCellComponent = ({
   const thumbnailSize = view === 'month' ? 32 : 48
   const maxVisible = view === 'month' ? 4 : 6
 
-  const visiblePins = pins.slice(0, maxVisible)
-  const overflowCount = pins.length - maxVisible
+  const sortedPins = [...pins].sort((a, b) => {
+    const aTime = a.scheduled_at || a.published_at || ''
+    const bTime = b.scheduled_at || b.published_at || ''
+    return aTime.localeCompare(bTime)
+  })
+  const visiblePins = sortedPins.slice(0, maxVisible)
+  const overflowCount = sortedPins.length - maxVisible
 
   // Drag and drop state
   const [isDragOver, setIsDragOver] = useState(false)
@@ -223,7 +228,7 @@ const CalendarDayCellComponent = ({
                 </div>
                 {/* All pins */}
                 <div className="space-y-1 p-2 max-h-[360px] overflow-y-auto">
-                  {pins.map((pin) => (
+                  {sortedPins.map((pin) => (
                     <div
                       key={pin.id}
                       onClick={() => onPinClick(pin.id)}
