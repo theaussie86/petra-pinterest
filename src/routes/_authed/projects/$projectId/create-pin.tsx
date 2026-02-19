@@ -132,7 +132,10 @@ function CreatePinPage() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
+                <Command filter={(value, search, keywords) => {
+                  const haystack = [value, ...(keywords ?? [])].join(' ').toLowerCase()
+                  return haystack.includes(search.toLowerCase()) ? 1 : 0
+                }}>
                   <CommandInput placeholder={t('createPin.searchArticle')} />
                   <CommandList>
                     <CommandEmpty>{t('createPin.noArticles')}</CommandEmpty>
@@ -206,7 +209,9 @@ function CreatePinPage() {
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
+                <Command filter={(value, search) => {
+                  return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+                }}>
                   <CommandInput placeholder={t('createPin.searchBoard')} />
                   <CommandList>
                     <CommandEmpty>{t('createPin.noBoards')}</CommandEmpty>
