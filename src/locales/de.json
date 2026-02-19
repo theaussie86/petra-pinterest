@@ -252,6 +252,8 @@
     "sortStatus": "Status",
     "sortCreated": "Erstellt",
     "sortUpdated": "Aktualisiert",
+    "sortScheduled": "Geplant",
+    "sortPublished": "Veröffentlicht",
     "sortAZ": "(A-Z)",
     "sortZA": "(Z-A)",
     "sortOldest": "(älteste)",
@@ -405,6 +407,22 @@
     "daySat": "Sa",
     "daySun": "So",
     "allPinsFor": "Alle Pins für {{date}}"
+  },
+  "pinTable": {
+    "columns": "Spalten",
+    "toggleColumns": "Spalten umschalten",
+    "columnImage": "Bild",
+    "columnTitle": "Titel",
+    "columnArticle": "Artikel",
+    "columnProject": "Projekt",
+    "columnBoard": "Board",
+    "columnStatus": "Status",
+    "columnScheduled": "Geplant",
+    "columnPublished": "Veröffentlicht",
+    "columnCreated": "Erstellt",
+    "columnUpdated": "Aktualisiert",
+    "sortScheduled": "Geplant",
+    "sortPublished": "Veröffentlicht"
   },
   "unscheduledPins": {
     "emptyMessage": "Keine ungeplanten Pins entsprechen deinen Filtern.",

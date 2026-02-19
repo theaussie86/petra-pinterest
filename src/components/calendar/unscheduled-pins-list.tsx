@@ -1,20 +1,9 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import {
-  ArrowUp,
-  ArrowDown,
   ArrowUpDown,
   CalendarIcon,
-  ImageIcon,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -23,12 +12,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { PinStatusBadge } from '@/components/pins/pin-status-badge'
+import { PinDataTable } from '@/components/pins/pin-data-table'
+import { ColumnVisibilityToggle } from '@/components/pins/column-visibility-toggle'
+import { getColumnsForIds, getStoredVisibility, saveVisibility } from '@/components/pins/pin-data-table-columns'
+import type { PinColumnId } from '@/components/pins/pin-data-table-columns'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
-import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import type { Pin, PinSortField } from '@/types/pins'
 
 type SortDirection = 'asc' | 'desc'
+
+const TABLE_COLUMNS: PinColumnId[] = [
+  'select', 'image', 'title', 'project', 'status', 'scheduled_at', 'created_at',
+]
 
 interface UnscheduledPinsListProps {
   pins: Pin[]
@@ -36,10 +31,15 @@ interface UnscheduledPinsListProps {
 }
 
 export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListProps) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [sortField, setSortField] = useState<PinSortField>('created_at')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [columnVisibility, setColumnVisibility] = useState(() => getStoredVisibility('unscheduled-pin-table-columns', TABLE_COLUMNS))
+
+  useEffect(() => {
+    saveVisibility('unscheduled-pin-table-columns', columnVisibility)
+  }, [columnVisibility])
 
   const { data: projects } = useBlogProjects()
 
@@ -49,33 +49,8 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
     return new Map(projects.map((p) => [p.id, p.name]))
   }, [projects])
 
-  // Sort pins
-  const sortedPins = useMemo(() => {
-    return [...pins].sort((a, b) => {
-      let aValue: string | null = null
-      let bValue: string | null = null
-
-      if (sortField === 'title') {
-        aValue = a.title
-        bValue = b.title
-      } else if (sortField === 'status') {
-        aValue = a.status
-        bValue = b.status
-      } else if (sortField === 'created_at') {
-        aValue = a.created_at
-        bValue = b.created_at
-      } else if (sortField === 'updated_at') {
-        aValue = a.updated_at
-        bValue = b.updated_at
-      }
-
-      if (aValue === null || aValue === '') return 1
-      if (bValue === null || bValue === '') return -1
-
-      const comparison = aValue > bValue ? 1 : -1
-      return sortDirection === 'asc' ? comparison : -comparison
-    })
-  }, [pins, sortField, sortDirection])
+  // Column defs for the visibility toggle
+  const columnDefs = useMemo(() => getColumnsForIds(TABLE_COLUMNS), [])
 
   // Selection handlers
   const toggleSelect = useCallback((id: string) => {
@@ -91,12 +66,12 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
   }, [])
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedIds.size === sortedPins.length) {
+    if (selectedIds.size === pins.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(sortedPins.map((p) => p.id)))
+      setSelectedIds(new Set(pins.map((p) => p.id)))
     }
-  }, [selectedIds.size, sortedPins])
+  }, [selectedIds.size, pins])
 
   // Sort handler
   const handleSort = (field: PinSortField) => {
@@ -108,19 +83,13 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
     }
   }
 
-  const getSortIcon = (field: PinSortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="ml-1 h-3 w-3 inline" />
-    }
-    return sortDirection === 'asc' ? (
-      <ArrowUp className="ml-1 h-3 w-3 inline" />
-    ) : (
-      <ArrowDown className="ml-1 h-3 w-3 inline" />
-    )
-  }
+  // Column visibility toggle
+  const handleToggleColumn = useCallback((id: PinColumnId) => {
+    setColumnVisibility((prev) => ({ ...prev, [id]: !prev[id] }))
+  }, [])
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString(i18n.language, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -128,7 +97,27 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
   }
 
   const hasSelection = selectedIds.size > 0
-  const allSelected = sortedPins.length > 0 && selectedIds.size === sortedPins.length
+  const allSelected = pins.length > 0 && selectedIds.size === pins.length
+
+  // Render props for PinDataTable
+  const renderTitleCell = (pin: Pin) => (
+    <button
+      onClick={() => onPinClick(pin.id)}
+      className="text-blue-600 hover:text-blue-700 hover:underline text-left max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
+    >
+      {pin.title ? (
+        pin.title
+      ) : (
+        <span className="italic text-slate-400">{t('common.untitled')}</span>
+      )}
+    </button>
+  )
+
+  const renderLookupCell = (pin: Pin) => (
+    <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
+      {projectMap.get(pin.blog_project_id) || t('unscheduledPins.unknownProject')}
+    </span>
+  )
 
   // Empty state
   if (pins.length === 0) {
@@ -160,6 +149,13 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Column visibility toggle */}
+          <ColumnVisibilityToggle
+            columns={columnDefs}
+            visibility={columnVisibility}
+            onToggle={handleToggleColumn}
+          />
+
           {/* Sort dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -178,8 +174,8 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
               <DropdownMenuItem onClick={() => handleSort('created_at')}>
                 {t('pinsList.sortCreated')} {sortField === 'created_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleSort('updated_at')}>
-                {t('pinsList.sortUpdated')} {sortField === 'updated_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
+              <DropdownMenuItem onClick={() => handleSort('scheduled_at')}>
+                {t('pinsList.sortScheduled')} {sortField === 'scheduled_at' && (sortDirection === 'asc' ? t('pinsList.sortOldest') : t('pinsList.sortNewest'))}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -188,71 +184,20 @@ export function UnscheduledPinsList({ pins, onPinClick }: UnscheduledPinsListPro
 
       {/* Table */}
       <div className="rounded-lg border border-slate-200 bg-white overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[40px]">
-                <Checkbox
-                  checked={allSelected}
-                  onCheckedChange={toggleSelectAll}
-                  aria-label={t('pinsList.selectAll')}
-                />
-              </TableHead>
-              <TableHead className="w-[60px]">{t('unscheduledPins.columnImage')}</TableHead>
-              <TableHead className="cursor-pointer" onClick={() => handleSort('title')}>
-                {t('unscheduledPins.columnTitle')} {getSortIcon('title')}
-              </TableHead>
-              <TableHead className="w-[200px]">{t('unscheduledPins.columnProject')}</TableHead>
-              <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
-                {t('unscheduledPins.columnStatus')} {getSortIcon('status')}
-              </TableHead>
-              <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
-                {t('unscheduledPins.columnCreated')} {getSortIcon('created_at')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedPins.map((pin) => (
-              <TableRow key={pin.id} data-state={selectedIds.has(pin.id) ? 'selected' : undefined}>
-                <TableCell>
-                  <Checkbox
-                    checked={selectedIds.has(pin.id)}
-                    onCheckedChange={() => toggleSelect(pin.id)}
-                    aria-label={`Select pin ${pin.title || t('common.untitled')}`}
-                  />
-                </TableCell>
-                <TableCell>
-                  <div className="h-10 w-10 overflow-hidden rounded bg-slate-100">
-                    <PinMediaPreview pin={pin} />
-                  </div>
-                </TableCell>
-                <TableCell className="font-medium">
-                  <button
-                    onClick={() => onPinClick(pin.id)}
-                    className="text-blue-600 hover:text-blue-700 hover:underline text-left max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
-                  >
-                    {pin.title ? (
-                      pin.title
-                    ) : (
-                      <span className="italic text-slate-400">{t('common.untitled')}</span>
-                    )}
-                  </button>
-                </TableCell>
-                <TableCell>
-                  <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
-                    {projectMap.get(pin.blog_project_id) || t('unscheduledPins.unknownProject')}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <PinStatusBadge status={pin.status} />
-                </TableCell>
-                <TableCell className="text-sm text-slate-500">
-                  {formatDate(pin.created_at)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <PinDataTable
+          pins={pins}
+          columns={TABLE_COLUMNS}
+          visibility={columnVisibility}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          renderTitleCell={renderTitleCell}
+          renderLookupCell={renderLookupCell}
+          formatDate={formatDate}
+        />
       </div>
 
     </div>

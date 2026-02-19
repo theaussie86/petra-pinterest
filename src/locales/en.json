@@ -252,6 +252,8 @@
     "sortStatus": "Status",
     "sortCreated": "Created",
     "sortUpdated": "Updated",
+    "sortScheduled": "Scheduled",
+    "sortPublished": "Published",
     "sortAZ": "(A-Z)",
     "sortZA": "(Z-A)",
     "sortOldest": "(oldest)",
@@ -405,6 +407,22 @@
     "daySat": "Sat",
     "daySun": "Sun",
     "allPinsFor": "All pins for {{date}}"
+  },
+  "pinTable": {
+    "columns": "Columns",
+    "toggleColumns": "Toggle columns",
+    "columnImage": "Image",
+    "columnTitle": "Title",
+    "columnArticle": "Article",
+    "columnProject": "Project",
+    "columnBoard": "Board",
+    "columnStatus": "Status",
+    "columnScheduled": "Scheduled",
+    "columnPublished": "Published",
+    "columnCreated": "Created",
+    "columnUpdated": "Updated",
+    "sortScheduled": "Scheduled",
+    "sortPublished": "Published"
   },
   "unscheduledPins": {
     "emptyMessage": "No unscheduled pins match your filters.",
