@@ -15,8 +15,8 @@ interface CalendarWeekGridProps {
 }
 
 // Constants
-const START_HOUR = 6
-const END_HOUR = 22 // 10 PM
+const START_HOUR = 0
+const END_HOUR = 24
 const HOUR_HEIGHT = 60 // px per hour (1min ≈ 1px)
 const PIN_HEIGHT = 45 // px
 const GUTTER_WIDTH = 60 // px
@@ -120,8 +120,6 @@ export function CalendarWeekGrid({
       if (dayIndex === -1) continue
 
       const top = timeToPixels(pinDate)
-      // Only include pins within the visible time range
-      if (top < 0 || top >= TOTAL_HOURS * HOUR_HEIGHT) continue
 
       if (!pinsByDay.has(dayIndex)) pinsByDay.set(dayIndex, [])
       pinsByDay.get(dayIndex)!.push({ pin, top })
@@ -199,7 +197,7 @@ export function CalendarWeekGrid({
     return Array.from({ length: TOTAL_HOURS }, (_, i) => {
       const date = new Date()
       date.setHours(START_HOUR + i, 0, 0, 0)
-      return { hour: START_HOUR + i, label: format(date, 'h a', { locale }) }
+      return { hour: START_HOUR + i, label: format(date, 'HH:mm') }
     })
   }, [locale])
 
@@ -306,7 +304,7 @@ export function CalendarWeekGrid({
       {/* Scrollable time grid */}
       <div
         ref={scrollRef}
-        className="overflow-y-auto"
+        className="overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
         <div
@@ -373,7 +371,7 @@ export function CalendarWeekGrid({
                   const widthPercent = 100 / pp.overlapCount
                   const leftPercent = pp.overlapIndex * widthPercent
                   const pinTime = pp.pin.scheduled_at
-                    ? format(new Date(pp.pin.scheduled_at), 'h:mm a', { locale })
+                    ? format(new Date(pp.pin.scheduled_at), 'HH:mm')
                     : ''
 
                   return (

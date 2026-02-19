@@ -20,16 +20,22 @@ import { useUpdatePin } from '@/lib/hooks/use-pins'
 
 interface CalendarGridProps {
   pins: Pin[]
+  allPins: Pin[]
   view: 'month' | 'week'
   onPinClick: (pinId: string) => void
   onViewChange: (view: 'month' | 'week') => void
+  onTogglePinList: () => void
+  pinListOpen: boolean
 }
 
 export function CalendarGrid({
   pins,
+  allPins,
   view,
   onPinClick,
   onViewChange,
+  onTogglePinList,
+  pinListOpen,
 }: CalendarGridProps) {
   const { t } = useTranslation()
   const [currentDate, setCurrentDate] = useState(new Date())
@@ -69,13 +75,17 @@ export function CalendarGrid({
         scheduled_at: targetDate.toISOString(),
       })
     } else {
-      // Month view: keep existing time, change only the date
-      const pin = pins.find((p) => p.id === pinId)
-      if (!pin || !pin.scheduled_at) return
+      // Month view: keep existing time, or default to 09:00 for unscheduled pins
+      const pin = allPins.find((p) => p.id === pinId)
+      if (!pin) return
 
-      const existingDate = new Date(pin.scheduled_at)
       const newDate = new Date(targetDate)
-      newDate.setHours(existingDate.getHours(), existingDate.getMinutes(), 0, 0)
+      if (pin.scheduled_at) {
+        const existingDate = new Date(pin.scheduled_at)
+        newDate.setHours(existingDate.getHours(), existingDate.getMinutes(), 0, 0)
+      } else {
+        newDate.setHours(9, 0, 0, 0)
+      }
 
       updatePin.mutate({
         id: pinId,
@@ -120,6 +130,8 @@ export function CalendarGrid({
         view={view}
         onNavigate={handleNavigate}
         onViewChange={onViewChange}
+        onTogglePinList={onTogglePinList}
+        pinListOpen={pinListOpen}
       />
 
       {/* Calendar grid */}

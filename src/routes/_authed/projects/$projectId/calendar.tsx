@@ -7,7 +7,7 @@ import { usePins } from '@/lib/hooks/use-pins'
 import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
-import { UnscheduledPinsList } from '@/components/calendar/unscheduled-pins-list'
+import { PinListSidebar } from '@/components/calendar/pin-list-sidebar'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { PinStatusFilterBar, filterPinsByTab, STATUS_TABS } from '@/components/pins/pin-status-filter-bar'
 import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
@@ -15,7 +15,6 @@ import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
 // Search params validation schema
 type CalendarSearch = {
   statusTab?: StatusTab
-  tab?: 'calendar' | 'unscheduled'
   view?: 'month' | 'week'
 }
 
@@ -25,10 +24,6 @@ export const Route = createFileRoute('/_authed/projects/$projectId/calendar')({
       statusTab: (STATUS_TABS as readonly string[]).includes(search.statusTab as string)
         ? (search.statusTab as StatusTab)
         : undefined,
-      tab:
-        search.tab === 'calendar' || search.tab === 'unscheduled'
-          ? search.tab
-          : 'calendar',
       view:
         search.view === 'month' || search.view === 'week'
           ? search.view
@@ -52,10 +47,11 @@ function CalendarPage() {
 
   const { data: pins, isLoading } = usePins(projectId)
 
-  const { statusTab = 'all', tab, view } = searchParams
+  const { statusTab = 'all', view } = searchParams
 
   // Sidebar state
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
+  const [pinListOpen, setPinListOpen] = useState(false)
 
   // Filter by status tab
   const filteredPins = useMemo(() => {
@@ -69,27 +65,12 @@ function CalendarPage() {
     [filteredPins]
   )
 
-  const unscheduledPins = useMemo(
-    () => filteredPins.filter((pin) => pin.scheduled_at === null),
-    [filteredPins]
-  )
-
   // Handle status filter tab change
   const handleStatusTabChange = (newStatusTab: StatusTab) => {
     navigate({
       search: (prev) => ({
         ...prev,
         statusTab: newStatusTab === 'all' ? undefined : newStatusTab,
-      }),
-    })
-  }
-
-  // Handle tab change
-  const handleTabChange = (newTab: 'calendar' | 'unscheduled') => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        tab: newTab,
       }),
     })
   }
@@ -112,7 +93,7 @@ function CalendarPage() {
   return (
     <>
       <PageHeader title={t('calendar.title')} />
-      <PageLayout maxWidth="wide" className={cn(selectedPinId && "mr-[350px]")}>
+      <PageLayout maxWidth="wide" className={cn((pinListOpen || !!selectedPinId) && "mr-[350px]")}>
         {/* Status filter bar */}
         <div className="mb-4">
           <PinStatusFilterBar
@@ -120,37 +101,6 @@ function CalendarPage() {
             activeTab={statusTab}
             onTabChange={handleStatusTabChange}
           />
-        </div>
-
-        {/* Toolbar row */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            {/* Tab toggle */}
-            <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
-              <button
-                onClick={() => handleTabChange('calendar')}
-                className={cn(
-                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                  tab === 'calendar'
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                )}
-              >
-                {t('calendar.tabCalendar')}
-              </button>
-              <button
-                onClick={() => handleTabChange('unscheduled')}
-                className={cn(
-                  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-                  tab === 'unscheduled'
-                    ? 'bg-slate-900 text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                )}
-              >
-                {t('calendar.tabUnscheduled')}
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Loading state */}
@@ -181,36 +131,38 @@ function CalendarPage() {
 
         {/* Content area */}
         {!isLoading && (
-          <>
-            {tab === 'calendar' ? (
-              scheduledPins.length === 0 ? (
-                <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-                  <p className="text-slate-600">
-                    {t('calendar.emptyScheduled')}
-                  </p>
-                  <p className="text-sm text-slate-500 mt-2">
-                    {t('calendar.emptyHint')}
-                  </p>
-                </div>
-              ) : (
-                <CalendarGrid
-                  pins={scheduledPins}
-                  view={view || 'month'}
-                  onPinClick={handlePinClick}
-                  onViewChange={handleViewChange}
-                />
-              )
-            ) : (
-              <UnscheduledPinsList
-                pins={unscheduledPins}
-                onPinClick={handlePinClick}
-              />
-            )}
-          </>
+          scheduledPins.length === 0 ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+              <p className="text-slate-600">
+                {t('calendar.emptyScheduled')}
+              </p>
+              <p className="text-sm text-slate-500 mt-2">
+                {t('calendar.emptyHint')}
+              </p>
+            </div>
+          ) : (
+            <CalendarGrid
+              pins={scheduledPins}
+              allPins={filteredPins}
+              view={view || 'month'}
+              onPinClick={handlePinClick}
+              onViewChange={handleViewChange}
+              onTogglePinList={() => setPinListOpen((prev) => !prev)}
+              pinListOpen={pinListOpen}
+            />
+          )
         )}
       </PageLayout>
 
-      {/* Pin Sidebar */}
+      {/* Pin List Sidebar */}
+      <PinListSidebar
+        pins={filteredPins}
+        isOpen={pinListOpen}
+        onClose={() => setPinListOpen(false)}
+        onPinClick={handlePinClick}
+      />
+
+      {/* Pin edit Sidebar */}
       <PinSidebar
         pinId={selectedPinId}
         onClose={() => setSelectedPinId(null)}
