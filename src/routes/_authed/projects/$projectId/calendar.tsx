@@ -4,17 +4,17 @@ import { useTranslation } from 'react-i18next'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { usePins } from '@/lib/hooks/use-pins'
-import { PIN_STATUS, getStatusBadgeClasses } from '@/types/pins'
-import type { PinStatus } from '@/types/pins'
 import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
 import { UnscheduledPinsList } from '@/components/calendar/unscheduled-pins-list'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
+import { PinStatusFilterBar, filterPinsByTab, STATUS_TABS } from '@/components/pins/pin-status-filter-bar'
+import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
 
 // Search params validation schema
 type CalendarSearch = {
-  statuses?: string[]
+  statusTab?: StatusTab
   tab?: 'calendar' | 'unscheduled'
   view?: 'month' | 'week'
 }
@@ -22,8 +22,8 @@ type CalendarSearch = {
 export const Route = createFileRoute('/_authed/projects/$projectId/calendar')({
   validateSearch: (search: Record<string, unknown>): CalendarSearch => {
     return {
-      statuses: Array.isArray(search.statuses)
-        ? search.statuses.filter((s): s is string => typeof s === 'string')
+      statusTab: (STATUS_TABS as readonly string[]).includes(search.statusTab as string)
+        ? (search.statusTab as StatusTab)
         : undefined,
       tab:
         search.tab === 'calendar' || search.tab === 'unscheduled'
@@ -52,21 +52,16 @@ function CalendarPage() {
 
   const { data: pins, isLoading } = usePins(projectId)
 
-  const { statuses, tab, view } = searchParams
+  const { statusTab = 'all', tab, view } = searchParams
 
   // Sidebar state
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
 
-  // Filter by statuses
+  // Filter by status tab
   const filteredPins = useMemo(() => {
     if (!pins) return []
-
-    if (statuses && statuses.length > 0) {
-      return pins.filter((pin) => statuses.includes(pin.status))
-    }
-
-    return pins
-  }, [pins, statuses])
+    return filterPinsByTab(pins, statusTab)
+  }, [pins, statusTab])
 
   // Split into scheduled and unscheduled
   const scheduledPins = useMemo(
@@ -79,17 +74,12 @@ function CalendarPage() {
     [filteredPins]
   )
 
-  // Handle status chip toggle
-  const handleStatusToggle = (status: PinStatus) => {
-    const currentStatuses = statuses || []
-    const newStatuses = currentStatuses.includes(status)
-      ? currentStatuses.filter((s) => s !== status)
-      : [...currentStatuses, status]
-
+  // Handle status filter tab change
+  const handleStatusTabChange = (newStatusTab: StatusTab) => {
     navigate({
       search: (prev) => ({
         ...prev,
-        statuses: newStatuses.length > 0 ? newStatuses : undefined,
+        statusTab: newStatusTab === 'all' ? undefined : newStatusTab,
       }),
     })
   }
@@ -119,15 +109,19 @@ function CalendarPage() {
     setSelectedPinId(pinId)
   }
 
-  // Get filterable statuses (exclude 'deleted')
-  const filterableStatuses = Object.keys(PIN_STATUS).filter(
-    (status) => status !== 'deleted'
-  ) as PinStatus[]
-
   return (
     <>
       <PageHeader title={t('calendar.title')} />
       <PageLayout maxWidth="wide" className={cn(selectedPinId && "mr-[350px]")}>
+        {/* Status filter bar */}
+        <div className="mb-4">
+          <PinStatusFilterBar
+            pins={pins || []}
+            activeTab={statusTab}
+            onTabChange={handleStatusTabChange}
+          />
+        </div>
+
         {/* Toolbar row */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
@@ -157,30 +151,6 @@ function CalendarPage() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Status filter chips */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {filterableStatuses.map((status) => {
-            const isActive = statuses?.includes(status) || false
-            const colorClasses = getStatusBadgeClasses(status)
-            const label = t('pinStatus.' + status)
-
-            return (
-              <button
-                key={status}
-                onClick={() => handleStatusToggle(status)}
-                className={cn(
-                  'inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium transition-all',
-                  isActive
-                    ? colorClasses
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                )}
-              >
-                {label}
-              </button>
-            )
-          })}
         </div>
 
         {/* Loading state */}

@@ -82,7 +82,7 @@ export interface PinMetadataGeneration {
 }
 
 // Sort and view mode types for pin list UI
-export type PinSortField = 'title' | 'status' | 'created_at' | 'updated_at'
+export type PinSortField = 'title' | 'status' | 'created_at' | 'updated_at' | 'scheduled_at' | 'published_at'
 export type PinViewMode = 'table' | 'grid'
 
 // Helper to get Tailwind badge classes for a pin status

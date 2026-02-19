@@ -249,17 +249,6 @@ function PinSidebarForm({
           hasPinterestBoard={!!pin.pinterest_board_id}
           pinterestPinUrl={pin.pinterest_pin_url}
         />
-        {pin.pinterest_pin_url && (
-          <a
-            href={pin.pinterest_pin_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            {t('pinSidebar.viewOnPinterest')}
-          </a>
-        )}
       </div>
 
       {/* Article link */}

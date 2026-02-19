@@ -18,7 +18,7 @@ sequenceDiagram
     Button->>Server: scrapeBlogFn({ blog_project_id, blog_url, sitemap_url })
     Server->>Sitemap: Discover URLs from sitemap XML
     Sitemap-->>Server: string[] of blog post URLs
-    Server->>DB: Fetch existing article URLs for project
+    Server->>DB: Fetch existing article URLs for project (incl. archived)
     DB-->>Server: Existing URLs
     Server->>Server: Diff: new URLs = discovered - existing
 
@@ -35,6 +35,8 @@ sequenceDiagram
 ```
 
 The server function returns immediately after dispatching to Edge Functions (fire-and-forget). New articles appear via Supabase Realtime subscription on the articles table.
+
+> **Note:** The duplicate check queries all articles for the project **including archived ones** (no `archived_at` filter). This ensures archived articles are not re-scraped. If an archived article's `lastmod` in the sitemap is newer than its `scraped_at`, it will be re-scraped and updated in place — but it remains archived.
 
 ## Manual Add
 
@@ -84,6 +86,8 @@ flowchart LR
 - **Archive:** Sets `archived_at = NOW()`, article hidden from active list
 - **Restore:** Sets `archived_at = null`, article returns to active list
 - Articles are never hard-deleted
+- **Pin creation:** Archived articles are excluded from the article selector (uses `archived_at IS NULL` filter)
+- **Existing pins:** Pins linked to an archived article keep their reference — the article link on the pin detail page still works
 
 The articles table has two tabs: "Active" (default) and "Archived". Both show title, date, pin count, source URL, and an action button (Archive or Restore).
 

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { ProjectPicker } from "@/components/layout/project-picker";
 
 export interface BreadcrumbItemType {
   label: string;
@@ -60,6 +61,11 @@ export function PageHeader({
             </BreadcrumbList>
           </Breadcrumb>
         )}
+
+        {/* Project picker — desktop only */}
+        <div className="ml-auto hidden md:flex">
+          <ProjectPicker variant="header" />
+        </div>
       </div>
       <div className="flex items-center justify-between mt-2">
         <div>
