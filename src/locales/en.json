@@ -406,7 +406,12 @@
     "dayFri": "Fri",
     "daySat": "Sat",
     "daySun": "Sun",
-    "allPinsFor": "All pins for {{date}}"
+    "allPinsFor": "All pins for {{date}}",
+    "pinListFilterAll": "All Records",
+    "pinListFilterWithDate": "With Date",
+    "pinListFilterWithoutDate": "Without Date",
+    "togglePinList": "Show Pins",
+    "dragHint": "You can schedule these records by dragging them into the calendar."
   },
   "pinTable": {
     "columns": "Columns",

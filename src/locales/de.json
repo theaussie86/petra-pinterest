@@ -406,7 +406,12 @@
     "dayFri": "Fr",
     "daySat": "Sa",
     "daySun": "So",
-    "allPinsFor": "Alle Pins für {{date}}"
+    "allPinsFor": "Alle Pins für {{date}}",
+    "pinListFilterAll": "Alle Datensätze",
+    "pinListFilterWithDate": "Mit Daten",
+    "pinListFilterWithoutDate": "Ohne Daten",
+    "togglePinList": "Pins anzeigen",
+    "dragHint": "Sie können diese Datensätze planen, indem Sie sie in den Kalender ziehen."
   },
   "pinTable": {
     "columns": "Spalten",
