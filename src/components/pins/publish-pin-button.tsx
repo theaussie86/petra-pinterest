@@ -10,6 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { usePublishPin } from '@/lib/hooks/use-pinterest-publishing'
 import type { PinStatus } from '@/types/pins'
+import { Link } from '@tanstack/react-router'
 
 interface PublishPinButtonProps {
   pinId: string
@@ -41,15 +42,15 @@ export function PublishPinButton({
   if (pinStatus === 'published') {
     if (pinterestPinUrl) {
       return (
-        <a
-          href={pinterestPinUrl}
+        <Link
+          to={pinterestPinUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
         >
           {t('publishPin.published')}
           <ExternalLink className="h-3.5 w-3.5" />
-        </a>
+        </Link>
       )
     }
     return (
