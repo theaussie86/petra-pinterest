@@ -304,7 +304,7 @@ export function CalendarWeekGrid({
       {/* Scrollable time grid */}
       <div
         ref={scrollRef}
-        className="overflow-y-auto"
+        className="overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         style={{ maxHeight: 'calc(100vh - 280px)' }}
       >
         <div
