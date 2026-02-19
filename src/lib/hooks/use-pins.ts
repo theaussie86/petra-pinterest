@@ -15,12 +15,19 @@ import {
 } from '@/lib/api/pins'
 import type { PinStatus } from '@/types/pins'
 
+const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
+
+function hasProcessingPin(pins: { status: string }[] | undefined) {
+  return pins?.some((p) => PROCESSING_STATUSES.includes(p.status)) ?? false
+}
+
 export function usePins(projectId: string) {
   return useQuery({
     queryKey: ['pins', projectId],
     queryFn: () => getPinsByProject(projectId),
     enabled: !!projectId,
     staleTime: 30000,
+    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
 }
 
@@ -30,6 +37,7 @@ export function useArticlePins(articleId: string) {
     queryFn: () => getPinsByArticle(articleId),
     enabled: !!articleId,
     staleTime: 30000,
+    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
 }
 
@@ -38,6 +46,7 @@ export function useAllPins() {
     queryKey: ['pins', 'all'],
     queryFn: getAllPins,
     staleTime: 30000,
+    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
 }
 
