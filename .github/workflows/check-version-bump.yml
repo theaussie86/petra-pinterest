@@ -14,13 +14,13 @@ jobs:
 
       - name: Get PR version
         id: pr
-        run: echo "version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
 
       - name: Get base version
         id: base
         run: |
           git checkout ${{ github.event.pull_request.base.sha }} -- package.json
-          echo "version=$(node -p 'require(\"./package.json\").version')" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
           git checkout HEAD -- package.json
 
       - name: Compare versions
