@@ -11,7 +11,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Badge } from '@/components/ui/badge'
 
 interface CalendarDayCellProps {
   date: Date
@@ -35,9 +34,32 @@ const STATUS_BORDER_CLASSES: Record<string, string> = {
   gray: 'border-gray-300',
 }
 
+// Map status colors to background classes (for month view rows)
+const STATUS_BG_CLASSES: Record<string, string> = {
+  slate: 'bg-slate-100',
+  blue: 'bg-blue-100',
+  violet: 'bg-violet-100',
+  teal: 'bg-teal-100',
+  green: 'bg-green-100',
+  emerald: 'bg-emerald-100',
+  red: 'bg-red-100',
+  gray: 'bg-gray-100',
+}
+
 function getStatusBorderClass(status: Pin['status']): string {
   const color = PIN_STATUS[status].color
   return STATUS_BORDER_CLASSES[color] || 'border-slate-300'
+}
+
+function getStatusBgClass(status: Pin['status']): string {
+  const color = PIN_STATUS[status].color
+  return STATUS_BG_CLASSES[color] || 'bg-slate-100'
+}
+
+function getPinTime(pin: Pin): string {
+  const dateStr = pin.scheduled_at || pin.published_at
+  if (!dateStr) return ''
+  return format(new Date(dateStr), 'HH:mm')
 }
 
 const CalendarDayCellComponent = ({
@@ -54,7 +76,7 @@ const CalendarDayCellComponent = ({
 
   // Determine thumbnail size and max visible count based on view
   const thumbnailSize = view === 'month' ? 32 : 48
-  const maxVisible = view === 'month' ? 6 : 6
+  const maxVisible = view === 'month' ? 4 : 6
 
   const visiblePins = pins.slice(0, maxVisible)
   const overflowCount = pins.length - maxVisible
@@ -126,76 +148,99 @@ const CalendarDayCellComponent = ({
         {format(date, 'd')}
       </div>
 
-      {/* Pin thumbnails */}
+      {/* Pin list */}
       <div className={cn(
-          view === 'month' ? 'grid grid-cols-3 gap-1' : 'space-y-1'
+          view === 'month' ? 'space-y-0.5' : 'space-y-1'
         )}>
-        {visiblePins.map((pin) => (
-          <div
-            key={pin.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, pin)}
-            onDragEnd={handleDragEnd}
-            onClick={() => onPinClick(pin.id)}
-            className="cursor-pointer"
-            title={pin.title || t('common.untitled')}
-          >
+        {visiblePins.map((pin) =>
+          view === 'month' ? (
+            // Month view: row with time + title + thumbnail
             <div
+              key={pin.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, pin)}
+              onDragEnd={handleDragEnd}
+              onClick={() => onPinClick(pin.id)}
               className={cn(
-                'rounded border-2 overflow-hidden transition-opacity',
-                getStatusBorderClass(pin.status),
+                'flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer transition-opacity text-xs',
+                getStatusBgClass(pin.status),
                 draggingPinId === pin.id && 'opacity-50'
               )}
-              style={{
-                width: `${thumbnailSize}px`,
-                height: `${thumbnailSize}px`,
-              }}
             >
-              <PinMediaPreview pin={pin} />
+              <span className="shrink-0 w-9 font-medium text-slate-700 tabular-nums">
+                {getPinTime(pin)}
+              </span>
+              <span className="flex-1 min-w-0 truncate text-slate-900">
+                {pin.title || t('common.untitled')}
+              </span>
+              <div className="shrink-0 w-7 h-7 rounded overflow-hidden">
+                <PinMediaPreview pin={pin} />
+              </div>
             </div>
-          </div>
-        ))}
+          ) : (
+            // Week view: thumbnail only (unchanged)
+            <div
+              key={pin.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, pin)}
+              onDragEnd={handleDragEnd}
+              onClick={() => onPinClick(pin.id)}
+              className="cursor-pointer"
+              title={pin.title || t('common.untitled')}
+            >
+              <div
+                className={cn(
+                  'rounded border-2 overflow-hidden transition-opacity',
+                  getStatusBorderClass(pin.status),
+                  draggingPinId === pin.id && 'opacity-50'
+                )}
+                style={{
+                  width: `${thumbnailSize}px`,
+                  height: `${thumbnailSize}px`,
+                }}
+              >
+                <PinMediaPreview pin={pin} />
+              </div>
+            </div>
+          )
+        )}
 
-        {/* Overflow badge */}
+        {/* Overflow button */}
         {overflowCount > 0 && (
           <Popover>
             <PopoverTrigger asChild>
-              <button className={cn(
-                'inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-600 text-xs px-2 py-0.5 font-medium hover:bg-slate-200 transition-colors',
-                view === 'month' && 'col-span-3 w-full rounded-md'
-              )}>
+              <button className="w-full text-left text-xs text-slate-500 hover:text-slate-700 px-1 py-0.5 transition-colors">
                 {t('unscheduledPins.more', { count: overflowCount })}
               </button>
             </PopoverTrigger>
-            <PopoverContent className="w-80 p-3" align="start">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-slate-900 mb-3">
-                  {t('calendar.allPinsFor', { date: format(date, 'MMM d, yyyy', { locale }) })}
-                </p>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <PopoverContent className="w-72 p-0" align="start">
+              <div>
+                {/* Header */}
+                <div className="flex items-center justify-between px-3 py-2 border-b">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {format(date, 'EEEE, d. MMMM', { locale })}
+                  </p>
+                </div>
+                {/* All pins */}
+                <div className="space-y-1 p-2 max-h-[360px] overflow-y-auto">
                   {pins.map((pin) => (
                     <div
                       key={pin.id}
                       onClick={() => onPinClick(pin.id)}
-                      className="flex items-center gap-3 p-2 rounded hover:bg-slate-50 cursor-pointer transition-colors"
+                      className={cn(
+                        'flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-opacity text-sm',
+                        getStatusBgClass(pin.status)
+                      )}
                     >
-                      <div className={cn(
-                          'w-6 h-6 rounded border overflow-hidden shrink-0',
-                          getStatusBorderClass(pin.status)
-                        )}>
+                      <span className="shrink-0 w-10 font-medium text-slate-700 tabular-nums text-xs">
+                        {getPinTime(pin)}
+                      </span>
+                      <span className="flex-1 min-w-0 truncate text-slate-900">
+                        {pin.title || t('common.untitled')}
+                      </span>
+                      <div className="shrink-0 w-8 h-8 rounded overflow-hidden">
                         <PinMediaPreview pin={pin} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-900 truncate">
-                          {pin.title || t('common.untitled')}
-                        </p>
-                      </div>
-                      <Badge
-                        variant="secondary"
-                        className="text-xs shrink-0"
-                      >
-                        {t('pinStatus.' + pin.status)}
-                      </Badge>
                     </div>
                   ))}
                 </div>
