@@ -10,11 +10,13 @@ Follow these steps exactly:
 
 2. **Check git status.** Run `git status --porcelain`. If there are uncommitted changes, warn the user and ask if they want to proceed (changes won't be included in the release commit).
 
-3. **Ensure we're on a feature branch.** Run `git branch --show-current`. If on `main`, create and checkout a new branch named `release/v<new-version>` (you'll need to peek at the version after bumping — so first run the release script, then read the version, then create the branch before the commit happens). Actually, the simpler approach: ask the user to create a feature branch first, or offer to create `release/<type>-bump` for them.
+3. **Ensure we're on a feature branch.** Run `git branch --show-current`. If on `main`:
+   - First, peek at the current version with `node -p "require('./package.json').version"` and compute what the new version will be (e.g. 1.0.4 → patch → 1.0.5).
+   - Create and checkout `release/v<new-version>` (e.g. `release/v1.0.5`).
 
 4. **Run the release script.** Execute `npm run release -- <type>` where `<type>` is the validated argument. This bumps the version in package.json and creates a commit.
 
-5. **Read the new version.** Run `node -p "require('./package.json').version"` to get the bumped version string.
+5. **Read the new version.** Run `node -p "require('./package.json').version"` to confirm the bumped version string.
 
 6. **Push the branch.** Run `git push -u origin HEAD`.
 
