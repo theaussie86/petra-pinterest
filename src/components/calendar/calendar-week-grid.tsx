@@ -371,7 +371,7 @@ export function CalendarWeekGrid({
                   const widthPercent = 100 / pp.overlapCount
                   const leftPercent = pp.overlapIndex * widthPercent
                   const pinTime = pp.pin.scheduled_at
-                    ? format(new Date(pp.pin.scheduled_at), 'h:mm a', { locale })
+                    ? format(new Date(pp.pin.scheduled_at), 'HH:mm')
                     : ''
 
                   return (
