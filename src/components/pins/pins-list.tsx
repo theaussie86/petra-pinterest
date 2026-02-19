@@ -22,7 +22,6 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +44,9 @@ import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { PinMediaPreview } from '@/components/pins/pin-media-preview'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
-import { PIN_STATUS, ACTIVE_STATUSES } from '@/types/pins'
+import { PinStatusFilterBar, filterPinsByTab, TAB_LABEL_KEYS } from '@/components/pins/pin-status-filter-bar'
+import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
+import { ACTIVE_STATUSES } from '@/types/pins'
 import type { PinStatus, PinSortField, PinViewMode } from '@/types/pins'
 
 type SortDirection = 'asc' | 'desc'
@@ -54,25 +55,6 @@ interface PinsListProps {
   projectId: string
 }
 
-const STATUS_TABS = ['all', 'draft', 'generation', 'metadata_created', 'published', 'error'] as const
-type StatusTab = (typeof STATUS_TABS)[number]
-
-const STATUS_TAB_GROUPS: Record<Exclude<StatusTab, 'all'>, PinStatus[]> = {
-  draft: ['draft'],
-  generation: ['generate_metadata', 'generating_metadata'],
-  metadata_created: ['metadata_created'],
-  published: ['published'],
-  error: ['error'],
-}
-
-const TAB_LABEL_KEYS: Record<StatusTab, string> = {
-  all: 'pinsList.all',
-  draft: 'pinsList.tab_draft',
-  generation: 'pinsList.tab_generation',
-  metadata_created: 'pinsList.tab_metadata_created',
-  published: 'pinsList.tab_published',
-  error: 'pinsList.tab_error',
-}
 
 export function PinsList({ projectId }: PinsListProps) {
   const { t, i18n } = useTranslation()
@@ -105,30 +87,10 @@ export function PinsList({ projectId }: PinsListProps) {
     return new Map(articles.map((a) => [a.id, a.title]))
   }, [articles])
 
-  // Compute per-tab counts
-  const tabCounts = useMemo(() => {
-    const counts: Record<StatusTab, number> = {
-      all: 0, draft: 0, generation: 0, metadata_created: 0,
-      published: 0, error: 0,
-    }
-    if (!pins) return counts
-    counts.all = pins.length
-    for (const pin of pins) {
-      for (const [tab, statuses] of Object.entries(STATUS_TAB_GROUPS)) {
-        if (statuses.includes(pin.status)) {
-          counts[tab as StatusTab]++
-        }
-      }
-    }
-    return counts
-  }, [pins])
-
   // Filter pins by status tab
   const filteredPins = useMemo(() => {
     if (!pins) return []
-    if (activeTab === 'all') return pins
-    const statuses = STATUS_TAB_GROUPS[activeTab]
-    return pins.filter((pin) => statuses.includes(pin.status))
+    return filterPinsByTab(pins, activeTab)
   }, [pins, activeTab])
 
   // Sort pins
@@ -251,8 +213,8 @@ export function PinsList({ projectId }: PinsListProps) {
   }
 
   // Tab change clears selection
-  const handleTabChange = (value: string) => {
-    setActiveTab(value as StatusTab)
+  const handleTabChange = (value: StatusTab) => {
+    setActiveTab(value)
     clearSelection()
   }
 
@@ -290,19 +252,11 @@ export function PinsList({ projectId }: PinsListProps) {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList>
-          {STATUS_TABS.map((tab) => (
-            <TabsTrigger key={tab} value={tab}>
-              {t(TAB_LABEL_KEYS[tab])}
-              {tabCounts[tab] > 0 && (
-                <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs font-medium leading-none">
-                  {tabCounts[tab]}
-                </span>
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <PinStatusFilterBar
+        pins={pins || []}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
 
         {/* Toolbar row */}
         <div className="flex items-center justify-between mt-4">
@@ -424,111 +378,106 @@ export function PinsList({ projectId }: PinsListProps) {
           </div>
         </div>
 
-        {/* Shared content across all tabs */}
-        {STATUS_TABS.map((tab) => (
-          <TabsContent key={tab} value={tab}>
-            {sortedPins.length === 0 ? (
-              <EmptyState tab={tab} />
-            ) : viewMode === 'table' ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[40px]">
-                      <Checkbox
-                        checked={allSelected}
-                        onCheckedChange={toggleSelectAll}
-                        aria-label="Select all"
-                      />
-                    </TableHead>
-                    <TableHead className="w-[60px]">{t('pinsList.columnImage')}</TableHead>
-                    <TableHead className="cursor-pointer" onClick={() => handleSort('title')}>
-                      {t('pinsList.columnTitle')} {getSortIcon('title')}
-                    </TableHead>
-                    <TableHead className="w-[200px]">{t('pinsList.columnArticle')}</TableHead>
-                    <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
-                      {t('pinsList.columnStatus')} {getSortIcon('status')}
-                    </TableHead>
-                    <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
-                      {t('pinsList.columnCreated')} {getSortIcon('created_at')}
-                    </TableHead>
-                    <TableHead className="w-[100px]" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedPins.map((pin) => (
-                    <TableRow key={pin.id} data-state={selectedIds.has(pin.id) ? 'selected' : undefined}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedIds.has(pin.id)}
-                          onCheckedChange={() => toggleSelect(pin.id)}
-                          aria-label={`Select pin ${pin.title || t('common.untitled')}`}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-12 w-12 overflow-hidden rounded bg-slate-100">
-                          <PinMediaPreview pin={pin} />
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <Link
-                          to="/projects/$projectId/pins/$pinId"
-                          params={{ projectId: pin.blog_project_id, pinId: pin.id }}
-                          className="text-blue-600 hover:text-blue-700 hover:underline max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
-                        >
-                          {pin.title ? (
-                            pin.title
-                          ) : (
-                            <span className="italic text-slate-400">{t('common.untitled')}</span>
-                          )}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
-                          {articleMap.get(pin.blog_article_id) || t('pinsList.unknownArticle')}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <PinStatusBadge status={pin.status} />
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-500">
-                        {formatDate(pin.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }}>
-                              {t('pinsList.viewEdit')}
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeletePin(pin.id)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {sortedPins.map((pin) => (
-                  <PinCard
-                    key={pin.id}
-                    pin={pin}
-                    selected={selectedIds.has(pin.id)}
-                    onToggleSelect={toggleSelect}
+        {/* Pin content */}
+        {sortedPins.length === 0 ? (
+          <EmptyState tab={activeTab} />
+        ) : viewMode === 'table' ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[40px]">
+                  <Checkbox
+                    checked={allSelected}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all"
                   />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+                </TableHead>
+                <TableHead className="w-[60px]">{t('pinsList.columnImage')}</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => handleSort('title')}>
+                  {t('pinsList.columnTitle')} {getSortIcon('title')}
+                </TableHead>
+                <TableHead className="w-[200px]">{t('pinsList.columnArticle')}</TableHead>
+                <TableHead className="cursor-pointer w-[180px]" onClick={() => handleSort('status')}>
+                  {t('pinsList.columnStatus')} {getSortIcon('status')}
+                </TableHead>
+                <TableHead className="cursor-pointer w-[120px]" onClick={() => handleSort('created_at')}>
+                  {t('pinsList.columnCreated')} {getSortIcon('created_at')}
+                </TableHead>
+                <TableHead className="w-[100px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedPins.map((pin) => (
+                <TableRow key={pin.id} data-state={selectedIds.has(pin.id) ? 'selected' : undefined}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(pin.id)}
+                      onCheckedChange={() => toggleSelect(pin.id)}
+                      aria-label={`Select pin ${pin.title || t('common.untitled')}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="h-12 w-12 overflow-hidden rounded bg-slate-100">
+                      <PinMediaPreview pin={pin} />
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <Link
+                      to="/projects/$projectId/pins/$pinId"
+                      params={{ projectId: pin.blog_project_id, pinId: pin.id }}
+                      className="text-blue-600 hover:text-blue-700 hover:underline max-w-[300px] block overflow-hidden text-ellipsis whitespace-nowrap"
+                    >
+                      {pin.title ? (
+                        pin.title
+                      ) : (
+                        <span className="italic text-slate-400">{t('common.untitled')}</span>
+                      )}
+                    </Link>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-slate-600 max-w-[180px] block overflow-hidden text-ellipsis whitespace-nowrap">
+                      {articleMap.get(pin.blog_article_id) || t('pinsList.unknownArticle')}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <PinStatusBadge status={pin.status} />
+                  </TableCell>
+                  <TableCell className="text-sm text-slate-500">
+                    {formatDate(pin.created_at)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }}>
+                          {t('pinsList.viewEdit')}
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => handleDeletePin(pin.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {sortedPins.map((pin) => (
+              <PinCard
+                key={pin.id}
+                pin={pin}
+                selected={selectedIds.has(pin.id)}
+                onToggleSelect={toggleSelect}
+              />
+            ))}
+          </div>
+        )}
 
       {/* Bulk delete confirmation dialog */}
       <Dialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
