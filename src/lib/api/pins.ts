@@ -55,6 +55,7 @@ export async function createPin(pin: PinInsert): Promise<Pin> {
     .insert({
       ...pin,
       tenant_id,
+      status: 'generate_metadata',
     })
     .select()
     .single()
@@ -68,7 +69,7 @@ export async function createPins(pins: PinInsert[]): Promise<Pin[]> {
 
   const { data, error } = await supabase
     .from('pins')
-    .insert(pins.map((pin) => ({ ...pin, tenant_id })))
+    .insert(pins.map((pin) => ({ ...pin, tenant_id, status: 'generate_metadata' })))
     .select()
 
   if (error) throw error
