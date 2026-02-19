@@ -3,7 +3,7 @@ export const PIN_STATUS = {
   draft: { color: 'slate' },
   generate_metadata: { color: 'violet' },
   generating_metadata: { color: 'violet' },
-  metadata_created: { color: 'teal' },
+  metadata_created: { color: 'blue' },
   published: { color: 'emerald' },
   error: { color: 'red' },
   deleted: { color: 'gray' },
@@ -90,7 +90,7 @@ export function getStatusBadgeClasses(status: PinStatus): string {
   const colorMap: Record<string, string> = {
     slate: 'bg-slate-100 text-slate-700',
     violet: 'bg-violet-100 text-violet-700',
-    teal: 'bg-teal-100 text-teal-700',
+    blue: 'bg-blue-100 text-blue-700',
     emerald: 'bg-emerald-100 text-emerald-700',
     red: 'bg-red-100 text-red-700',
     gray: 'bg-gray-100 text-gray-500',
