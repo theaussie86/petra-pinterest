@@ -30,7 +30,7 @@ export const Route = createFileRoute('/auth/pinterest/callback')({
         throw redirect({
           to: '/projects/$projectId',
           params: { projectId: result.blog_project_id },
-          search: { pinterest_connected: 'true' },
+          search: { pinterest_connected: 'true', pinterest_error: undefined },
         })
       } else {
         // Exchange failed: redirect to dashboard with error
