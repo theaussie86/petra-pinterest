@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { ExternalLink, Send, Loader2, RotateCcw } from 'lucide-react'
+import { ExternalLink, Send, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -56,16 +56,6 @@ export function PublishPinButton({
       <Badge className="bg-emerald-100 text-emerald-700">
         {t('publishPin.published')}
       </Badge>
-    )
-  }
-
-  // Publishing state: show loading spinner
-  if (pinStatus === 'publish_pin') {
-    return (
-      <Button variant={variant} size={size} disabled>
-        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-        {t('publishPin.publishing')}
-      </Button>
     )
   }
 

@@ -14,14 +14,16 @@ Deno.serve(async (req) => {
     const supabase = createServiceClient()
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 
-    // Query pins that are ready to publish and past their scheduled time
+    // Query pins with metadata_created + scheduled_at in the past + not yet published
     const { data: pins, error: fetchError } = await supabase
       .from('pins')
       .select(
         '*, blog_articles(url), blog_projects(pinterest_connection_id)'
       )
-      .eq('status', 'ready_to_schedule')
+      .eq('status', 'metadata_created')
+      .not('scheduled_at', 'is', null)
       .lte('scheduled_at', new Date().toISOString())
+      .is('pinterest_pin_id', null)
 
     if (fetchError) {
       throw new Error(`Failed to fetch scheduled pins: ${fetchError.message}`)
@@ -58,6 +60,7 @@ Deno.serve(async (req) => {
             error_message: 'No Pinterest account connected to this project',
           })
           .eq('id', pin.id)
+          .eq('status', 'metadata_created')
         continue
       }
 
@@ -93,6 +96,7 @@ Deno.serve(async (req) => {
               error_message: `Failed to retrieve Pinterest access token: ${tokenError?.message || 'Unknown error'}`,
             })
             .eq('id', pin.id)
+            .eq('status', 'metadata_created')
 
           results.push({
             pin_id: pin.id,
@@ -111,12 +115,6 @@ Deno.serve(async (req) => {
         const pin = connectionPins[i]
 
         try {
-          // Set status to publishing
-          await supabase
-            .from('pins')
-            .update({ status: 'publish_pin' })
-            .eq('id', pin.id)
-
           // Build image URL
           const imagePublicUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${pin.image_path}`
 
@@ -145,7 +143,7 @@ Deno.serve(async (req) => {
           // Call Pinterest API
           const result = await createPinterestPin(accessToken, payload)
 
-          // On success: update pin
+          // Atomic update: only update if status is still metadata_created
           await supabase
             .from('pins')
             .update({
@@ -155,6 +153,7 @@ Deno.serve(async (req) => {
               pinterest_pin_url: `https://www.pinterest.com/pin/${result.id}/`,
             })
             .eq('id', pin.id)
+            .eq('status', 'metadata_created')
 
           results.push({ pin_id: pin.id, success: true })
           totalPublished++
@@ -170,7 +169,7 @@ Deno.serve(async (req) => {
               .eq('id', connectionId)
           }
 
-          // Mark pin as error
+          // Atomic error update: only if status hasn't changed
           await supabase
             .from('pins')
             .update({
@@ -178,6 +177,7 @@ Deno.serve(async (req) => {
               error_message: errorMessage,
             })
             .eq('id', pin.id)
+            .eq('status', 'metadata_created')
 
           results.push({
             pin_id: pin.id,

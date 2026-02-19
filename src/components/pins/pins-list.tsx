@@ -61,7 +61,7 @@ const STATUS_TAB_GROUPS: Record<Exclude<StatusTab, 'all'>, PinStatus[]> = {
   draft: ['draft'],
   generation: ['generate_metadata', 'generating_metadata'],
   metadata_created: ['metadata_created'],
-  published: ['publish_pin', 'published'],
+  published: ['published'],
   error: ['error'],
 }
 

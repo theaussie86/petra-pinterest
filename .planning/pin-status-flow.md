@@ -16,11 +16,8 @@ stateDiagram-v2
     generating_metadata --> error : AI/network failure
 
     metadata_created --> generate_metadata : User regenerates (with feedback)
-    metadata_created --> publish_pin : User publishes pin
+    metadata_created --> published : Auto-publish (scheduled_at <= now) or manual publish
     metadata_created --> deleted : User deletes
-
-    publish_pin --> published : System publishes to Pinterest
-    publish_pin --> error : Publish failure
 
     published --> [*]
 
@@ -39,7 +36,6 @@ stateDiagram-v2
 | `generate_metadata` | Metadaten generieren | violet | User | User has requested generation |
 | `generating_metadata` | Metadaten werden generiert | violet | System | AI generation in progress |
 | `metadata_created` | Metadaten erstellt | teal | System | AI metadata applied to pin |
-| `publish_pin` | Wird veroffentlicht | green | User | User triggered publish, in progress |
 | `published` | Veroffentlicht | emerald | System | Live on Pinterest |
 | `error` | Fehler | red | System | Failed operation, recoverable |
 | `deleted` | Loschen | gray | User | Soft-deleted |
@@ -48,4 +44,5 @@ stateDiagram-v2
 
 - **System-managed statuses** (`generating_metadata`, `published`) cannot be set by users in the UI
 - **Error recovery** restores `previous_status` if available, otherwise falls back to `draft`
-- **Publishing** is triggered manually by the user (no scheduling queue)
+- **Auto-publishing** is triggered by pg_cron every 10 minutes (7-23 UTC) for pins with `metadata_created` status and `scheduled_at <= NOW()`
+- **Manual publishing** is also available via the UI publish button

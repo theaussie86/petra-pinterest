@@ -70,12 +70,10 @@ describe('publishSinglePin()', () => {
 
     const pin = buildPinWithRelations()
     const fetchQb = createMockQueryBuilder({ data: pin })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
     const successUpdateQb = createMockQueryBuilder({ data: null })
 
     supabase.from
       .mockReturnValueOnce(fetchQb as any)     // fetch pin
-      .mockReturnValueOnce(statusUpdateQb as any) // update status to publish_pin
       .mockReturnValueOnce(successUpdateQb as any) // update with published status
 
     serviceClient.rpc.mockResolvedValueOnce({ data: 'access-token-123', error: null })
@@ -165,12 +163,10 @@ describe('publishSinglePin()', () => {
 
     const pin = buildPinWithRelations()
     const fetchQb = createMockQueryBuilder({ data: pin })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
     const errorUpdateQb = createMockQueryBuilder({ data: null })
 
     supabase.from
       .mockReturnValueOnce(fetchQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
       .mockReturnValueOnce(errorUpdateQb as any)
 
     serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
@@ -195,12 +191,10 @@ describe('publishSinglePin()', () => {
       alt_text: 'C'.repeat(600),
     })
     const fetchQb = createMockQueryBuilder({ data: pin })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
     const successUpdateQb = createMockQueryBuilder({ data: null })
 
     supabase.from
       .mockReturnValueOnce(fetchQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
       .mockReturnValueOnce(successUpdateQb as any)
 
     serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
@@ -220,16 +214,14 @@ describe('publishPinFn', () => {
   it('authenticates and publishes a single pin', async () => {
     // Pin access check
     const pinAccessQb = createMockQueryBuilder({ data: { id: 'pin-1' } })
-    // publishSinglePin internal calls: fetch pin, status update, success update
+    // publishSinglePin internal calls: fetch pin, success update
     const pin = buildPinWithRelations()
     const fetchQb = createMockQueryBuilder({ data: pin })
-    const statusQb = createMockQueryBuilder({ data: null })
     const successQb = createMockQueryBuilder({ data: null })
 
     mockServerClient.from
       .mockReturnValueOnce(pinAccessQb as any)
       .mockReturnValueOnce(fetchQb as any)
-      .mockReturnValueOnce(statusQb as any)
       .mockReturnValueOnce(successQb as any)
 
     mockServiceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
@@ -278,22 +270,18 @@ describe('publishPinsBulkFn', () => {
     // publishSinglePin calls for pin-1
     const pin1 = buildPinWithRelations({ id: 'pin-1' })
     const fetch1 = createMockQueryBuilder({ data: pin1 })
-    const status1 = createMockQueryBuilder({ data: null })
     const success1 = createMockQueryBuilder({ data: null })
 
     // publishSinglePin calls for pin-2
     const pin2 = buildPinWithRelations({ id: 'pin-2' })
     const fetch2 = createMockQueryBuilder({ data: pin2 })
-    const status2 = createMockQueryBuilder({ data: null })
     const success2 = createMockQueryBuilder({ data: null })
 
     mockServerClient.from
       .mockReturnValueOnce(pinsAccessQb as any)
       .mockReturnValueOnce(fetch1 as any)
-      .mockReturnValueOnce(status1 as any)
       .mockReturnValueOnce(success1 as any)
       .mockReturnValueOnce(fetch2 as any)
-      .mockReturnValueOnce(status2 as any)
       .mockReturnValueOnce(success2 as any)
 
     mockServiceClient.rpc

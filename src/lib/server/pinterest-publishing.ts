@@ -43,12 +43,6 @@ export async function publishSinglePin(
       throw new Error('Pin must have an image')
     }
 
-    // Update pin status to 'publishing'
-    await supabase
-      .from('pins')
-      .update({ status: 'publish_pin' })
-      .eq('id', pinId)
-
     // Get access token from Vault via service client
     const { data: tokenData, error: tokenError } = await serviceClient.rpc(
       'get_pinterest_access_token',
