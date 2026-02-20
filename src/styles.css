@@ -1,56 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-background: #ffffff;
-  --color-foreground: #0a0a0a;
-  --color-muted: #f5f5f5;
-  --color-muted-foreground: #737373;
-  --color-border: #e5e5e5;
-  --color-primary: #e60023;
+  /* Typography */
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-display: "Nunito", system-ui, sans-serif;
+
+  /* Light mode color palette */
+  --color-background: oklch(99% 0.006 280);
+  --color-foreground: oklch(14% 0.02 280);
+  --color-muted: oklch(96% 0.012 280);
+  --color-muted-foreground: oklch(52% 0.015 280);
+  --color-border: oklch(90% 0.015 280);
+  --color-input: oklch(90% 0.015 280);
+  --color-ring: oklch(42% 0.25 280 / 50%);
+  --color-primary: oklch(42% 0.25 280);
   --color-primary-foreground: #ffffff;
-  --color-accent: #f5f5f5;
-  --color-accent-foreground: #0a0a0a;
-  --color-destructive: #dc2626;
+  --color-secondary: oklch(50% 0.26 10);
+  --color-secondary-foreground: #ffffff;
+  --color-accent: oklch(96% 0.012 280);
+  --color-accent-foreground: oklch(14% 0.02 280);
+  --color-destructive: oklch(50% 0.26 10);
   --color-destructive-foreground: #ffffff;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #0a0a0a;
-  --color-card: #ffffff;
-  --color-card-foreground: #0a0a0a;
-  --color-input: #e5e5e5;
-  --color-ring: #e60023;
-  --radius-default: 0.5rem;
+  --color-popover: oklch(99% 0.006 280);
+  --color-popover-foreground: oklch(14% 0.02 280);
+  --color-card: rgba(255, 255, 255, 0.72);
+  --color-card-foreground: oklch(14% 0.02 280);
+
+  /* Border radius */
+  --radius-default: 0.75rem;
 }
 
-body {
-  @apply m-0 bg-background text-foreground antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
-    "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
-    "Helvetica Neue", sans-serif;
-}
-
+/* Sidebar tokens — light mode */
 :root {
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(240 5.9% 10%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar: hsl(280 20% 97%);
+  --sidebar-foreground: hsl(270 15% 25%);
+  --sidebar-primary: hsl(270 80% 42%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(270 30% 92%);
+  --sidebar-accent-foreground: hsl(270 80% 42%);
+  --sidebar-border: hsl(280 20% 90%);
+  --sidebar-ring: hsl(270 80% 42%);
 }
 
+/* Sidebar tokens — dark mode */
 .dark {
-  --sidebar: hsl(240 5.9% 10%);
-  --sidebar-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar: hsl(270 35% 10%);
+  --sidebar-foreground: hsl(280 15% 85%);
+  --sidebar-primary: hsl(270 80% 65%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 3.7% 15.9%);
-  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-  --sidebar-border: hsl(240 3.7% 15.9%);
-  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+  --sidebar-accent: hsl(270 30% 18%);
+  --sidebar-accent-foreground: hsl(270 80% 75%);
+  --sidebar-border: hsl(270 20% 16%);
+  --sidebar-ring: hsl(270 80% 65%);
+
+  /* Dark mode main color overrides */
+  --color-background: oklch(11% 0.04 280);
+  --color-foreground: oklch(95% 0.01 280);
+  --color-muted: oklch(19% 0.03 280);
+  --color-muted-foreground: oklch(62% 0.015 280);
+  --color-border: oklch(24% 0.03 280);
+  --color-input: oklch(24% 0.03 280);
+  --color-ring: oklch(68% 0.2 280 / 50%);
+  --color-primary: oklch(68% 0.2 280);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: oklch(62% 0.24 10);
+  --color-secondary-foreground: #ffffff;
+  --color-accent: oklch(19% 0.03 280);
+  --color-accent-foreground: oklch(95% 0.01 280);
+  --color-destructive: oklch(62% 0.24 10);
+  --color-destructive-foreground: #ffffff;
+  --color-popover: oklch(14% 0.04 280);
+  --color-popover-foreground: oklch(95% 0.01 280);
+  --color-card: rgba(30, 18, 60, 0.72);
+  --color-card-foreground: oklch(95% 0.01 280);
 }
 
 @theme inline {
@@ -67,10 +93,41 @@ body {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    transition-timing-function: ease;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply m-0 bg-background text-foreground antialiased;
+    font-family: "DM Sans", system-ui, sans-serif;
+    background: radial-gradient(ellipse at top, oklch(96% 0.015 280), oklch(99% 0.006 280));
+    min-height: 100vh;
   }
+  .dark body {
+    background: radial-gradient(ellipse at top, oklch(16% 0.05 280), oklch(11% 0.04 280));
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Nunito", system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Sidebar entrance animation */
+@keyframes slide-in-from-left {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Main content entrance animation */
+@keyframes slide-in-from-top {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+[data-sidebar] {
+  animation: slide-in-from-left 200ms ease forwards;
+}
+
+main {
+  animation: slide-in-from-top 300ms 100ms ease both;
 }
 
 /* Calendar cell sizing — CSS variables for react-day-picker */

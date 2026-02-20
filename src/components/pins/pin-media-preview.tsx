@@ -21,8 +21,8 @@ export function PinMediaPreview({ pin, className, controls = false, displayWidth
     return (
       <div className={cn('flex h-full w-full flex-col items-center justify-center gap-2 bg-muted', className)}>
         <img
-          src="/logo.svg"
-          alt="Petra Pinterest logo"
+          src="/logo.png"
+          alt="Pinfinity logo"
           className="h-10 w-10 opacity-40"
         />
         {pin.pinterest_pin_url && (

@@ -73,7 +73,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     .slice(0, 2);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="backdrop-blur-md bg-white/65 dark:bg-[#0E0A1F]/80 border-r border-purple-100/50 dark:border-white/5">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -81,7 +81,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
               <Link to="/dashboard">
                   <Logo className="size-8! text-primary" />
                 {state === "expanded" ? <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">PinMa</span>
+                  <span className="bg-gradient-to-r from-violet-600 to-rose-600 bg-clip-text text-transparent font-extrabold text-lg" style={{ fontFamily: 'Nunito, system-ui, sans-serif' }}>
+                    Pinfinity
+                  </span>
                 </div> : null}
               </Link>
             </SidebarMenuButton>
