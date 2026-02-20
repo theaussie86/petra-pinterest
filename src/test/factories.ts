@@ -67,7 +67,6 @@ export function buildBlogProject(overrides: Partial<BlogProject> = {}): BlogProj
     tenant_id: 'test-tenant-id',
     name: 'Test Blog',
     blog_url: 'https://example.com',
-    rss_url: null,
     sitemap_url: null,
     scraping_frequency: 'manual',
     description: null,

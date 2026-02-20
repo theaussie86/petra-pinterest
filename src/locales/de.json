@@ -123,8 +123,6 @@
     "placeholderName": "Projektname",
     "fieldBlogUrl": "Blog-URL",
     "placeholderBlogUrl": "https://meinblog.de",
-    "fieldRssUrl": "RSS-URL",
-    "placeholderRssUrl": "https://meinblog.de/feed",
     "fieldSitemapUrl": "Sitemap-URL",
     "placeholderSitemapUrl": "https://meinblog.de/sitemap.xml",
     "fieldDescription": "Beschreibung",

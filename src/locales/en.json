@@ -123,8 +123,6 @@
     "placeholderName": "Project name",
     "fieldBlogUrl": "Blog URL",
     "placeholderBlogUrl": "https://myblog.com",
-    "fieldRssUrl": "RSS URL",
-    "placeholderRssUrl": "https://myblog.com/feed",
     "fieldSitemapUrl": "Sitemap URL",
     "placeholderSitemapUrl": "https://myblog.com/sitemap.xml",
     "fieldDescription": "Description",
