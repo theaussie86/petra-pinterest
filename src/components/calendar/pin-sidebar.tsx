@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -351,8 +352,8 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
     return null
   }
 
-  return (
-    <div className="fixed right-0 top-16 z-40 w-[350px] h-[calc(100vh-64px)] bg-white border-l border-slate-200 shadow-lg overflow-y-auto transition-transform duration-200">
+  return createPortal(
+    <div className="fixed right-0 inset-y-0 z-50 w-[420px] h-svh bg-white border-l border-slate-200 shadow-lg overflow-y-auto transition-transform duration-200">
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -391,6 +392,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
           />
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { format } from 'date-fns'
 import { useTranslation } from 'react-i18next'
@@ -134,8 +135,8 @@ export function PinListSidebar({ pins, isOpen, onClose, onPinClick }: PinListSid
 
   if (!isOpen) return null
 
-  return (
-    <div className="fixed right-0 top-16 z-30 w-[350px] h-[calc(100vh-4rem)] bg-white border-l border-slate-200 shadow-lg flex flex-col">
+  return createPortal(
+    <div className="fixed right-0 inset-y-0 z-40 w-[420px] h-svh bg-white border-l border-slate-200 shadow-lg flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 flex-shrink-0">
         <Select value={filter} onValueChange={(v) => setFilter(v as FilterMode)}>
@@ -195,6 +196,7 @@ export function PinListSidebar({ pins, isOpen, onClose, onPinClick }: PinListSid
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
