@@ -17,15 +17,15 @@
     "notAssigned": "Nicht zugewiesen"
   },
   "meta": {
-    "title": "Pinterest Management",
-    "description": "Pinterest Management Plattform"
+    "title": "Pinfinity",
+    "description": "Pinfinity — Automatisiere deine Pinterest Pins"
   },
   "notFound": {
     "title": "404",
     "message": "Seite nicht gefunden"
   },
   "login": {
-    "heading": "PinMa",
+    "heading": "Pinfinity",
     "subtitle": "Dein Pinterest-Dashboard für Content-Planung, KI-Metadaten und automatisches Publishing",
     "signIn": "Mit Google anmelden",
     "redirecting": "Weiterleitung...",

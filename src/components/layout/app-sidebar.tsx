@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -73,7 +74,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
     .slice(0, 2);
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="backdrop-blur-md bg-white/65 dark:bg-[#0E0A1F]/80 border-r border-purple-100/50 dark:border-white/5">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -81,7 +82,12 @@ export function AppSidebar({ user }: AppSidebarProps) {
               <Link to="/dashboard">
                   <Logo className="size-8! text-primary" />
                 {state === "expanded" ? <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">PinMa</span>
+                  <span className="bg-gradient-to-r from-violet-600 to-rose-600 bg-clip-text text-transparent font-extrabold text-lg" style={{ fontFamily: 'Nunito, system-ui, sans-serif' }}>
+                    Pinfinity
+                  </span>
+                  <span className="text-[10px] text-sidebar-foreground/40 font-mono tracking-wide">
+                    v{version}
+                  </span>
                 </div> : null}
               </Link>
             </SidebarMenuButton>

@@ -31,7 +31,7 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <header className="border-b bg-white px-4 py-2">
+    <header className="border-b border-purple-100/50 dark:border-white/5 bg-white/70 dark:bg-[#0E0A1F]/70 backdrop-blur-md px-4 py-2 animate-in fade-in slide-in-from-top-1 duration-300">
       <div className="flex items-center gap-2">
         <SidebarTrigger />
         <Separator
