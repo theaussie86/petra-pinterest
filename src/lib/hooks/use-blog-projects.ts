@@ -46,7 +46,6 @@ export function useCreateBlogProject() {
             tenant_id: 'temp',
             name: newProject.name,
             blog_url: newProject.blog_url,
-            rss_url: newProject.rss_url ?? null,
             sitemap_url: newProject.sitemap_url ?? null,
             scraping_frequency: newProject.scraping_frequency ?? 'manual',
             description: newProject.description ?? null,
