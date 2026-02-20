@@ -39,6 +39,7 @@ export interface Pin {
   status: PinStatus
   error_message: string | null
   previous_status: PinStatus | null
+  alternate_url: string | null
   scheduled_at: string | null
   published_at: string | null
   pinterest_pin_id: string | null
@@ -63,6 +64,7 @@ export interface PinUpdate {
   title?: string | null
   description?: string | null
   alt_text?: string | null
+  alternate_url?: string | null
   pinterest_board_id?: string | null
   pinterest_board_name?: string | null
   status?: PinStatus
