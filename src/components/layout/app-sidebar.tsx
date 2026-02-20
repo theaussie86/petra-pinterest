@@ -33,7 +33,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ user }: AppSidebarProps) {
   const navigate = useNavigate();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  const closeMobile = () => { if (isMobile) setOpenMobile(false); };
   const { t, i18n } = useTranslation();
   const { activeProjectId } = useActiveProject();
 
@@ -79,7 +80,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link to="/dashboard">
+              <Link to="/dashboard" onClick={closeMobile}>
                   <Logo className="size-8! text-primary" />
                 {state === "expanded" ? <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="bg-gradient-to-r from-violet-600 to-rose-600 bg-clip-text text-transparent font-extrabold text-lg" style={{ fontFamily: 'Nunito, system-ui, sans-serif' }}>
@@ -106,6 +107,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     activeProps={{
                       className: "bg-sidebar-accent text-sidebar-accent-foreground",
                     }}
+                    onClick={closeMobile}
                   >
                     <item.icon />
                     <span>{item.title}</span>
@@ -142,6 +144,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
                     activeProps={{
                       className: "bg-sidebar-accent text-sidebar-accent-foreground",
                     }}
+                    onClick={closeMobile}
                   >
                     <item.icon />
                     <span>{item.title}</span>
