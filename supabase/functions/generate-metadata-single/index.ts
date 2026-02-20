@@ -14,6 +14,8 @@ Deno.serve(async (req) => {
 
   let pin_id: string | undefined
 
+  const supabase = createServiceClient()
+
   try {
     const body = (await req.json()) as MetadataRequest
     pin_id = body.pin_id
@@ -31,8 +33,6 @@ Deno.serve(async (req) => {
         }
       )
     }
-
-    const supabase = createServiceClient()
 
     // Fetch pin with article data
     const { data: pin, error: fetchError } = await supabase
@@ -130,19 +130,16 @@ Deno.serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error)
     console.error('[generate-metadata-single] Error:', message)
 
-    // Try to set pin status to error
     if (pin_id) {
-      try {
-        const supabase = createServiceClient()
-        await supabase
-          .from('pins')
-          .update({
-            status: 'error',
-            error_message: message,
-          })
-          .eq('id', pin_id)
-      } catch {
-        // Best-effort error status update
+      const { error: updateError } = await supabase
+        .from('pins')
+        .update({ status: 'error', error_message: message })
+        .eq('id', pin_id)
+      if (updateError) {
+        console.error(
+          '[generate-metadata-single] Failed to set error status:',
+          updateError.message
+        )
       }
     }
 

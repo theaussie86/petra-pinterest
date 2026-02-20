@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
-import { PIN_STATUS, getStatusBadgeClasses } from '@/types/pins'
+import { getStatusBadgeClasses } from '@/types/pins'
 import type { PinStatus } from '@/types/pins'
 
 interface PinStatusBadgeProps {
