@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Pin, PinStatus } from '@/types/pins'
 
 export const STATUS_TABS = ['all', 'draft', 'generation', 'metadata_created', 'published', 'error'] as const
@@ -57,19 +58,41 @@ export function PinStatusFilterBar({ pins, activeTab, onTabChange }: PinStatusFi
   const tabCounts = useMemo(() => computeTabCounts(pins), [pins])
 
   return (
-    <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as StatusTab)}>
-      <TabsList>
-        {STATUS_TABS.map((tab) => (
-          <TabsTrigger key={tab} value={tab}>
-            {t(TAB_LABEL_KEYS[tab])}
-            {tabCounts[tab] > 0 && (
-              <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs font-medium leading-none">
-                {tabCounts[tab]}
-              </span>
-            )}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+    <>
+      {/* Mobile: dropdown select */}
+      <div className="sm:hidden">
+        <Select value={activeTab} onValueChange={(v) => onTabChange(v as StatusTab)}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {STATUS_TABS.map((tab) => (
+              <SelectItem key={tab} value={tab}>
+                {t(TAB_LABEL_KEYS[tab])}
+                {tabCounts[tab] > 0 && ` (${tabCounts[tab]})`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Desktop: tab bar */}
+      <div className="hidden sm:block">
+        <Tabs value={activeTab} onValueChange={(v) => onTabChange(v as StatusTab)}>
+          <TabsList>
+            {STATUS_TABS.map((tab) => (
+              <TabsTrigger key={tab} value={tab}>
+                {t(TAB_LABEL_KEYS[tab])}
+                {tabCounts[tab] > 0 && (
+                  <span className="ml-1.5 rounded-full bg-slate-200 px-1.5 py-0.5 text-xs font-medium leading-none">
+                    {tabCounts[tab]}
+                  </span>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+    </>
   )
 }
