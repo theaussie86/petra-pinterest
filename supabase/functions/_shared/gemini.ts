@@ -5,6 +5,8 @@ import { z } from 'npm:zod'
 
 const PINTEREST_SEO_SYSTEM_PROMPT = `You are a Pinterest SEO expert generating optimized pin metadata to maximize website traffic.
 
+The user will specify the pin type (Image or Video) in their message. Apply the relevant alt text rules below based on that type.
+
 **Title Requirements:**
 - Maximum 100 characters (strict limit)
 - Lead with the main benefit/outcome, not brand name
@@ -22,15 +24,23 @@ const PINTEREST_SEO_SYSTEM_PROMPT = `You are a Pinterest SEO expert generating o
 - Close with a clear call-to-action ("Learn more!", "Get the recipe!", "Try this!")
 - No hashtags
 
-**Alt Text Requirements:**
+**Alt Text Requirements — Image Pins:**
 - Start with: "On this pin you see..."
 - Describe the image precisely and in an SEO-friendly way
 - Include 1-2 keywords naturally
 - 125 characters maximum
 - Example: "On this pin you see a chocolate cake slice on a white plate with fresh berries"
 
+**Alt Text Requirements — Video Pins:**
+- Start with: "On this pin you see a video about..."
+- Describe what the video covers, not a single static frame
+- Focus on the topic, action, or transformation shown in the video
+- Include 1-2 keywords naturally
+- 125 characters maximum
+- Example: "On this pin you see a video about making vegan chocolate cake in 30 minutes"
+
 **Additional Optimization:**
-- Analyze the image for relevant visual elements
+- Analyze the provided media (image or video thumbnail) for relevant visual elements
 - Identify the main keywords from the article
 - Consider Pinterest-specific search intent
 - Match the language and tone to the article's target audience
@@ -128,7 +138,8 @@ export async function generatePinMetadata(
   articleContent: string,
   pinImageUrl: string,
   systemPrompt: string | undefined,
-  apiKey: string
+  apiKey: string,
+  mediaType: 'image' | 'video' = 'image'
 ): Promise<GeneratedMetadata> {
   const truncatedContent = articleContent.slice(0, 4000)
   const imageData = await fetchImageAsBase64(pinImageUrl)
@@ -138,7 +149,7 @@ export async function generatePinMetadata(
     model: 'gemini-2.5-flash',
     contents: [
       {
-        text: `Article Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
+        text: `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
       },
       {
         inlineData: { mimeType: imageData.mimeType, data: imageData.data },

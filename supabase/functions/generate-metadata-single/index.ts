@@ -70,13 +70,18 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const imageUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${pin.image_path}`
 
+    // Derive media type from file extension
+    const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
+    const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
+
     // Generate metadata with Gemini
     const metadata = await generatePinMetadata(
       pin.blog_articles.title,
       pin.blog_articles.content,
       imageUrl,
       undefined,
-      apiKey
+      apiKey,
+      mediaType
     )
 
     // Insert generation history
