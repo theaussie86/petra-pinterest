@@ -5,7 +5,7 @@ type OptimizedImageProps = React.ImgHTMLAttributes<HTMLImageElement> & {
 }
 
 function useVercelOptimizedImageProps(src: string, width: number) {
-  if (import.meta.env.DEV || !src) return { src }
+  if (import.meta.env.PROD !== true || !src) return { src }
   const encoded = encodeURIComponent(src)
   return {
     src: `/_vercel/image?url=${encoded}&w=${width}&q=75`,
