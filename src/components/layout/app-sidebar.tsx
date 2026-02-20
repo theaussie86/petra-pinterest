@@ -1,3 +1,4 @@
+import { version } from '../../../package.json';
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, PlusCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -83,6 +84,9 @@ export function AppSidebar({ user }: AppSidebarProps) {
                 {state === "expanded" ? <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="bg-gradient-to-r from-violet-600 to-rose-600 bg-clip-text text-transparent font-extrabold text-lg" style={{ fontFamily: 'Nunito, system-ui, sans-serif' }}>
                     Pinfinity
+                  </span>
+                  <span className="text-[10px] text-sidebar-foreground/40 font-mono tracking-wide">
+                    v{version}
                   </span>
                 </div> : null}
               </Link>
