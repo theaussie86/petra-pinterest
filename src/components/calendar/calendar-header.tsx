@@ -31,74 +31,150 @@ export function CalendarHeader({
       ? format(currentDate, 'MMMM yyyy', { locale })
       : format(currentDate, 'MMM d, yyyy', { locale })
 
-  return (
-    <div className="flex items-center justify-between mb-6 bg-white rounded-lg border border-slate-200 p-4">
-      {/* Left: Navigation buttons */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onNavigate('prev')}
-          className="h-9 w-9"
+  const navButtons = (
+    <div className="flex items-center gap-2">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => onNavigate('prev')}
+        className="h-9 w-9"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => onNavigate('today')}
+        className="h-9 px-3"
+      >
+        {t('calendar.today')}
+      </Button>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => onNavigate('next')}
+        className="h-9 w-9"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  )
+
+  const viewControls = (
+    <div className="flex items-center gap-2">
+      <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
+        <button
+          onClick={() => onViewChange('month')}
+          className={cn(
+            'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            view === 'month'
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          )}
         >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onNavigate('today')}
-          className="h-9 px-3"
+          {t('calendar.viewMonth')}
+        </button>
+        <button
+          onClick={() => onViewChange('week')}
+          className={cn(
+            'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+            view === 'week'
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-600 hover:text-slate-900'
+          )}
         >
-          {t('calendar.today')}
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onNavigate('next')}
-          className="h-9 w-9"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          {t('calendar.viewWeek')}
+        </button>
       </div>
 
-      {/* Center: Period label */}
-      <div className="text-lg font-semibold text-slate-900">{periodLabel}</div>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={onTogglePinList}
+        className={cn('h-9 w-9', pinListOpen && 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900')}
+        title={t('calendar.togglePinList')}
+      >
+        <List className="h-4 w-4" />
+      </Button>
+    </div>
+  )
 
-      {/* Right: View toggle + Pin list toggle */}
-      <div className="flex items-center gap-2">
-        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-1">
-          <button
-            onClick={() => onViewChange('month')}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              view === 'month'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
+  return (
+    <div className="mb-6 bg-white rounded-lg border border-slate-200 p-4">
+      {/* Mobile: three rows */}
+      <div className="sm:hidden space-y-3">
+        {/* Row 1: period label */}
+        <div className="text-lg font-semibold text-slate-900 text-center">{periodLabel}</div>
+
+        {/* Row 2: nav buttons spread full width */}
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onNavigate('prev')}
+            className="h-9 w-9"
           >
-            {t('calendar.viewMonth')}
-          </button>
-          <button
-            onClick={() => onViewChange('week')}
-            className={cn(
-              'rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
-              view === 'week'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            )}
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onNavigate('today')}
+            className="h-9 flex-1"
           >
-            {t('calendar.viewWeek')}
-          </button>
+            {t('calendar.today')}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => onNavigate('next')}
+            className="h-9 w-9"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
 
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onTogglePinList}
-          className={cn('h-9 w-9', pinListOpen && 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900')}
-          title={t('calendar.togglePinList')}
-        >
-          <List className="h-4 w-4" />
-        </Button>
+        {/* Row 3: view toggle (full width) + sidebar button */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex flex-1 rounded-lg border border-slate-200 bg-slate-50 p-1">
+            <button
+              onClick={() => onViewChange('month')}
+              className={cn(
+                'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                view === 'month'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              {t('calendar.viewMonth')}
+            </button>
+            <button
+              onClick={() => onViewChange('week')}
+              className={cn(
+                'flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+                view === 'week'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              )}
+            >
+              {t('calendar.viewWeek')}
+            </button>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={onTogglePinList}
+            className={cn('h-9 w-9 shrink-0', pinListOpen && 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white border-slate-900')}
+            title={t('calendar.togglePinList')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Desktop: single row */}
+      <div className="hidden sm:flex items-center justify-between">
+        {navButtons}
+        <div className="text-lg font-semibold text-slate-900">{periodLabel}</div>
+        {viewControls}
       </div>
     </div>
   )

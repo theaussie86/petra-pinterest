@@ -51,6 +51,7 @@ const editPinSchema = z.object({
   title: z.string().max(200, 'Title too long'),
   description: z.string().max(1000, 'Description too long'),
   alt_text: z.string().max(500, 'Alt text too long'),
+  alternate_url: z.string().url('Ungültige URL').or(z.literal('')).optional(),
   pinterest_board_id: z.string(),
   status: z.string(),
 })
@@ -78,6 +79,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
       title: '',
       description: '',
       alt_text: '',
+      alternate_url: '',
       pinterest_board_id: '',
       status: 'draft',
     },
@@ -102,6 +104,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         title: pin.title || '',
         description: pin.description || '',
         alt_text: pin.alt_text || '',
+        alternate_url: pin.alternate_url || '',
         pinterest_board_id: pin.pinterest_board_id || '__none__',
         status: pin.status,
       })
@@ -118,6 +121,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         title: data.title.trim() || null,
         description: data.description.trim() || null,
         alt_text: data.alt_text.trim() || null,
+        alternate_url: data.alternate_url?.trim() || null,
         pinterest_board_id: selectedBoard?.pinterest_board_id || null,
         pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
@@ -182,6 +186,19 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
             />
             {errors.alt_text && (
               <p className="text-sm text-red-600">{errors.alt_text.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-alternate-url">{t('editPin.fieldAlternateUrl')}</Label>
+            <Input
+              id="edit-alternate-url"
+              {...register('alternate_url')}
+              placeholder={t('editPin.placeholderAlternateUrl')}
+              disabled={isSubmitting}
+            />
+            {errors.alternate_url && (
+              <p className="text-sm text-red-600">{errors.alternate_url.message}</p>
             )}
           </div>
 

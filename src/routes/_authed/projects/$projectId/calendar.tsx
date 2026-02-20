@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { cn } from '@/lib/utils'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { usePins } from '@/lib/hooks/use-pins'
-import { cn } from '@/lib/utils'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
 import { PinListSidebar } from '@/components/calendar/pin-list-sidebar'
@@ -52,6 +52,7 @@ function CalendarPage() {
   // Sidebar state
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
   const [pinListOpen, setPinListOpen] = useState(false)
+  const sidebarOpen = pinListOpen || selectedPinId !== null
 
   // Filter by status tab
   const filteredPins = useMemo(() => {
@@ -93,65 +94,67 @@ function CalendarPage() {
   return (
     <>
       <PageHeader title={t('calendar.title')} />
-      <PageLayout maxWidth="wide" className={cn((pinListOpen || !!selectedPinId) && "mr-[350px]")}>
-        {/* Status filter bar */}
-        <div className="mb-4">
-          <PinStatusFilterBar
-            pins={pins || []}
-            activeTab={statusTab}
-            onTabChange={handleStatusTabChange}
-          />
-        </div>
-
-        {/* Loading state */}
-        {isLoading && (
-          <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-            {/* Header skeleton */}
-            <div className="grid grid-cols-7 border-b border-slate-200">
-              {[t('calendar.dayMon'), t('calendar.dayTue'), t('calendar.dayWed'), t('calendar.dayThu'), t('calendar.dayFri'), t('calendar.daySat'), t('calendar.daySun')].map((day) => (
-                <div
-                  key={day}
-                  className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-            {/* Grid skeleton */}
-            <div className="grid grid-cols-7">
-              {Array.from({ length: 42 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="border-r border-b min-h-[100px] p-2 bg-slate-100 animate-pulse"
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Content area */}
-        {!isLoading && (
-          scheduledPins.length === 0 ? (
-            <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-              <p className="text-slate-600">
-                {t('calendar.emptyScheduled')}
-              </p>
-              <p className="text-sm text-slate-500 mt-2">
-                {t('calendar.emptyHint')}
-              </p>
-            </div>
-          ) : (
-            <CalendarGrid
-              pins={scheduledPins}
-              allPins={filteredPins}
-              view={view || 'month'}
-              onPinClick={handlePinClick}
-              onViewChange={handleViewChange}
-              onTogglePinList={() => setPinListOpen((prev) => !prev)}
-              pinListOpen={pinListOpen}
+      <PageLayout maxWidth="wide">
+        <div className={cn(sidebarOpen && "lg:mr-[420px]")}>
+          {/* Status filter bar */}
+          <div className="mb-4">
+            <PinStatusFilterBar
+              pins={pins || []}
+              activeTab={statusTab}
+              onTabChange={handleStatusTabChange}
             />
-          )
-        )}
+          </div>
+
+          {/* Loading state */}
+          {isLoading && (
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              {/* Header skeleton */}
+              <div className="grid grid-cols-7 border-b border-slate-200">
+                {[t('calendar.dayMon'), t('calendar.dayTue'), t('calendar.dayWed'), t('calendar.dayThu'), t('calendar.dayFri'), t('calendar.daySat'), t('calendar.daySun')].map((day) => (
+                  <div
+                    key={day}
+                    className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+              {/* Grid skeleton */}
+              <div className="grid grid-cols-7">
+                {Array.from({ length: 42 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="border-r border-b min-h-[100px] p-2 bg-slate-100 animate-pulse"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Content area */}
+          {!isLoading && (
+            scheduledPins.length === 0 ? (
+              <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+                <p className="text-slate-600">
+                  {t('calendar.emptyScheduled')}
+                </p>
+                <p className="text-sm text-slate-500 mt-2">
+                  {t('calendar.emptyHint')}
+                </p>
+              </div>
+            ) : (
+              <CalendarGrid
+                pins={scheduledPins}
+                allPins={filteredPins}
+                view={view || 'month'}
+                onPinClick={handlePinClick}
+                onViewChange={handleViewChange}
+                onTogglePinList={() => setPinListOpen((prev) => !prev)}
+                pinListOpen={pinListOpen}
+              />
+            )
+          )}
+        </div>
       </PageLayout>
 
       {/* Pin List Sidebar */}

@@ -121,6 +121,24 @@ function PinDetail() {
                       </p>
                     </div>
 
+                    {/* Andere URL */}
+                    <div>
+                      <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.alternateUrl')}</h3>
+                      {pin.alternate_url ? (
+                        <a
+                          href={pin.alternate_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-700 hover:underline break-all flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                          {pin.alternate_url}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-slate-400">{t('pinDetail.noAlternateUrl')}</span>
+                      )}
+                    </div>
+
                     {/* Dates */}
                     <div className="grid grid-cols-2 gap-4 pt-2 border-t">
                       {pin.scheduled_at && (

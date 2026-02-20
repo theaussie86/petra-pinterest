@@ -21,6 +21,7 @@ export function buildPin(overrides: Partial<Pin> = {}): Pin {
     title: 'Test Pin Title',
     description: 'Test pin description',
     alt_text: 'Test alt text',
+    alternate_url: null,
     status: 'draft',
     error_message: null,
     previous_status: null,

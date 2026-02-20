@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -43,6 +44,7 @@ const editPinSchema = z.object({
   title: z.string().max(200, 'Title too long'),
   description: z.string().max(1000, 'Description too long'),
   alt_text: z.string().max(500, 'Alt text too long'),
+  alternate_url: z.string().url('Ungültige URL').or(z.literal('')).optional(),
   pinterest_board_id: z.string(),
   status: z.string(),
 })
@@ -77,6 +79,7 @@ function PinSidebarForm({
       title: pin.title || '',
       description: pin.description || '',
       alt_text: pin.alt_text || '',
+      alternate_url: pin.alternate_url || '',
       pinterest_board_id: pin.pinterest_board_id || '__none__',
       status: pin.status,
     },
@@ -103,6 +106,7 @@ function PinSidebarForm({
         title: data.title.trim() || null,
         description: data.description.trim() || null,
         alt_text: data.alt_text.trim() || null,
+        alternate_url: data.alternate_url?.trim() || null,
         pinterest_board_id: selectedBoard?.pinterest_board_id || null,
         pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
@@ -167,6 +171,19 @@ function PinSidebarForm({
           />
           {errors.alt_text && (
             <p className="text-sm text-red-600">{errors.alt_text.message}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="sidebar-alternate-url">{t('editPin.fieldAlternateUrl')}</Label>
+          <Input
+            id="sidebar-alternate-url"
+            {...register('alternate_url')}
+            placeholder={t('editPin.placeholderAlternateUrl')}
+            disabled={isSubmitting}
+          />
+          {errors.alternate_url && (
+            <p className="text-sm text-red-600">{errors.alternate_url.message}</p>
           )}
         </div>
 
@@ -335,8 +352,8 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
     return null
   }
 
-  return (
-    <div className="fixed right-0 top-16 z-40 w-[350px] h-[calc(100vh-64px)] bg-white border-l border-slate-200 shadow-lg overflow-y-auto transition-transform duration-200">
+  return createPortal(
+    <div className="fixed right-0 inset-y-0 z-50 w-[420px] h-svh bg-white border-l border-slate-200 shadow-lg overflow-y-auto transition-transform duration-200">
       <div className="p-4 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -375,6 +392,7 @@ export function PinSidebar({ pinId, onClose }: PinSidebarProps) {
           />
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
