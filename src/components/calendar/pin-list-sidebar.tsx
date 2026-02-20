@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getPinImageUrl } from '@/lib/api/pins'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useDateLocale } from '@/lib/date-locale'
 import { PIN_STATUS } from '@/types/pins'
 import type { Pin } from '@/types/pins'
@@ -84,8 +85,9 @@ function PinCard({ pin, onClick }: { pin: Pin; onClick: () => void }) {
       {/* Thumbnail */}
       <div className="h-12 w-12 flex-shrink-0 rounded overflow-hidden bg-slate-200">
         {imageUrl && (
-          <img
+          <OptimizedImage
             src={imageUrl}
+            width={48}
             alt={pin.alt_text || pin.title || ''}
             className="h-full w-full object-cover"
             onError={(e) => {
