@@ -31,7 +31,7 @@ export interface Pin {
   blog_article_id: string
   pinterest_board_id: string | null
   pinterest_board_name: string | null
-  image_path: string
+  image_path: string | null
   media_type: 'image' | 'video'
   title: string | null
   description: string | null

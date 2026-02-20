@@ -174,7 +174,8 @@ export async function uploadPinMedia(
   return path
 }
 
-export function getPinImageUrl(path: string): string {
+export function getPinImageUrl(path: string | null): string {
+  if (!path) return ''
   const {
     data: { publicUrl },
   } = supabase.storage.from('pin-images').getPublicUrl(path)

@@ -48,8 +48,10 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       const serviceSupabase = getSupabaseServiceClient()
       const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_articles.blog_project_id)
 
-      // Get pin image URL
+      // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
+      const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
+      const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
       // Call Gemini to generate metadata
       const metadata = await generatePinMetadata(
@@ -57,7 +59,8 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
         pin.blog_articles.content,
         imageUrl,
         undefined,
-        apiKey
+        apiKey,
+        mediaType
       )
 
       // Insert into pin_metadata_generations table
@@ -166,8 +169,10 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       const serviceSupabase = getSupabaseServiceClient()
       const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_articles.blog_project_id)
 
-      // Get pin image URL
+      // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
+      const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
+      const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
       // Call Gemini with feedback (multi-turn conversation)
       const metadata = await generatePinMetadataWithFeedback(
@@ -180,7 +185,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
           alt_text: previousGeneration.alt_text,
         },
         data.feedback,
-        apiKey
+        apiKey,
+        mediaType
       )
 
       // Store new generation in pin_metadata_generations WITH feedback text

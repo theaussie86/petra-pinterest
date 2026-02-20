@@ -4,7 +4,7 @@ import { getPinImageUrl } from '@/lib/api/pins'
 import type { Pin } from '@/types/pins'
 
 interface PinMediaPreviewProps {
-  pin: Pick<Pin, 'image_path' | 'media_type' | 'title'>
+  pin: Pick<Pin, 'image_path' | 'media_type' | 'title' | 'pinterest_pin_url'>
   className?: string
   /** Show controls on video elements (for lightbox usage) */
   controls?: boolean
@@ -12,6 +12,30 @@ interface PinMediaPreviewProps {
 
 export function PinMediaPreview({ pin, className, controls = false }: PinMediaPreviewProps) {
   const { t } = useTranslation()
+
+  // Cleaned-up image: published pin with no storage image remaining
+  if (pin.image_path === null) {
+    return (
+      <div className={cn('flex h-full w-full flex-col items-center justify-center gap-2 bg-muted', className)}>
+        <img
+          src="/logo.svg"
+          alt="Petra Pinterest logo"
+          className="h-10 w-10 opacity-40"
+        />
+        {pin.pinterest_pin_url && (
+          <a
+            href={pin.pinterest_pin_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            {t('pinSidebar.viewOnPinterest')}
+          </a>
+        )}
+      </div>
+    )
+  }
+
   const url = getPinImageUrl(pin.image_path)
 
   if (pin.media_type === 'video') {

@@ -60,7 +60,8 @@ export async function generatePinMetadata(
   articleContent: string,
   pinImageUrl: string,
   systemPrompt: string | undefined,
-  apiKey: string
+  apiKey: string,
+  mediaType: 'image' | 'video' = 'image'
 ): Promise<GeneratedMetadata> {
   const truncatedContent = articleContent.slice(0, 4000)
   const imageData = await fetchImageAsBase64(pinImageUrl)
@@ -68,7 +69,9 @@ export async function generatePinMetadata(
   const response = await getAiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: [
-      { text: `Article Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}` },
+      {
+        text: `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
+      },
       { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
     ],
     config: {
@@ -99,7 +102,8 @@ export async function generatePinMetadataWithFeedback(
   pinImageUrl: string,
   previousMetadata: GeneratedMetadata,
   feedback: string,
-  apiKey: string
+  apiKey: string,
+  mediaType: 'image' | 'video' = 'image'
 ): Promise<GeneratedMetadata> {
   const truncatedContent = articleContent.slice(0, 4000)
   const imageData = await fetchImageAsBase64(pinImageUrl)
@@ -117,7 +121,9 @@ export async function generatePinMetadataWithFeedback(
       {
         role: 'user',
         parts: [
-          { text: `Article Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}` },
+          {
+            text: `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
+          },
           { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
         ],
       },

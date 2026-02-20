@@ -95,6 +95,7 @@ describe('generateMetadataFn', () => {
       'https://test.supabase.co/storage/v1/object/public/pin-images/tenant/image.png',
       undefined,
       'test-gemini-api-key',
+      'image',
     )
 
     // Verify API key was fetched from vault
@@ -198,6 +199,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       previousGen,
       'Make it more catchy',
       'test-gemini-api-key',
+      'image',
     )
 
     // Verify new generation was stored with feedback text

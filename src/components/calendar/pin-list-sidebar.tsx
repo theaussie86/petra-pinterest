@@ -43,7 +43,7 @@ function getStatusAccentClass(status: Pin['status']): string {
 
 function PinCard({ pin, onClick }: { pin: Pin; onClick: () => void }) {
   const locale = useDateLocale()
-  const imageUrl = getPinImageUrl(pin.image_path)
+  const imageUrl = pin.image_path ? getPinImageUrl(pin.image_path) : null
   const [isDragging, setIsDragging] = useState(false)
 
   const dateLabel = pin.scheduled_at
@@ -83,14 +83,16 @@ function PinCard({ pin, onClick }: { pin: Pin; onClick: () => void }) {
 
       {/* Thumbnail */}
       <div className="h-12 w-12 flex-shrink-0 rounded overflow-hidden bg-slate-200">
-        <img
-          src={imageUrl}
-          alt={pin.alt_text || pin.title || ''}
-          className="h-full w-full object-cover"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none'
-          }}
-        />
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt={pin.alt_text || pin.title || ''}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none'
+            }}
+          />
+        )}
       </div>
     </div>
   )
