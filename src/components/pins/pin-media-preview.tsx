@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { getPinImageUrl } from '@/lib/api/pins'
+import { OptimizedImage } from '@/components/ui/optimized-image'
 import type { Pin } from '@/types/pins'
 
 interface PinMediaPreviewProps {
@@ -8,9 +9,11 @@ interface PinMediaPreviewProps {
   className?: string
   /** Show controls on video elements (for lightbox usage) */
   controls?: boolean
+  /** Hint for Vercel image optimization. Match the rendered CSS width. */
+  displayWidth?: number
 }
 
-export function PinMediaPreview({ pin, className, controls = false }: PinMediaPreviewProps) {
+export function PinMediaPreview({ pin, className, controls = false, displayWidth = 400 }: PinMediaPreviewProps) {
   const { t } = useTranslation()
 
   // Cleaned-up image: published pin with no storage image remaining
@@ -58,11 +61,11 @@ export function PinMediaPreview({ pin, className, controls = false }: PinMediaPr
   }
 
   return (
-    <img
+    <OptimizedImage
       src={url}
+      width={displayWidth}
       alt={pin.title || 'Pin image'}
       className={cn('h-full w-full object-cover', className)}
-      loading="lazy"
     />
   )
 }
