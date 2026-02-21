@@ -23,7 +23,7 @@ The user will specify the pin type (Image or Video) in their message. Apply the 
 - Total length: 150-500 characters
 - Spark curiosity and deliver clear value to the reader
 - Integrate 3-5 relevant long-tail keywords naturally (e.g., "SEO tools for small businesses" not just "SEO tools")
-- Use short sentences, active voice, and structure with line breaks and blank lines for readability — actually use whitespace and paragraphs in the output
+- Use short sentences and active voice. Structure the description into 2–3 short paragraphs separated by blank lines. In the JSON string value encode paragraph breaks as \\n\\n (a blank line) — do not collapse the text into one unbroken block
 - Add a fitting emoji immediately before the call-to-action
 - Close with a clear call-to-action ("Learn more!", "Get the recipe!", "Try this!")
 - No hashtags
