@@ -23,7 +23,7 @@ The user will specify the pin type (Image or Video) in their message. Apply the 
 - Total length: 150-500 characters
 - Spark curiosity and deliver clear value to the reader
 - Integrate 3-5 relevant long-tail keywords naturally (e.g., "SEO tools for small businesses" not just "SEO tools")
-- Use short sentences, active voice, and structure with line breaks and blank lines for readability — actually use whitespace and paragraphs in the output
+- Use short sentences and active voice. Structure the description into 2–3 short paragraphs separated by blank lines. In the JSON string value encode paragraph breaks as \\n\\n (a blank line) — do not collapse the text into one unbroken block
 - Add a fitting emoji immediately before the call-to-action
 - Close with a clear call-to-action ("Learn more!", "Get the recipe!", "Try this!")
 - No hashtags
@@ -59,6 +59,18 @@ Return ONLY valid JSON with this exact structure:
 }
 
 Do not include any text outside the JSON object.`
+
+/**
+ * Builds a language-aware Pinterest SEO system prompt.
+ * The language value must already be sanitized before calling this function.
+ */
+export function buildPinterestSeoSystemPrompt(language: string | null): string {
+  if (!language) return PINTEREST_SEO_SYSTEM_PROMPT
+  return (
+    PINTEREST_SEO_SYSTEM_PROMPT +
+    `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.\nImportant: also translate the alt text prefix phrases into ${language}. For example, in German "On this pin you see" becomes "Auf diesem Pin siehst du" and "On this pin you see a video about" becomes "Auf diesem Pin siehst du ein Video über". Use the natural equivalent in ${language}.`
+  )
+}
 
 export const ARTICLE_SCRAPER_SYSTEM_PROMPT = `You are an expert web scraper and content extractor.
 Your task is to analyze the provided HTML content of a blog post or article and extract the core information into structured JSON.

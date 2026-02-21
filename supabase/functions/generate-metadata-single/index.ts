@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
-import { generatePinMetadata } from '../_shared/gemini.ts'
+import { generatePinMetadata, sanitizeLanguage, buildPinterestSeoSystemPrompt } from '../_shared/gemini.ts'
 
 interface MetadataRequest {
   pin_id: string
@@ -51,6 +51,16 @@ Deno.serve(async (req) => {
 
     // Get Gemini API key from Vault using pin's blog_project_id directly
     const projectId = pin.blog_project_id
+
+    // Fetch project language for language-aware metadata generation
+    const { data: projectData } = await supabase
+      .from('blog_projects')
+      .select('language')
+      .eq('id', projectId)
+      .single()
+    const language = sanitizeLanguage(projectData?.language)
+    const systemPrompt = buildPinterestSeoSystemPrompt(language)
+
     const { data: apiKey, error: vaultError } = await supabase.rpc(
       'get_gemini_api_key',
       { p_blog_project_id: projectId }
@@ -75,7 +85,7 @@ Deno.serve(async (req) => {
       pin.blog_articles?.title ?? null,
       pin.blog_articles?.content ?? null,
       imageUrl,
-      undefined,
+      systemPrompt,
       apiKey,
       mediaType
     )

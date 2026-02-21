@@ -14,6 +14,39 @@ function getAiClient(apiKey: string) {
   return new GoogleGenAI({ apiKey })
 }
 
+/**
+ * Escape literal control characters (newlines, carriage returns, tabs) inside
+ * JSON string values. Gemini sometimes emits these unescaped despite using
+ * responseMimeType: 'application/json', which causes JSON.parse to fail with
+ * "Unterminated string".
+ */
+function sanitizeJsonResponse(text: string): string {
+  let inString = false
+  let escaped = false
+  let result = ''
+  for (const char of text) {
+    if (escaped) {
+      result += char
+      escaped = false
+    } else if (char === '\\' && inString) {
+      result += char
+      escaped = true
+    } else if (char === '"') {
+      result += char
+      inString = !inString
+    } else if (inString && char === '\n') {
+      result += '\\n'
+    } else if (inString && char === '\r') {
+      result += '\\r'
+    } else if (inString && char === '\t') {
+      result += '\\t'
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
 // --- Zod schemas ---
 
 const generatedMetadataSchema = z.object({
@@ -79,10 +112,11 @@ export async function generatePinMetadata(
     ],
     config: {
       systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       temperature: 0.7,
       responseMimeType: 'application/json',
       responseJsonSchema: metadataJsonSchema,
+      thinkingConfig: { thinkingBudget: 0 },
     },
   })
 
@@ -90,7 +124,7 @@ export async function generatePinMetadata(
     throw new Error('Gemini returned empty response')
   }
 
-  return generatedMetadataSchema.parse(JSON.parse(response.text))
+  return generatedMetadataSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
 }
 
 /**
@@ -106,7 +140,8 @@ export async function generatePinMetadataWithFeedback(
   previousMetadata: GeneratedMetadata,
   feedback: string,
   apiKey: string,
-  mediaType: 'image' | 'video' = 'image'
+  mediaType: 'image' | 'video' = 'image',
+  systemPrompt?: string
 ): Promise<GeneratedMetadata> {
   const articleSection = articleTitle
     ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
@@ -117,11 +152,12 @@ export async function generatePinMetadataWithFeedback(
   const chat = getAiClient(apiKey).chats.create({
     model: 'gemini-2.5-flash',
     config: {
-      systemInstruction: PINTEREST_SEO_SYSTEM_PROMPT,
-      maxOutputTokens: 2048,
+      systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
+      maxOutputTokens: 8192,
       temperature: 0.7,
       responseMimeType: 'application/json',
       responseJsonSchema: metadataJsonSchema,
+      thinkingConfig: { thinkingBudget: 0 },
     },
     history: [
       {
@@ -148,7 +184,7 @@ export async function generatePinMetadataWithFeedback(
     throw new Error('Gemini returned empty response')
   }
 
-  return generatedMetadataSchema.parse(JSON.parse(response.text))
+  return generatedMetadataSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
 }
 
 /**
@@ -178,5 +214,5 @@ export async function generateArticleFromHtml(
       throw new Error('Gemini returned empty response')
     }
 
-    return scrapedArticleSchema.parse(JSON.parse(response.text))
+    return scrapedArticleSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
   }

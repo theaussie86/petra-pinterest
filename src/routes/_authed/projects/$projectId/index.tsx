@@ -29,6 +29,7 @@ const basicInfoFields: FieldConfig[] = [
   { key: 'blog_url', labelKey: 'projectBranding.fieldBlogUrl', placeholderKey: 'projectBranding.placeholderBlogUrl', type: 'input' },
   { key: 'sitemap_url', labelKey: 'projectBranding.fieldSitemapUrl', placeholderKey: 'projectBranding.placeholderSitemapUrl', type: 'input' },
   { key: 'description', labelKey: 'projectBranding.fieldDescription', placeholderKey: 'projectBranding.placeholderDescription', type: 'textarea' },
+  { key: 'language', labelKey: 'projectBranding.fieldLanguage', placeholderKey: 'projectBranding.placeholderLanguage', type: 'language-combobox' },
 ]
 
 const scrapingFields: FieldConfig[] = [
@@ -120,6 +121,7 @@ function BasicInfoContent({ project }: { project: BlogProject }) {
       <FieldDisplay label={t('projectBranding.fieldName')} value={project.name} />
       <FieldDisplay label={t('projectBranding.fieldBlogUrl')} value={project.blog_url} isUrl />
       <FieldDisplay label={t('projectBranding.fieldSitemapUrl')} value={project.sitemap_url} isUrl />
+      <FieldDisplay label={t('projectBranding.fieldLanguage')} value={project.language ?? null} />
       <div className="sm:col-span-2">
         <FieldDisplay label={t('projectBranding.fieldDescription')} value={project.description} />
       </div>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
@@ -32,6 +32,7 @@ function PinDetail() {
   const { data: pin, isLoading, error } = usePin(pinId)
   const { data: project } = useBlogProject(projectId)
   const navigate = useNavigate()
+  const router = useRouter()
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -91,7 +92,7 @@ function PinDetail() {
                     {/* Description */}
                     <div>
                       <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.description')}</h3>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
                         {pin.description || <span className="text-slate-400">{t('pinDetail.noDescription')}</span>}
                       </p>
                     </div>
@@ -221,7 +222,7 @@ function PinDetail() {
             open={deleteDialogOpen}
             onOpenChange={setDeleteDialogOpen}
             pin={pin}
-            onDeleted={() => navigate({ to: '/projects/$projectId', params: { projectId: pin.blog_project_id } })}
+            onDeleted={() => router.history.back()}
           />
           <MetadataHistoryDialog
             pinId={pinId}

@@ -18,6 +18,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { ChevronsUpDown, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { useUpdateBlogProject } from '@/lib/hooks/use-blog-projects'
 import type { BlogProject, BlogProjectUpdate } from '@/types/blog-projects'
 
@@ -25,8 +40,16 @@ export type FieldConfig = {
   key: keyof BlogProjectUpdate
   labelKey: string
   placeholderKey?: string
-  type: 'input' | 'textarea' | 'frequency-select'
+  type: 'input' | 'textarea' | 'frequency-select' | 'language-combobox'
 }
+
+const LANGUAGE_OPTIONS = [
+  { label: 'Deutsch', value: 'German' },
+  { label: 'English', value: 'English' },
+  { label: 'Français', value: 'French' },
+  { label: 'Italiano', value: 'Italian' },
+  { label: 'Español', value: 'Spanish' },
+]
 
 interface ProjectSectionDialogProps {
   open: boolean
@@ -46,6 +69,8 @@ export function ProjectSectionDialog({
   const { t } = useTranslation()
   const updateMutation = useUpdateBlogProject()
   const [values, setValues] = useState<Record<string, string>>({})
+  const [langComboOpen, setLangComboOpen] = useState(false)
+  const [langComboSearch, setLangComboSearch] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -55,6 +80,7 @@ export function ProjectSectionDialog({
         initial[field.key] = typeof val === 'string' ? val : ''
       }
       setValues(initial)
+      setLangComboSearch('')
     }
   }, [open, project, fields])
 
@@ -77,6 +103,20 @@ export function ProjectSectionDialog({
       onOpenChange(false)
     } catch {
       // Error toast handled by mutation hook
+    }
+  }
+
+  const handleLangSelect = (value: string) => {
+    setValues((prev) => ({ ...prev, language: value }))
+    setLangComboSearch('')
+    setLangComboOpen(false)
+  }
+
+  const handleLangCustomSelect = () => {
+    if (langComboSearch.trim()) {
+      setValues((prev) => ({ ...prev, language: langComboSearch.trim() }))
+      setLangComboSearch('')
+      setLangComboOpen(false)
     }
   }
 
@@ -134,6 +174,87 @@ export function ProjectSectionDialog({
                     <SelectItem value="manual">{t('projectDialog.frequencyManual')}</SelectItem>
                   </SelectContent>
                 </Select>
+              )}
+
+              {field.type === 'language-combobox' && (
+                <div className="space-y-1.5">
+                  <Popover open={langComboOpen} onOpenChange={setLangComboOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        id={`section-${field.key}`}
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={langComboOpen}
+                        className="w-full justify-between font-normal"
+                        disabled={updateMutation.isPending}
+                        type="button"
+                      >
+                        <span className={cn(!values[field.key] && 'text-muted-foreground')}>
+                          {values[field.key] ||
+                            (field.placeholderKey ? t(field.placeholderKey) : t('projectBranding.languageCustomPlaceholder'))}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput
+                          placeholder={t('projectBranding.languageCustomPlaceholder')}
+                          value={langComboSearch}
+                          onValueChange={setLangComboSearch}
+                        />
+                        <CommandList>
+                          <CommandEmpty>
+                            {langComboSearch.trim() && (
+                              <button
+                                type="button"
+                                className="w-full px-4 py-2 text-sm text-left hover:bg-accent cursor-pointer"
+                                onClick={handleLangCustomSelect}
+                              >
+                                {t('projectBranding.languageUseCustom', { value: langComboSearch.trim() })}
+                              </button>
+                            )}
+                          </CommandEmpty>
+                          <CommandGroup>
+                            {LANGUAGE_OPTIONS.map((option) => (
+                              <CommandItem
+                                key={option.value}
+                                value={option.label}
+                                onSelect={() => handleLangSelect(option.value)}
+                              >
+                                <Check
+                                  className={cn(
+                                    'mr-2 h-4 w-4',
+                                    values[field.key] === option.value
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                                {option.label}
+                              </CommandItem>
+                            ))}
+                            {langComboSearch.trim() &&
+                              !LANGUAGE_OPTIONS.some(
+                                (o) =>
+                                  o.label.toLowerCase() === langComboSearch.trim().toLowerCase() ||
+                                  o.value.toLowerCase() === langComboSearch.trim().toLowerCase()
+                              ) && (
+                                <CommandItem
+                                  key="__custom__"
+                                  value={`__custom__${langComboSearch}`}
+                                  onSelect={handleLangCustomSelect}
+                                >
+                                  <Check className="mr-2 h-4 w-4 opacity-0" />
+                                  {t('projectBranding.languageUseCustom', { value: langComboSearch.trim() })}
+                                </CommandItem>
+                              )}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  <p className="text-xs text-muted-foreground">{t('projectBranding.languageHint')}</p>
+                </div>
               )}
             </div>
           ))}
