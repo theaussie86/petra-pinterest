@@ -56,21 +56,24 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
  * to generate SEO-optimized title, description, and alt text.
  */
 export async function generatePinMetadata(
-  articleTitle: string,
-  articleContent: string,
+  articleTitle: string | null | undefined,
+  articleContent: string | null | undefined,
   pinImageUrl: string,
   systemPrompt: string | undefined,
   apiKey: string,
   mediaType: 'image' | 'video' = 'image'
 ): Promise<GeneratedMetadata> {
-  const truncatedContent = articleContent.slice(0, 4000)
+  const articleSection = articleTitle
+    ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
+    : `\n\n[No article linked — generate metadata based solely on the image.]`
+  const promptText = `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
   const imageData = await fetchImageAsBase64(pinImageUrl)
 
   const response = await getAiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
     contents: [
       {
-        text: `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
+        text: promptText,
       },
       { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
     ],
@@ -97,15 +100,18 @@ export async function generatePinMetadata(
  * then sends the user's feedback to get refined metadata.
  */
 export async function generatePinMetadataWithFeedback(
-  articleTitle: string,
-  articleContent: string,
+  articleTitle: string | null | undefined,
+  articleContent: string | null | undefined,
   pinImageUrl: string,
   previousMetadata: GeneratedMetadata,
   feedback: string,
   apiKey: string,
   mediaType: 'image' | 'video' = 'image'
 ): Promise<GeneratedMetadata> {
-  const truncatedContent = articleContent.slice(0, 4000)
+  const articleSection = articleTitle
+    ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
+    : `\n\n[No article linked — generate metadata based solely on the image.]`
+  const promptText = `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
   const imageData = await fetchImageAsBase64(pinImageUrl)
 
   const chat = getAiClient(apiKey).chats.create({
@@ -122,7 +128,7 @@ export async function generatePinMetadataWithFeedback(
         role: 'user',
         parts: [
           {
-            text: `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
+            text: promptText,
           },
           { inlineData: { mimeType: imageData.mimeType, data: imageData.data } },
         ],

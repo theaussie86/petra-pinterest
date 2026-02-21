@@ -134,14 +134,17 @@ async function fetchImageAsBase64(
  * Uses Gemini 2.5 Flash with vision to analyze article content + pin image.
  */
 export async function generatePinMetadata(
-  articleTitle: string,
-  articleContent: string,
+  articleTitle: string | null | undefined,
+  articleContent: string | null | undefined,
   pinImageUrl: string,
   systemPrompt: string | undefined,
   apiKey: string,
   mediaType: 'image' | 'video' = 'image'
 ): Promise<GeneratedMetadata> {
-  const truncatedContent = articleContent.slice(0, 4000)
+  const articleSection = articleTitle
+    ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
+    : `\n\n[No article linked — generate metadata based solely on the image.]`
+  const promptText = `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
   const imageData = await fetchImageAsBase64(pinImageUrl)
 
   const ai = new GoogleGenAI({ apiKey })
@@ -149,7 +152,7 @@ export async function generatePinMetadata(
     model: 'gemini-2.5-flash',
     contents: [
       {
-        text: `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${truncatedContent}`,
+        text: promptText,
       },
       {
         inlineData: { mimeType: imageData.mimeType, data: imageData.data },

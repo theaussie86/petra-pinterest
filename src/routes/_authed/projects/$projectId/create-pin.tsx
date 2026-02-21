@@ -55,10 +55,6 @@ function CreatePinPage() {
       toast.error(t('createPin.validationMediaRequired'))
       return
     }
-    if (!selectedArticleId) {
-      toast.error(t('createPin.validationArticleRequired'))
-      return
-    }
 
     setIsUploading(true)
 
@@ -78,7 +74,7 @@ function CreatePinPage() {
       await createPinsMutation.mutateAsync(
         uploadedFiles.map(({ path, mediaType }) => ({
           blog_project_id: projectId,
-          blog_article_id: selectedArticleId,
+          blog_article_id: selectedArticleId || null,
           image_path: path,
           media_type: mediaType,
           pinterest_board_id: selectedBoardId || null,
@@ -140,6 +136,21 @@ function CreatePinPage() {
                   <CommandList>
                     <CommandEmpty>{t('createPin.noArticles')}</CommandEmpty>
                     <CommandGroup>
+                      <CommandItem
+                        value="__none__"
+                        onSelect={() => {
+                          setSelectedArticleId('')
+                          setArticlePopoverOpen(false)
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            !selectedArticleId ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <span className="text-muted-foreground">{t('createPin.noArticleOption')}</span>
+                      </CommandItem>
                       {articles.map((article) => (
                         <CommandItem
                           key={article.id}
@@ -269,7 +280,7 @@ function CreatePinPage() {
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={isUploading || files.length === 0 || !selectedArticleId}
+              disabled={isUploading || files.length === 0}
             >
               {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {submitLabel}

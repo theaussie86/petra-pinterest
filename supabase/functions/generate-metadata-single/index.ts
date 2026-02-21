@@ -34,10 +34,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Fetch pin with article data
+    // Fetch pin with article data (article may be null)
     const { data: pin, error: fetchError } = await supabase
       .from('pins')
-      .select('*, blog_articles(title, content, blog_project_id)')
+      .select('*, blog_articles(title, content)')
       .eq('id', pin_id)
       .single()
 
@@ -45,16 +45,12 @@ Deno.serve(async (req) => {
       throw new Error(`Pin not found: ${pin_id}`)
     }
 
-    if (!pin.blog_articles) {
-      throw new Error(`Pin ${pin_id} has no linked article`)
-    }
-
     if (!pin.image_path) {
       throw new Error(`Pin ${pin_id} has no image`)
     }
 
-    // Get Gemini API key from Vault
-    const projectId = pin.blog_articles.blog_project_id
+    // Get Gemini API key from Vault using pin's blog_project_id directly
+    const projectId = pin.blog_project_id
     const { data: apiKey, error: vaultError } = await supabase.rpc(
       'get_gemini_api_key',
       { p_blog_project_id: projectId }
@@ -74,10 +70,10 @@ Deno.serve(async (req) => {
     const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
     const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
-    // Generate metadata with Gemini
+    // Generate metadata with Gemini (article may be null)
     const metadata = await generatePinMetadata(
-      pin.blog_articles.title,
-      pin.blog_articles.content,
+      pin.blog_articles?.title ?? null,
+      pin.blog_articles?.content ?? null,
       imageUrl,
       undefined,
       apiKey,
