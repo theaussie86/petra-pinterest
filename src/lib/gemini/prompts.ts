@@ -68,7 +68,7 @@ export function buildPinterestSeoSystemPrompt(language: string | null): string {
   if (!language) return PINTEREST_SEO_SYSTEM_PROMPT
   return (
     PINTEREST_SEO_SYSTEM_PROMPT +
-    `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.`
+    `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.\nImportant: also translate the alt text prefix phrases into ${language}. For example, in German "On this pin you see" becomes "Auf diesem Pin siehst du" and "On this pin you see a video about" becomes "Auf diesem Pin siehst du ein Video über". Use the natural equivalent in ${language}.`
   )
 }
 
