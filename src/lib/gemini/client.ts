@@ -112,10 +112,11 @@ export async function generatePinMetadata(
     ],
     config: {
       systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       temperature: 0.7,
       responseMimeType: 'application/json',
       responseJsonSchema: metadataJsonSchema,
+      thinkingConfig: { thinkingBudget: 0 },
     },
   })
 
@@ -152,10 +153,11 @@ export async function generatePinMetadataWithFeedback(
     model: 'gemini-2.5-flash',
     config: {
       systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       temperature: 0.7,
       responseMimeType: 'application/json',
       responseJsonSchema: metadataJsonSchema,
+      thinkingConfig: { thinkingBudget: 0 },
     },
     history: [
       {
