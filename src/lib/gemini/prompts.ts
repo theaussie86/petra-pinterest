@@ -60,6 +60,18 @@ Return ONLY valid JSON with this exact structure:
 
 Do not include any text outside the JSON object.`
 
+/**
+ * Builds a language-aware Pinterest SEO system prompt.
+ * The language value must already be sanitized before calling this function.
+ */
+export function buildPinterestSeoSystemPrompt(language: string | null): string {
+  if (!language) return PINTEREST_SEO_SYSTEM_PROMPT
+  return (
+    PINTEREST_SEO_SYSTEM_PROMPT +
+    `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.`
+  )
+}
+
 export const ARTICLE_SCRAPER_SYSTEM_PROMPT = `You are an expert web scraper and content extractor.
 Your task is to analyze the provided HTML content of a blog post or article and extract the core information into structured JSON.
 

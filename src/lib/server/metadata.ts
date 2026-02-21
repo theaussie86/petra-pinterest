@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
+import { sanitizeLanguage } from '@/lib/gemini/language'
+import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
 
 function getPinImageUrl(imagePath: string): string {
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${imagePath}`
@@ -48,6 +50,15 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       const serviceSupabase = getSupabaseServiceClient()
       const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
 
+      // Fetch project language for language-aware metadata generation
+      const { data: project } = await supabase
+        .from('blog_projects')
+        .select('language')
+        .eq('id', pin.blog_project_id)
+        .single()
+      const language = sanitizeLanguage(project?.language)
+      const systemPrompt = buildPinterestSeoSystemPrompt(language)
+
       // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
@@ -58,7 +69,7 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
         pin.blog_articles?.title ?? null,
         pin.blog_articles?.content ?? null,
         imageUrl,
-        undefined,
+        systemPrompt,
         apiKey,
         mediaType
       )
@@ -169,6 +180,15 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       const serviceSupabase = getSupabaseServiceClient()
       const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
 
+      // Fetch project language for language-aware metadata generation
+      const { data: project } = await supabase
+        .from('blog_projects')
+        .select('language')
+        .eq('id', pin.blog_project_id)
+        .single()
+      const language = sanitizeLanguage(project?.language)
+      const systemPrompt = buildPinterestSeoSystemPrompt(language)
+
       // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
@@ -186,7 +206,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
         },
         data.feedback,
         apiKey,
-        mediaType
+        mediaType,
+        systemPrompt
       )
 
       // Store new generation in pin_metadata_generations WITH feedback text

@@ -106,7 +106,8 @@ export async function generatePinMetadataWithFeedback(
   previousMetadata: GeneratedMetadata,
   feedback: string,
   apiKey: string,
-  mediaType: 'image' | 'video' = 'image'
+  mediaType: 'image' | 'video' = 'image',
+  systemPrompt?: string
 ): Promise<GeneratedMetadata> {
   const articleSection = articleTitle
     ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
@@ -117,7 +118,7 @@ export async function generatePinMetadataWithFeedback(
   const chat = getAiClient(apiKey).chats.create({
     model: 'gemini-2.5-flash',
     config: {
-      systemInstruction: PINTEREST_SEO_SYSTEM_PROMPT,
+      systemInstruction: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
       maxOutputTokens: 2048,
       temperature: 0.7,
       responseMimeType: 'application/json',

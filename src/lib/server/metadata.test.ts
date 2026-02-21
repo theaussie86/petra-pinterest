@@ -74,6 +74,7 @@ describe('generateMetadataFn', () => {
     const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
     const statusUpdateQb = createMockQueryBuilder({ data: null })
     const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
     const insertGenQb = createMockQueryBuilder({ data: null })
     const updatePinQb = createMockQueryBuilder({ data: null })
     const pruneSelectQb = createMockQueryBuilder({ data: [{ id: 'g1' }, { id: 'g2' }] })
@@ -82,6 +83,7 @@ describe('generateMetadataFn', () => {
       .mockReturnValueOnce(profileQb as any)      // profiles
       .mockReturnValueOnce(statusUpdateQb as any)  // pins - set generating_metadata
       .mockReturnValueOnce(pinFetchQb as any)      // pins - fetch pin + article
+      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
       .mockReturnValueOnce(insertGenQb as any)     // pin_metadata_generations - insert
       .mockReturnValueOnce(updatePinQb as any)     // pins - update with metadata
       .mockReturnValueOnce(pruneSelectQb as any)   // pin_metadata_generations - prune check
@@ -96,12 +98,12 @@ describe('generateMetadataFn', () => {
     // Verify status was set to generating_metadata
     expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
 
-    // Verify Gemini was called with article content and image URL
+    // Verify Gemini was called with article content, image URL, and system prompt
     expect(mockGenerateMetadata).toHaveBeenCalledWith(
       'Article Title',
       'Article Content',
       'https://test.supabase.co/storage/v1/object/public/pin-images/tenant/image.png',
-      undefined,
+      expect.any(String),
       'test-gemini-api-key',
       'image',
     )
@@ -122,6 +124,7 @@ describe('generateMetadataFn', () => {
     const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
     const statusUpdateQb = createMockQueryBuilder({ data: null })
     const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
     const insertGenQb = createMockQueryBuilder({ data: null })
     const updatePinQb = createMockQueryBuilder({ data: null })
     const pruneSelectQb = createMockQueryBuilder({
@@ -133,6 +136,7 @@ describe('generateMetadataFn', () => {
       .mockReturnValueOnce(profileQb as any)
       .mockReturnValueOnce(statusUpdateQb as any)
       .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
       .mockReturnValueOnce(insertGenQb as any)
       .mockReturnValueOnce(updatePinQb as any)
       .mockReturnValueOnce(pruneSelectQb as any)
@@ -149,6 +153,7 @@ describe('generateMetadataFn', () => {
     const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
     const statusUpdateQb = createMockQueryBuilder({ data: null })
     const pinFetchQb = createMockQueryBuilder({ data: mockPinNoArticle })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
     const insertGenQb = createMockQueryBuilder({ data: null })
     const updatePinQb = createMockQueryBuilder({ data: null })
     const pruneSelectQb = createMockQueryBuilder({ data: [] })
@@ -157,6 +162,7 @@ describe('generateMetadataFn', () => {
       .mockReturnValueOnce(profileQb as any)
       .mockReturnValueOnce(statusUpdateQb as any)
       .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
       .mockReturnValueOnce(insertGenQb as any)
       .mockReturnValueOnce(updatePinQb as any)
       .mockReturnValueOnce(pruneSelectQb as any)
@@ -168,7 +174,7 @@ describe('generateMetadataFn', () => {
       null,
       null,
       expect.stringContaining('pin-images'),
-      undefined,
+      expect.any(String),
       'test-gemini-api-key',
       'image',
     )
@@ -208,6 +214,7 @@ describe('generateMetadataWithFeedbackFn', () => {
     const statusUpdateQb = createMockQueryBuilder({ data: null })
     const prevGenQb = createMockQueryBuilder({ data: previousGen })
     const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
     const insertGenQb = createMockQueryBuilder({ data: null })
     const updatePinQb = createMockQueryBuilder({ data: null })
     const pruneSelectQb = createMockQueryBuilder({ data: [{ id: 'g1' }] })
@@ -217,6 +224,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       .mockReturnValueOnce(statusUpdateQb as any)
       .mockReturnValueOnce(prevGenQb as any)
       .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
       .mockReturnValueOnce(insertGenQb as any)
       .mockReturnValueOnce(updatePinQb as any)
       .mockReturnValueOnce(pruneSelectQb as any)
@@ -230,7 +238,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       metadata: { title: 'Feedback Title', description: 'Feedback description', alt_text: 'Feedback alt' },
     })
 
-    // Verify Gemini was called with previous metadata and feedback
+    // Verify Gemini was called with previous metadata, feedback, and system prompt
     expect(mockGenerateWithFeedback).toHaveBeenCalledWith(
       'Article Title',
       'Article Content',
@@ -239,6 +247,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       'Make it more catchy',
       'test-gemini-api-key',
       'image',
+      expect.any(String),
     )
 
     // Verify new generation was stored with feedback text
@@ -254,6 +263,7 @@ describe('generateMetadataWithFeedbackFn', () => {
     const statusUpdateQb = createMockQueryBuilder({ data: null })
     const prevGenQb = createMockQueryBuilder({ data: previousGen })
     const pinFetchQb = createMockQueryBuilder({ data: mockPinNoArticle })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
     const insertGenQb = createMockQueryBuilder({ data: null })
     const updatePinQb = createMockQueryBuilder({ data: null })
     const pruneSelectQb = createMockQueryBuilder({ data: [] })
@@ -263,6 +273,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       .mockReturnValueOnce(statusUpdateQb as any)
       .mockReturnValueOnce(prevGenQb as any)
       .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
       .mockReturnValueOnce(insertGenQb as any)
       .mockReturnValueOnce(updatePinQb as any)
       .mockReturnValueOnce(pruneSelectQb as any)
@@ -277,6 +288,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       'More minimal',
       'test-gemini-api-key',
       'image',
+      expect.any(String),
     )
   })
 

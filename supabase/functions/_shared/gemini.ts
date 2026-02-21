@@ -56,6 +56,39 @@ Return ONLY valid JSON with this exact structure:
 
 Do not include any text outside the JSON object.`
 
+// --- Language sanitization and prompt building ---
+
+const KNOWN_LANGUAGES: Record<string, string> = {
+  german: 'German',
+  deutsch: 'German',
+  english: 'English',
+  englisch: 'English',
+  french: 'French',
+  französisch: 'French',
+  franzoesisch: 'French',
+  italian: 'Italian',
+  italienisch: 'Italian',
+  spanish: 'Spanish',
+  spanisch: 'Spanish',
+}
+
+export function sanitizeLanguage(value: string | null | undefined): string | null {
+  if (!value) return null
+  const trimmed = value.trim()
+  const lower = trimmed.toLowerCase()
+  if (KNOWN_LANGUAGES[lower]) return KNOWN_LANGUAGES[lower]
+  const safe = trimmed.replace(/[^a-zA-Z\s\-]/g, '').trim().slice(0, 50)
+  return safe.length >= 2 ? safe : null
+}
+
+export function buildPinterestSeoSystemPrompt(language: string | null): string {
+  if (!language) return PINTEREST_SEO_SYSTEM_PROMPT
+  return (
+    PINTEREST_SEO_SYSTEM_PROMPT +
+    `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.`
+  )
+}
+
 const ARTICLE_SCRAPER_SYSTEM_PROMPT = `You are an expert web scraper and content extractor.
 Your task is to analyze the provided HTML content of a blog post or article and extract the core information into structured JSON.
 
