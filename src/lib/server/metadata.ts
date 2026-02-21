@@ -35,28 +35,28 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
         .update({ status: 'generating_metadata' })
         .eq('id', data.pin_id)
 
-      // Fetch pin with article data and blog_project_id
+      // Fetch pin with article data
       const { data: pin, error: fetchError } = await supabase
         .from('pins')
-        .select('*, blog_articles(title, content, blog_project_id)')
+        .select('*, blog_articles(title, content)')
         .eq('id', data.pin_id)
         .single()
 
       if (fetchError || !pin) throw new Error('Pin not found')
 
-      // Fetch Gemini API key from Vault
+      // Fetch Gemini API key from Vault using pin's blog_project_id directly
       const serviceSupabase = getSupabaseServiceClient()
-      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_articles.blog_project_id)
+      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
 
       // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
-      // Call Gemini to generate metadata
+      // Call Gemini to generate metadata (article may be null)
       const metadata = await generatePinMetadata(
-        pin.blog_articles.title,
-        pin.blog_articles.content,
+        pin.blog_articles?.title ?? null,
+        pin.blog_articles?.content ?? null,
         imageUrl,
         undefined,
         apiKey,
@@ -159,25 +159,25 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       // Fetch pin + article data
       const { data: pin, error: fetchError } = await supabase
         .from('pins')
-        .select('*, blog_articles(title, content, blog_project_id)')
+        .select('*, blog_articles(title, content)')
         .eq('id', data.pin_id)
         .single()
 
       if (fetchError || !pin) throw new Error('Pin not found')
 
-      // Fetch Gemini API key from Vault
+      // Fetch Gemini API key from Vault using pin's blog_project_id directly
       const serviceSupabase = getSupabaseServiceClient()
-      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_articles.blog_project_id)
+      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
 
       // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
-      // Call Gemini with feedback (multi-turn conversation)
+      // Call Gemini with feedback (multi-turn conversation, article may be null)
       const metadata = await generatePinMetadataWithFeedback(
-        pin.blog_articles.title,
-        pin.blog_articles.content,
+        pin.blog_articles?.title ?? null,
+        pin.blog_articles?.content ?? null,
         imageUrl,
         {
           title: previousGeneration.title,

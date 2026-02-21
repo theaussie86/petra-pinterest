@@ -182,6 +182,63 @@ describe('publishSinglePin()', () => {
     }))
   })
 
+  it('omits link when pin has no article and no alternate_url', async () => {
+    const { supabase, serviceClient } = createMockClients()
+
+    const pin = buildPinWithRelations({ blog_articles: null, alternate_url: null })
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const successUpdateQb = createMockQueryBuilder({ data: null })
+
+    supabase.from
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(successUpdateQb as any)
+
+    serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    await publishSinglePin(supabase as any, serviceClient as any, 'pin-1')
+
+    const payload = mockCreatePinterestPin.mock.calls[0][1]
+    expect(payload.link).toBeUndefined()
+  })
+
+  it('uses alternate_url as link when article has no url', async () => {
+    const { supabase, serviceClient } = createMockClients()
+
+    const pin = buildPinWithRelations({ blog_articles: null, alternate_url: 'https://custom.com/page' })
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const successUpdateQb = createMockQueryBuilder({ data: null })
+
+    supabase.from
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(successUpdateQb as any)
+
+    serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    await publishSinglePin(supabase as any, serviceClient as any, 'pin-1')
+
+    const payload = mockCreatePinterestPin.mock.calls[0][1]
+    expect(payload.link).toBe('https://custom.com/page')
+  })
+
+  it('prefers alternate_url over blog_articles url', async () => {
+    const { supabase, serviceClient } = createMockClients()
+
+    const pin = buildPinWithRelations({ alternate_url: 'https://override.com' })
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const successUpdateQb = createMockQueryBuilder({ data: null })
+
+    supabase.from
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(successUpdateQb as any)
+
+    serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    await publishSinglePin(supabase as any, serviceClient as any, 'pin-1')
+
+    const payload = mockCreatePinterestPin.mock.calls[0][1]
+    expect(payload.link).toBe('https://override.com')
+  })
+
   it('truncates title to 100 chars and description to 800 chars', async () => {
     const { supabase, serviceClient } = createMockClients()
 

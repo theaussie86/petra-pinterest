@@ -136,8 +136,9 @@ Deno.serve(async (req) => {
           if (pin.alt_text) {
             payload.alt_text = pin.alt_text.substring(0, 500)
           }
-          if (pin.blog_articles?.url) {
-            payload.link = pin.blog_articles.url
+          const linkUrl = pin.alternate_url ?? pin.blog_articles?.url
+          if (linkUrl) {
+            payload.link = linkUrl
           }
 
           // Call Pinterest API

@@ -57,8 +57,16 @@ beforeAll(() => {
 
 const mockPin = {
   id: 'pin-1',
+  blog_project_id: 'proj-1',
   image_path: 'tenant/image.png',
-  blog_articles: { title: 'Article Title', content: 'Article Content', blog_project_id: 'proj-1' },
+  blog_articles: { title: 'Article Title', content: 'Article Content' },
+}
+
+const mockPinNoArticle = {
+  id: 'pin-2',
+  blog_project_id: 'proj-1',
+  image_path: 'tenant/image.png',
+  blog_articles: null,
 }
 
 describe('generateMetadataFn', () => {
@@ -137,6 +145,37 @@ describe('generateMetadataFn', () => {
     expect(pruneDeleteQb.not).toHaveBeenCalledWith('id', 'in', '(g1,g2,g3)')
   })
 
+  it('passes null article data when pin has no linked article', async () => {
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = createMockQueryBuilder({ data: null })
+    const pinFetchQb = createMockQueryBuilder({ data: mockPinNoArticle })
+    const insertGenQb = createMockQueryBuilder({ data: null })
+    const updatePinQb = createMockQueryBuilder({ data: null })
+    const pruneSelectQb = createMockQueryBuilder({ data: [] })
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)
+      .mockReturnValueOnce(statusUpdateQb as any)
+      .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(insertGenQb as any)
+      .mockReturnValueOnce(updatePinQb as any)
+      .mockReturnValueOnce(pruneSelectQb as any)
+
+    await generateMetadataFn({ data: { pin_id: 'pin-2' } })
+
+    // Gemini called with null title and content (image-only generation)
+    expect(mockGenerateMetadata).toHaveBeenCalledWith(
+      null,
+      null,
+      expect.stringContaining('pin-images'),
+      undefined,
+      'test-gemini-api-key',
+      'image',
+    )
+    // API key fetched using pin.blog_project_id directly
+    expect(mockGetVaultKey).toHaveBeenCalledWith(mockServiceClient, 'proj-1')
+  })
+
   it('sets error status on failure', async () => {
     const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
     const statusUpdateQb = createMockQueryBuilder({ data: null })
@@ -205,6 +244,39 @@ describe('generateMetadataWithFeedbackFn', () => {
     // Verify new generation was stored with feedback text
     expect(insertGenQb.insert).toHaveBeenCalledWith(
       expect.objectContaining({ feedback: 'Make it more catchy' }),
+    )
+  })
+
+  it('passes null article data when pin has no linked article', async () => {
+    const previousGen = { title: 'Old Title', description: 'Old desc', alt_text: 'Old alt' }
+
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = createMockQueryBuilder({ data: null })
+    const prevGenQb = createMockQueryBuilder({ data: previousGen })
+    const pinFetchQb = createMockQueryBuilder({ data: mockPinNoArticle })
+    const insertGenQb = createMockQueryBuilder({ data: null })
+    const updatePinQb = createMockQueryBuilder({ data: null })
+    const pruneSelectQb = createMockQueryBuilder({ data: [] })
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)
+      .mockReturnValueOnce(statusUpdateQb as any)
+      .mockReturnValueOnce(prevGenQb as any)
+      .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(insertGenQb as any)
+      .mockReturnValueOnce(updatePinQb as any)
+      .mockReturnValueOnce(pruneSelectQb as any)
+
+    await generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-2', feedback: 'More minimal' } })
+
+    expect(mockGenerateWithFeedback).toHaveBeenCalledWith(
+      null,
+      null,
+      expect.stringContaining('pin-images'),
+      previousGen,
+      'More minimal',
+      'test-gemini-api-key',
+      'image',
     )
   })
 

@@ -28,7 +28,7 @@ export interface Pin {
   id: string
   tenant_id: string
   blog_project_id: string
-  blog_article_id: string
+  blog_article_id: string | null
   pinterest_board_id: string | null
   pinterest_board_name: string | null
   image_path: string | null
@@ -50,7 +50,7 @@ export interface Pin {
 
 export interface PinInsert {
   blog_project_id: string
-  blog_article_id: string
+  blog_article_id: string | null
   image_path: string
   media_type?: 'image' | 'video'
   pinterest_board_id?: string | null

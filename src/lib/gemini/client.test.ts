@@ -76,6 +76,18 @@ describe('generatePinMetadata()', () => {
     expect(callArgs.config.systemInstruction).toBe('Custom prompt')
   })
 
+  it('builds image-only prompt when article title is null', async () => {
+    const metadata = { title: 'T', description: 'D', alt_text: 'A' }
+    mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(metadata) })
+
+    await generatePinMetadata(null, null, 'https://img.com/pic.png', undefined, 'key')
+
+    const callArgs = mockGenerateContent.mock.calls[0][0]
+    const textContent = callArgs.contents[0].text
+    expect(textContent).not.toContain('Article Title')
+    expect(textContent).toContain('No article linked')
+  })
+
   it('throws on empty Gemini response', async () => {
     mockGenerateContent.mockResolvedValueOnce({ text: null })
 
@@ -130,6 +142,28 @@ describe('generatePinMetadataWithFeedback()', () => {
     expect(mockSendMessage).toHaveBeenCalledWith({
       message: expect.stringContaining('Make it more catchy'),
     })
+  })
+
+  it('builds image-only prompt in history when article is null', async () => {
+    const previousMetadata = { title: 'Old', description: 'Old desc', alt_text: 'Old alt' }
+    const newMetadata = { title: 'New', description: 'New desc', alt_text: 'New alt' }
+
+    mockSendMessage.mockResolvedValueOnce({ text: JSON.stringify(newMetadata) })
+    mockCreate.mockReturnValueOnce({ sendMessage: mockSendMessage })
+
+    await generatePinMetadataWithFeedback(
+      null,
+      null,
+      'https://img.com/pic.png',
+      previousMetadata,
+      'feedback',
+      'key',
+    )
+
+    const chatArgs = mockCreate.mock.calls[0][0]
+    const userText = chatArgs.history[0].parts[0].text
+    expect(userText).not.toContain('Article Title')
+    expect(userText).toContain('No article linked')
   })
 
   it('throws on empty chat response', async () => {

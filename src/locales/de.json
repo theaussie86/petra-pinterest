@@ -278,8 +278,9 @@
   "createPin": {
     "titleSingle": "Pin erstellen",
     "titleMultiple": "{{count}} Pins erstellen",
-    "fieldArticle": "Artikel *",
+    "fieldArticle": "Artikel (optional)",
     "placeholderArticle": "Artikel auswählen",
+    "noArticleOption": "Keiner (kein Artikel)",
     "noArticles": "Keine Artikel gefunden. Füge zuerst Artikel zu diesem Projekt hinzu.",
     "fieldBoard": "Board (optional)",
     "placeholderBoard": "Board auswählen (optional)",
