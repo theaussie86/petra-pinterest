@@ -6,7 +6,7 @@ import { fetchPinterestBoards } from './pinterest-api'
  * Server function: Fetch boards directly from Pinterest API
  * Returns boards as { pinterest_board_id, name }[] without storing them in DB
  */
-export const fetchPinterestBoardsFn = createServerFn({ method: 'GET' })
+export const fetchPinterestBoardsFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { blog_project_id: string }) => data)
   .handler(async ({ data: { blog_project_id } }) => {
     try {
