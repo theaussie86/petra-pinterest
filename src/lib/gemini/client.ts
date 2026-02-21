@@ -14,6 +14,39 @@ function getAiClient(apiKey: string) {
   return new GoogleGenAI({ apiKey })
 }
 
+/**
+ * Escape literal control characters (newlines, carriage returns, tabs) inside
+ * JSON string values. Gemini sometimes emits these unescaped despite using
+ * responseMimeType: 'application/json', which causes JSON.parse to fail with
+ * "Unterminated string".
+ */
+function sanitizeJsonResponse(text: string): string {
+  let inString = false
+  let escaped = false
+  let result = ''
+  for (const char of text) {
+    if (escaped) {
+      result += char
+      escaped = false
+    } else if (char === '\\' && inString) {
+      result += char
+      escaped = true
+    } else if (char === '"') {
+      result += char
+      inString = !inString
+    } else if (inString && char === '\n') {
+      result += '\\n'
+    } else if (inString && char === '\r') {
+      result += '\\r'
+    } else if (inString && char === '\t') {
+      result += '\\t'
+    } else {
+      result += char
+    }
+  }
+  return result
+}
+
 // --- Zod schemas ---
 
 const generatedMetadataSchema = z.object({
@@ -90,7 +123,7 @@ export async function generatePinMetadata(
     throw new Error('Gemini returned empty response')
   }
 
-  return generatedMetadataSchema.parse(JSON.parse(response.text))
+  return generatedMetadataSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
 }
 
 /**
@@ -149,7 +182,7 @@ export async function generatePinMetadataWithFeedback(
     throw new Error('Gemini returned empty response')
   }
 
-  return generatedMetadataSchema.parse(JSON.parse(response.text))
+  return generatedMetadataSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
 }
 
 /**
@@ -179,5 +212,5 @@ export async function generateArticleFromHtml(
       throw new Error('Gemini returned empty response')
     }
 
-    return scrapedArticleSchema.parse(JSON.parse(response.text))
+    return scrapedArticleSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
   }

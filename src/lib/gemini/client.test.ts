@@ -103,6 +103,25 @@ describe('generatePinMetadata()', () => {
       generatePinMetadata('Title', 'Content', 'https://img.com/pic.png', undefined, 'key'),
     ).rejects.toThrow()
   })
+
+  it('parses response with literal newlines in description string', async () => {
+    // Gemini sometimes outputs literal newlines inside JSON string values
+    // despite using responseMimeType: 'application/json'
+    const raw = '{\n  "title": "Title",\n  "description": "Line 1\nLine 2\n\nLine 3",\n  "alt_text": "Alt"\n}'
+    mockGenerateContent.mockResolvedValueOnce({ text: raw })
+
+    const result = await generatePinMetadata(
+      'Article',
+      'Content',
+      'https://img.com/pic.png',
+      undefined,
+      'key',
+    )
+
+    expect(result.title).toBe('Title')
+    expect(result.description).toBe('Line 1\nLine 2\n\nLine 3')
+    expect(result.alt_text).toBe('Alt')
+  })
 })
 
 describe('generatePinMetadataWithFeedback()', () => {
