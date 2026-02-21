@@ -92,7 +92,7 @@ function PinDetail() {
                     {/* Description */}
                     <div>
                       <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.description')}</h3>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-slate-700 whitespace-pre-wrap">
                         {pin.description || <span className="text-slate-400">{t('pinDetail.noDescription')}</span>}
                       </p>
                     </div>
