@@ -58,9 +58,9 @@
     "yourProjects": "Deine Projekte",
     "createProject": "Projekt erstellen",
     "empty": {
-      "heading": "Hey! Lass uns dein erstes Blog einrichten.",
+      "heading": "Hey! Lass uns deinen ersten Blog einrichten.",
       "message": "Erstelle ein Blog, um Pinterest-Pins zu planen und deinen Content zu verwalten.",
-      "button": "Erstes Blog erstellen"
+      "button": "Jetzt erstellen"
     }
   },
   "stats": {
