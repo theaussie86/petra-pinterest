@@ -13,15 +13,8 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { useCreateBlogProject, useUpdateBlogProject } from '@/lib/hooks/use-blog-projects'
-import type { BlogProject } from '@/types/blog-projects'
+
+import { useCreateBlogProject } from '@/lib/hooks/use-blog-projects'
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name too long'),
@@ -40,14 +33,11 @@ type ProjectFormData = {
 interface ProjectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  project?: BlogProject
 }
 
-export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProps) {
+export function ProjectDialog({ open, onOpenChange }: ProjectDialogProps) {
   const { t } = useTranslation()
-  const isEditMode = !!project
   const createMutation = useCreateBlogProject()
-  const updateMutation = useUpdateBlogProject()
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -63,23 +53,14 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     register,
     handleSubmit,
     reset,
-    setValue,
-    watch,
     formState: { errors, isSubmitting },
   } = form
 
-  const scrapingFrequency = watch('scraping_frequency')
+
 
   // Reset form when dialog opens/closes or project changes
   useEffect(() => {
-    if (open && project) {
-      reset({
-        name: project.name,
-        blog_url: project.blog_url,
-        sitemap_url: project.sitemap_url || '',
-        scraping_frequency: project.scraping_frequency,
-      })
-    } else if (!open) {
+    if (!open) {
       reset({
         name: '',
         blog_url: '',
@@ -87,7 +68,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
         scraping_frequency: 'weekly',
       })
     }
-  }, [open, project, reset])
+  }, [open, reset])
 
   const onSubmit = async (data: ProjectFormData) => {
     // Validate sitemap URL if provided
@@ -101,20 +82,10 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     }
 
     try {
-      if (isEditMode) {
-        await updateMutation.mutateAsync({
-          id: project.id,
-          name: data.name,
-          blog_url: data.blog_url,
-          sitemap_url: data.sitemap_url && data.sitemap_url.trim() !== '' ? data.sitemap_url : null,
-          scraping_frequency: data.scraping_frequency,
-        })
-      } else {
-        await createMutation.mutateAsync({
-          name: data.name,
-          blog_url: data.blog_url,
-        })
-      }
+      await createMutation.mutateAsync({
+        name: data.name,
+        blog_url: data.blog_url,
+      })
       onOpenChange(false)
     } catch (error) {
       // Error toast is handled by the mutation hooks
@@ -126,7 +97,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{isEditMode ? t('projectDialog.titleEdit') : t('projectDialog.titleCreate')}</DialogTitle>
+          <DialogTitle>{t('projectDialog.titleCreate')}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -156,42 +127,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
             )}
           </div>
 
-          {isEditMode && (
-            <>
-              <div className="space-y-2">
-                <Label htmlFor="sitemap_url">{t('projectDialog.fieldSitemapUrl')}</Label>
-                <Input
-                  id="sitemap_url"
-                  {...register('sitemap_url')}
-                  placeholder={t('projectDialog.placeholderSitemapUrl')}
-                  disabled={isSubmitting}
-                />
-                {errors.sitemap_url && (
-                  <p className="text-sm text-red-600">{errors.sitemap_url.message}</p>
-                )}
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="scraping_frequency">{t('projectDialog.fieldFrequency')}</Label>
-                <Select
-                  value={scrapingFrequency}
-                  onValueChange={(value) =>
-                    setValue('scraping_frequency', value as 'daily' | 'weekly' | 'manual')
-                  }
-                  disabled={isSubmitting}
-                >
-                  <SelectTrigger id="scraping_frequency">
-                    <SelectValue placeholder={t('projectDialog.placeholderFrequency')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">{t('projectDialog.frequencyDaily')}</SelectItem>
-                    <SelectItem value="weekly">{t('projectDialog.frequencyWeekly')}</SelectItem>
-                    <SelectItem value="manual">{t('projectDialog.frequencyManual')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </>
-          )}
 
           <DialogFooter>
             <Button
@@ -203,7 +139,7 @@ export function ProjectDialog({ open, onOpenChange, project }: ProjectDialogProp
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t('common.saving') : isEditMode ? t('common.update') : t('common.create')}
+              {isSubmitting ? t('common.saving') : t('common.create')}
             </Button>
           </DialogFooter>
         </form>

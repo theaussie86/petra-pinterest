@@ -8,13 +8,12 @@ import type { BlogProject } from '@/types/blog-projects'
 
 interface ProjectCardProps {
   project: BlogProject
-  onEdit: (project: BlogProject) => void
   onDelete: (project: BlogProject) => void
   stats?: { articles: number; scheduled: number; published: number }
   statsLoading?: boolean
 }
 
-export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: ProjectCardProps) {
+export function ProjectCard({ project, onDelete, stats, statsLoading }: ProjectCardProps) {
   const { t } = useTranslation()
   const displayStats = stats ?? { articles: 0, scheduled: 0, published: 0 }
 
@@ -76,11 +75,6 @@ export function ProjectCard({ project, onEdit, onDelete, stats, statsLoading }: 
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              onEdit(project)
-            }}
           >
             <Pencil className="h-4 w-4" />
           </Button>
