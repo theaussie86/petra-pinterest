@@ -23,15 +23,10 @@ function ProjectsPage() {
   const { projectStatsMap, loading: statsLoading } = useProjectStats()
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
-  const [editProject, setEditProject] = useState<BlogProject | null>(null)
   const [deleteProject, setDeleteProject] = useState<BlogProject | null>(null)
 
   const handleCreateProject = () => {
     setCreateDialogOpen(true)
-  }
-
-  const handleEditProject = (project: BlogProject) => {
-    setEditProject(project)
   }
 
   const handleDeleteProject = (project: BlogProject) => {
@@ -60,7 +55,6 @@ function ProjectsPage() {
               <ProjectCard
                 key={project.id}
                 project={project}
-                onEdit={handleEditProject}
                 onDelete={handleDeleteProject}
                 stats={projectStatsMap.get(project.id)}
                 statsLoading={statsLoading}
@@ -71,14 +65,12 @@ function ProjectsPage() {
       </PageLayout>
 
       <ProjectDialog
-        open={createDialogOpen || !!editProject}
+        open={createDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
             setCreateDialogOpen(false)
-            setEditProject(null)
           }
         }}
-        project={editProject || undefined}
       />
       <DeleteDialog
         open={!!deleteProject}
