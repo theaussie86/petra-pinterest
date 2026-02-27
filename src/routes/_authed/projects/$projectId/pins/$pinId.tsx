@@ -5,6 +5,8 @@ import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
+import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
+import { usePublishPin } from '@/lib/hooks/use-pinterest-publishing'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
@@ -273,15 +275,30 @@ function PinArticleLink({ articleId, projectId }: { articleId: string; projectId
 
 function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; previous_status: string | null } }) {
   const { t } = useTranslation()
-  const updateMutation = useUpdatePin()
+  const generateMetadata = useGenerateMetadata()
+  const publishPin = usePublishPin()
+  const updatePin = useUpdatePin()
 
-  const handleResetStatus = async () => {
-    await updateMutation.mutateAsync({
-      id: pin.id,
-      status: (pin.previous_status as any) || 'draft',
-      error_message: null,
-    })
+  const isMetadataError = ['generate_metadata', 'generating_metadata'].includes(pin.previous_status || '')
+  const isPublishError = pin.previous_status === 'metadata_created'
+
+  const handleRetry = () => {
+    if (isMetadataError) {
+      generateMetadata.mutate({ pin_id: pin.id })
+    } else if (isPublishError) {
+      publishPin.mutate({ pin_id: pin.id })
+    } else {
+      updatePin.mutate({ id: pin.id, status: 'draft', error_message: null })
+    }
   }
+
+  const isPending = generateMetadata.isPending || publishPin.isPending || updatePin.isPending
+
+  const buttonText = isMetadataError
+    ? (isPending ? t('publishPin.retrying') : t('publishPin.retryGenerate'))
+    : isPublishError
+      ? (isPending ? t('publishPin.retrying') : t('publishPin.retryPublish'))
+      : (isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus'))
 
   return (
     <Alert variant="destructive" className="border-red-200 bg-red-50">
@@ -292,12 +309,12 @@ function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; 
         <Button
           size="sm"
           variant="outline"
-          onClick={handleResetStatus}
-          disabled={updateMutation.isPending}
+          onClick={handleRetry}
+          disabled={isPending}
           className="border-red-300 hover:bg-red-100"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          {updateMutation.isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus')}
+          {buttonText}
         </Button>
       </AlertDescription>
     </Alert>

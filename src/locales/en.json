@@ -367,6 +367,7 @@
     "published": "Published",
     "publishing": "Publishing...",
     "retrying": "Retrying...",
+    "retryGenerate": "Retry generation",
     "retryPublish": "Retry Publish",
     "publish": "Publish",
     "tooltipNoConnection": "Connect Pinterest in project settings",
