@@ -4,7 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
+import { usePin } from '@/lib/hooks/use-pins'
+import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
@@ -271,16 +272,12 @@ function PinArticleLink({ articleId, projectId }: { articleId: string; projectId
   )
 }
 
-function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; previous_status: string | null } }) {
+function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null } }) {
   const { t } = useTranslation()
-  const updateMutation = useUpdatePin()
+  const generateMetadata = useGenerateMetadata()
 
-  const handleResetStatus = async () => {
-    await updateMutation.mutateAsync({
-      id: pin.id,
-      status: (pin.previous_status as any) || 'draft',
-      error_message: null,
-    })
+  const handleRetry = () => {
+    generateMetadata.mutate({ pin_id: pin.id })
   }
 
   return (
@@ -292,12 +289,12 @@ function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; 
         <Button
           size="sm"
           variant="outline"
-          onClick={handleResetStatus}
-          disabled={updateMutation.isPending}
+          onClick={handleRetry}
+          disabled={generateMetadata.isPending}
           className="border-red-300 hover:bg-red-100"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          {updateMutation.isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus')}
+          {generateMetadata.isPending ? t('pinActions.retrying') : t('common.retry')}
         </Button>
       </AlertDescription>
     </Alert>
