@@ -22,6 +22,7 @@ export interface BlogProject {
   topic_context: string | null
   visual_audience: string | null
   lighting_description: string | null
+  ai_context: string | null
   created_at: string
   updated_at: string
 }
@@ -55,4 +56,5 @@ export type BlogProjectUpdate = {
   topic_context?: string | null
   visual_audience?: string | null
   lighting_description?: string | null
+  ai_context?: string | null
 }

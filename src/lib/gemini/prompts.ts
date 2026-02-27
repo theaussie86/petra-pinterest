@@ -61,15 +61,24 @@ Return ONLY valid JSON with this exact structure:
 Do not include any text outside the JSON object.`
 
 /**
- * Builds a language-aware Pinterest SEO system prompt.
+ * Builds a Pinterest SEO system prompt with optional language and project-specific AI context.
  * The language value must already be sanitized before calling this function.
  */
-export function buildPinterestSeoSystemPrompt(language: string | null): string {
-  if (!language) return PINTEREST_SEO_SYSTEM_PROMPT
-  return (
-    PINTEREST_SEO_SYSTEM_PROMPT +
-    `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.\nImportant: also translate the alt text prefix phrases into ${language}. For example, in German "On this pin you see" becomes "Auf diesem Pin siehst du" and "On this pin you see a video about" becomes "Auf diesem Pin siehst du ein Video über". Use the natural equivalent in ${language}.`
-  )
+export function buildPinterestSeoSystemPrompt(
+  language: string | null,
+  aiContext?: string | null
+): string {
+  let prompt = PINTEREST_SEO_SYSTEM_PROMPT
+
+  if (language) {
+    prompt += `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.\nImportant: also translate the alt text prefix phrases into ${language}. For example, in German "On this pin you see" becomes "Auf diesem Pin siehst du" and "On this pin you see a video about" becomes "Auf diesem Pin siehst du ein Video über". Use the natural equivalent in ${language}.`
+  }
+
+  if (aiContext) {
+    prompt += `\n\n**Project-Specific Instructions:**\n${aiContext}`
+  }
+
+  return prompt
 }
 
 export const ARTICLE_SCRAPER_SYSTEM_PROMPT = `You are an expert web scraper and content extractor.

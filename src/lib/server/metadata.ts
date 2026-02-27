@@ -50,14 +50,14 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       const serviceSupabase = getSupabaseServiceClient()
       const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
 
-      // Fetch project language for language-aware metadata generation
+      // Fetch project settings for language and AI context
       const { data: project } = await supabase
         .from('blog_projects')
-        .select('language')
+        .select('language, ai_context')
         .eq('id', pin.blog_project_id)
         .single()
       const language = sanitizeLanguage(project?.language)
-      const systemPrompt = buildPinterestSeoSystemPrompt(language)
+      const systemPrompt = buildPinterestSeoSystemPrompt(language, project?.ai_context)
 
       // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)
@@ -180,14 +180,14 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       const serviceSupabase = getSupabaseServiceClient()
       const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
 
-      // Fetch project language for language-aware metadata generation
+      // Fetch project settings for language and AI context
       const { data: project } = await supabase
         .from('blog_projects')
-        .select('language')
+        .select('language, ai_context')
         .eq('id', pin.blog_project_id)
         .single()
       const language = sanitizeLanguage(project?.language)
-      const systemPrompt = buildPinterestSeoSystemPrompt(language)
+      const systemPrompt = buildPinterestSeoSystemPrompt(language, project?.ai_context)
 
       // Get pin image URL and derive media type from file extension
       const imageUrl = getPinImageUrl(pin.image_path)

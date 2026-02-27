@@ -52,14 +52,14 @@ Deno.serve(async (req) => {
     // Get Gemini API key from Vault using pin's blog_project_id directly
     const projectId = pin.blog_project_id
 
-    // Fetch project language for language-aware metadata generation
+    // Fetch project settings for language and AI context
     const { data: projectData } = await supabase
       .from('blog_projects')
-      .select('language')
+      .select('language, ai_context')
       .eq('id', projectId)
       .single()
     const language = sanitizeLanguage(projectData?.language)
-    const systemPrompt = buildPinterestSeoSystemPrompt(language)
+    const systemPrompt = buildPinterestSeoSystemPrompt(language, projectData?.ai_context)
 
     const { data: apiKey, error: vaultError } = await supabase.rpc(
       'get_gemini_api_key',

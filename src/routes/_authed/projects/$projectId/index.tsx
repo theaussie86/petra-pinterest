@@ -36,11 +36,16 @@ const scrapingFields: FieldConfig[] = [
   { key: 'scraping_frequency', labelKey: 'projectBranding.fieldScrapingFrequency', type: 'frequency-select' },
 ]
 
-type SectionKey = 'basicInfo' | 'scraping'
+const aiSettingsFields: FieldConfig[] = [
+  { key: 'ai_context', labelKey: 'projectBranding.fieldAiContext', placeholderKey: 'projectBranding.placeholderAiContext', type: 'textarea' },
+]
+
+type SectionKey = 'basicInfo' | 'scraping' | 'aiSettings'
 
 const SECTIONS: { key: SectionKey; titleKey: string; fields: FieldConfig[] }[] = [
   { key: 'basicInfo', titleKey: 'projectBranding.sectionBasicInfo', fields: basicInfoFields },
   { key: 'scraping', titleKey: 'projectBranding.sectionScraping', fields: scrapingFields },
+  { key: 'aiSettings', titleKey: 'projectBranding.sectionAiSettings', fields: aiSettingsFields },
 ]
 
 // --- Helper components ---
@@ -152,6 +157,15 @@ function ScrapingContent({ project }: { project: BlogProject }) {
   )
 }
 
+function AiSettingsContent({ project }: { project: BlogProject }) {
+  const { t } = useTranslation()
+  return (
+    <dl className="space-y-4">
+      <FieldDisplay label={t('projectBranding.fieldAiContext')} value={project.ai_context} />
+    </dl>
+  )
+}
+
 // --- Main component ---
 
 function ProjectDetail() {
@@ -208,6 +222,14 @@ function ProjectDetail() {
               onEdit={() => setEditSection('scraping')}
             >
               <ScrapingContent project={project} />
+            </SectionCard>
+
+            {/* AI Settings */}
+            <SectionCard
+              title={t('projectBranding.sectionAiSettings')}
+              onEdit={() => setEditSection('aiSettings')}
+            >
+              <AiSettingsContent project={project} />
             </SectionCard>
 
             {/* Gemini API Key */}
