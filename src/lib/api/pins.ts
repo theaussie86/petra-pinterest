@@ -2,6 +2,58 @@ import { supabase } from '@/lib/supabase'
 import { ensureProfile } from '@/lib/auth'
 import type { Pin, PinInsert, PinUpdate, PinStatus } from '@/types/pins'
 
+export interface PaginatedPinsResult {
+  pins: Pin[]
+  nextCursor: string | null
+}
+
+export interface GetPinsPaginatedOptions {
+  createdAfter?: Date
+  cursor?: string
+  limit?: number
+  statusFilter?: string[]
+}
+
+export async function getPinsPaginated(
+  projectId: string,
+  options: GetPinsPaginatedOptions = {}
+): Promise<PaginatedPinsResult> {
+  const { createdAfter, cursor, limit = 20, statusFilter } = options
+
+  let query = supabase
+    .from('pins')
+    .select('*')
+    .eq('blog_project_id', projectId)
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false }) // Secondary sort for consistent ordering
+    .limit(limit + 1) // Fetch one extra to determine if there's more
+
+  // Initial load: filter by created_after date
+  if (createdAfter) {
+    query = query.gte('created_at', createdAfter.toISOString())
+  }
+
+  // Pagination: fetch pins older than the cursor
+  if (cursor) {
+    query = query.lt('created_at', cursor)
+  }
+
+  // Status filter
+  if (statusFilter && statusFilter.length > 0) {
+    query = query.in('status', statusFilter)
+  }
+
+  const { data, error } = await query
+
+  if (error) throw error
+
+  const hasMore = data.length > limit
+  const pins = hasMore ? data.slice(0, limit) : data
+  const nextCursor = hasMore ? pins[pins.length - 1].created_at : null
+
+  return { pins, nextCursor }
+}
+
 export async function getPinsByProject(projectId: string): Promise<Pin[]> {
   const { data, error } = await supabase
     .from('pins')

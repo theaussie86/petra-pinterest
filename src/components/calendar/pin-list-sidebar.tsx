@@ -1,30 +1,23 @@
 import { useState, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { X } from 'lucide-react'
-import { format } from 'date-fns'
+import { X, Loader2 } from 'lucide-react'
+import { format, formatDistanceToNow } from 'date-fns'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { getPinImageUrl } from '@/lib/api/pins'
+import { getPinImageUrl, type PaginatedPinsResult } from '@/lib/api/pins'
+import { usePinsPaginated } from '@/lib/hooks/use-pins'
 import { OptimizedImage } from '@/components/ui/optimized-image'
 import { useDateLocale } from '@/lib/date-locale'
 import { PIN_STATUS } from '@/types/pins'
 import type { Pin } from '@/types/pins'
 
 interface PinListSidebarProps {
-  pins: Pin[]
+  projectId: string
+  statusFilter?: string[]
   isOpen: boolean
   onClose: () => void
   onPinClick: (pinId: string) => void
 }
-
-type FilterMode = 'all' | 'with-date' | 'without-date'
 
 // Tailwind classes must be complete strings for purge to work
 const STATUS_ACCENT_CLASSES: Record<string, string> = {
@@ -45,12 +38,18 @@ function getStatusAccentClass(status: Pin['status']): string {
 
 function PinCard({ pin, onClick }: { pin: Pin; onClick: () => void }) {
   const locale = useDateLocale()
+  const { t } = useTranslation()
   const imageUrl = pin.image_path ? getPinImageUrl(pin.image_path) : null
   const [isDragging, setIsDragging] = useState(false)
 
-  const dateLabel = pin.scheduled_at
-    ? format(new Date(pin.scheduled_at), 'dd. MMM yyyy, HH:mm', { locale })
-    : null
+  const scheduledLabel = pin.scheduled_at
+    ? format(new Date(pin.scheduled_at), 'dd. MMM, HH:mm', { locale })
+    : t('calendar.noDate')
+
+  const uploadedLabel = formatDistanceToNow(new Date(pin.created_at), {
+    addSuffix: true,
+    locale,
+  })
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', pin.id)
@@ -78,9 +77,11 @@ function PinCard({ pin, onClick }: { pin: Pin; onClick: () => void }) {
         <p className="text-sm font-medium text-slate-900 truncate">
           {pin.title || '—'}
         </p>
-        <p className="text-xs text-slate-500 mt-0.5">
-          {dateLabel ?? 'No date'}
-        </p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-xs text-slate-500">{scheduledLabel}</span>
+          <span className="text-xs text-slate-400">•</span>
+          <span className="text-xs text-slate-400">{uploadedLabel}</span>
+        </div>
       </div>
 
       {/* Thumbnail */}
@@ -101,37 +102,28 @@ function PinCard({ pin, onClick }: { pin: Pin; onClick: () => void }) {
   )
 }
 
-export function PinListSidebar({ pins, isOpen, onClose, onPinClick }: PinListSidebarProps) {
+export function PinListSidebar({
+  projectId,
+  statusFilter,
+  isOpen,
+  onClose,
+  onPinClick,
+}: PinListSidebarProps) {
   const { t } = useTranslation()
-  const locale = useDateLocale()
-  const [filter, setFilter] = useState<FilterMode>('all')
 
-  const filteredPins = useMemo(() => {
-    if (filter === 'with-date') return pins.filter((p) => p.scheduled_at !== null)
-    if (filter === 'without-date') return pins.filter((p) => p.scheduled_at === null)
-    return pins
-  }, [pins, filter])
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = usePinsPaginated(projectId, { statusFilter })
 
-  // Group scheduled pins by date
-  const { scheduledGroups, unscheduledPins } = useMemo(() => {
-    const scheduled = filteredPins.filter((p) => p.scheduled_at !== null)
-    const unscheduled = filteredPins.filter((p) => p.scheduled_at === null)
-
-    const groups = new Map<string, { label: string; pins: Pin[] }>()
-    for (const pin of scheduled) {
-      const dateKey = format(new Date(pin.scheduled_at!), 'yyyy-MM-dd')
-      if (!groups.has(dateKey)) {
-        groups.set(dateKey, {
-          label: format(new Date(pin.scheduled_at!), 'd. MMMM yyyy', { locale }),
-          pins: [],
-        })
-      }
-      groups.get(dateKey)!.pins.push(pin)
-    }
-
-    const sortedGroups = Array.from(groups.entries()).sort(([a], [b]) => a.localeCompare(b))
-    return { scheduledGroups: sortedGroups, unscheduledPins: unscheduled }
-  }, [filteredPins, locale])
+  // Flatten all pages into a single list
+  const allPins = useMemo(() => {
+    if (!data?.pages) return []
+    return data.pages.flatMap((page: PaginatedPinsResult) => page.pins)
+  }, [data])
 
   if (!isOpen) return null
 
@@ -139,17 +131,9 @@ export function PinListSidebar({ pins, isOpen, onClose, onPinClick }: PinListSid
     <div className="fixed right-0 inset-y-0 z-40 w-[420px] h-svh bg-white border-l border-slate-200 shadow-lg flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 flex-shrink-0">
-        <Select value={filter} onValueChange={(v) => setFilter(v as FilterMode)}>
-          <SelectTrigger className="w-[180px] h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('calendar.pinListFilterAll')}</SelectItem>
-            <SelectItem value="with-date">{t('calendar.pinListFilterWithDate')}</SelectItem>
-            <SelectItem value="without-date">{t('calendar.pinListFilterWithoutDate')}</SelectItem>
-          </SelectContent>
-        </Select>
-
+        <h2 className="text-sm font-medium text-slate-700">
+          {t('calendar.recentPins')}
+        </h2>
         <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
           <X className="h-4 w-4" />
         </Button>
@@ -157,42 +141,54 @@ export function PinListSidebar({ pins, isOpen, onClose, onPinClick }: PinListSid
 
       {/* Scrollable pin list */}
       <div className="flex-1 overflow-y-auto">
-        {filteredPins.length === 0 && (
-          <div className="p-6 text-center text-sm text-slate-500">
-            Keine Pins gefunden.
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center p-6">
+            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
           </div>
         )}
 
-        {/* Drag hint for unscheduled filter */}
-        {filter === 'without-date' && unscheduledPins.length > 0 && (
-          <div className="mx-3 my-3 p-3 rounded-lg bg-slate-50 border border-slate-200 text-sm text-slate-600">
-            {t('calendar.dragHint')}
+        {/* Empty state */}
+        {!isLoading && allPins.length === 0 && (
+          <div className="p-6 text-center">
+            <p className="text-sm text-slate-500 mb-3">
+              {t('calendar.noRecentPins')}
+            </p>
+            {hasNextPage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : null}
+                {t('calendar.loadOlderPins')}
+              </Button>
+            )}
           </div>
         )}
 
-        {/* Scheduled groups */}
-        {scheduledGroups.map(([dateKey, group]) => (
-          <div key={dateKey}>
-            <div className="px-4 py-2 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-100">
-              {group.label}
-            </div>
-            {group.pins.map((pin) => (
-              <PinCard key={pin.id} pin={pin} onClick={() => onPinClick(pin.id)} />
-            ))}
-          </div>
+        {/* Pin list - flat, sorted by upload time */}
+        {allPins.map((pin) => (
+          <PinCard key={pin.id} pin={pin} onClick={() => onPinClick(pin.id)} />
         ))}
 
-        {/* Unscheduled section */}
-        {unscheduledPins.length > 0 && (
-          <div>
-            {scheduledGroups.length > 0 && (
-              <div className="px-4 py-2 bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wide border-b border-slate-100">
-                {t('calendar.pinListFilterWithoutDate')}
-              </div>
-            )}
-            {unscheduledPins.map((pin) => (
-              <PinCard key={pin.id} pin={pin} onClick={() => onPinClick(pin.id)} />
-            ))}
+        {/* Load more button */}
+        {!isLoading && allPins.length > 0 && hasNextPage && (
+          <div className="p-4 border-t border-slate-100">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {t('calendar.loadMore')}
+            </Button>
           </div>
         )}
       </div>

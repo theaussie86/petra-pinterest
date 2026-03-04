@@ -418,10 +418,15 @@
     "allPinsFor": "Alle Pins für {{date}}",
     "noPinsForDay": "Keine Pins für diesen Tag",
     "pinListFilterAll": "Alle Datensätze",
-    "pinListFilterWithDate": "Mit Daten",
-    "pinListFilterWithoutDate": "Ohne Daten",
+    "pinListFilterWithDate": "Mit Datum",
+    "pinListFilterWithoutDate": "Ohne Datum",
     "togglePinList": "Pins anzeigen",
-    "dragHint": "Sie können diese Datensätze planen, indem Sie sie in den Kalender ziehen."
+    "dragHint": "Sie können diese Datensätze planen, indem Sie sie in den Kalender ziehen.",
+    "noDate": "Kein Datum",
+    "recentPins": "Neueste Pins",
+    "noRecentPins": "Keine neuen Pins in den letzten 3 Tagen.",
+    "loadOlderPins": "Ältere Pins laden",
+    "loadMore": "Mehr laden"
   },
   "pinTable": {
     "columns": "Spalten",

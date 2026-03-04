@@ -1,5 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { subDays } from 'date-fns'
 import i18n from '@/lib/i18n'
 import {
   getPinsByProject,
@@ -12,6 +13,7 @@ import {
   deletePin,
   deletePins,
   updatePinsStatus,
+  getPinsPaginated,
 } from '@/lib/api/pins'
 import type { PinStatus } from '@/types/pins'
 
@@ -55,6 +57,43 @@ export function usePin(id: string) {
     queryKey: ['pins', 'detail', id],
     queryFn: () => getPin(id),
     enabled: !!id,
+  })
+}
+
+interface UsePinsPaginatedOptions {
+  statusFilter?: string[]
+  initialDays?: number
+  pageSize?: number
+}
+
+type PaginationPageParam = {
+  createdAfter?: Date
+  cursor?: string
+}
+
+export function usePinsPaginated(
+  projectId: string,
+  options: UsePinsPaginatedOptions = {}
+) {
+  const { statusFilter, initialDays = 3, pageSize = 20 } = options
+
+  return useInfiniteQuery({
+    queryKey: ['pins', projectId, 'paginated', statusFilter],
+    queryFn: ({ pageParam }: { pageParam: PaginationPageParam }) =>
+      getPinsPaginated(projectId, {
+        ...pageParam,
+        statusFilter,
+        limit: pageSize,
+      }),
+    initialPageParam: {
+      createdAfter: subDays(new Date(), initialDays),
+    } satisfies PaginationPageParam,
+    getNextPageParam: (lastPage): PaginationPageParam | undefined =>
+      lastPage.nextCursor
+        ? { cursor: lastPage.nextCursor }
+        : undefined,
+    enabled: !!projectId,
+    staleTime: 30000,
   })
 }
 

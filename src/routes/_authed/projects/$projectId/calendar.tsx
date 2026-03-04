@@ -11,8 +11,14 @@ import { PinSidebar } from '@/components/calendar/pin-sidebar'
 import { PinListSidebar } from '@/components/calendar/pin-list-sidebar'
 import { DaySidebar } from '@/components/calendar/day-sidebar'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
-import { PinStatusFilterBar, filterPinsByTab, STATUS_TABS } from '@/components/pins/pin-status-filter-bar'
+import { PinStatusFilterBar, filterPinsByTab, STATUS_TABS, STATUS_TAB_GROUPS } from '@/components/pins/pin-status-filter-bar'
 import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
+
+// Convert status tab to array of statuses for API filter
+function getStatusFilterFromTab(tab: StatusTab): string[] | undefined {
+  if (tab === 'all') return undefined
+  return STATUS_TAB_GROUPS[tab]
+}
 
 // Search params validation schema
 type CalendarSearch = {
@@ -190,7 +196,8 @@ function CalendarPage() {
 
       {/* Pin List Sidebar */}
       <PinListSidebar
-        pins={filteredPins}
+        projectId={projectId}
+        statusFilter={getStatusFilterFromTab(statusTab)}
         isOpen={pinListOpen}
         onClose={() => setPinListOpen(false)}
         onPinClick={handlePinClick}
