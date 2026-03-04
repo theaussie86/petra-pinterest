@@ -46,7 +46,7 @@ function RootComponent() {
   return (
     <RootDocument>
       <Outlet />
-      <Toaster richColors position="top-right" />
+      <Toaster richColors position="bottom-left" />
       <TanStackDevtools
         config={{ position: 'bottom-right' }}
         plugins={[

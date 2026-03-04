@@ -85,6 +85,18 @@ function PinSidebarForm({
     },
   })
 
+  // Sync form when pin data changes (e.g., after mutation or external update)
+  useEffect(() => {
+    form.reset({
+      title: pin.title || '',
+      description: pin.description || '',
+      alt_text: pin.alt_text || '',
+      alternate_url: pin.alternate_url || '',
+      pinterest_board_id: pin.pinterest_board_id || '__none__',
+      status: pin.status,
+    })
+  }, [pin, form])
+
   const {
     register,
     handleSubmit,
