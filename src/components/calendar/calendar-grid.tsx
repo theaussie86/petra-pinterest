@@ -8,6 +8,7 @@ import {
   subMonths,
   subWeeks,
   isSameMonth,
+  isSameDay,
   isToday,
   format,
 } from 'date-fns'
@@ -22,7 +23,9 @@ interface CalendarGridProps {
   pins: Pin[]
   allPins: Pin[]
   view: 'month' | 'week'
+  selectedDay: Date | null
   onPinClick: (pinId: string) => void
+  onDayClick: (date: Date) => void
   onViewChange: (view: 'month' | 'week') => void
   onTogglePinList: () => void
   pinListOpen: boolean
@@ -32,7 +35,9 @@ export function CalendarGrid({
   pins,
   allPins,
   view,
+  selectedDay,
   onPinClick,
+  onDayClick,
   onViewChange,
   onTogglePinList,
   pinListOpen,
@@ -161,6 +166,7 @@ export function CalendarGrid({
             {calendarDays.map((date) => {
               const dateKey = format(date, 'yyyy-MM-dd')
               const dayPins = pinsByDate.get(dateKey) || []
+              const isSelected = selectedDay ? isSameDay(date, selectedDay) : false
               return (
                 <CalendarDayCell
                   key={dateKey}
@@ -168,9 +174,11 @@ export function CalendarGrid({
                   pins={dayPins}
                   isCurrentMonth={isSameMonth(date, currentDate)}
                   isToday={isToday(date)}
+                  isSelected={isSelected}
                   view={view}
                   onPinClick={onPinClick}
                   onPinDrop={handlePinDrop}
+                  onDayClick={onDayClick}
                 />
               )
             })}

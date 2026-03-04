@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
@@ -8,6 +9,7 @@ import { usePins } from '@/lib/hooks/use-pins'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
 import { PinListSidebar } from '@/components/calendar/pin-list-sidebar'
+import { DaySidebar } from '@/components/calendar/day-sidebar'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { PinStatusFilterBar, filterPinsByTab, STATUS_TABS } from '@/components/pins/pin-status-filter-bar'
 import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
@@ -52,7 +54,10 @@ function CalendarPage() {
   // Sidebar state
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
   const [pinListOpen, setPinListOpen] = useState(false)
-  const sidebarOpen = pinListOpen || selectedPinId !== null
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+
+  // Determine if any sidebar is open
+  const sidebarOpen = pinListOpen || selectedPinId !== null || selectedDay !== null
 
   // Filter by status tab
   const filteredPins = useMemo(() => {
@@ -65,6 +70,17 @@ function CalendarPage() {
     () => filteredPins.filter((pin) => pin.scheduled_at !== null),
     [filteredPins]
   )
+
+  // Get pins for selected day
+  const selectedDayPins = useMemo(() => {
+    if (!selectedDay) return []
+    const dateKey = format(selectedDay, 'yyyy-MM-dd')
+    return scheduledPins.filter((pin) => {
+      if (!pin.scheduled_at) return false
+      const pinDateKey = format(new Date(pin.scheduled_at), 'yyyy-MM-dd')
+      return pinDateKey === dateKey
+    })
+  }, [selectedDay, scheduledPins])
 
   // Handle status filter tab change
   const handleStatusTabChange = (newStatusTab: StatusTab) => {
@@ -86,9 +102,22 @@ function CalendarPage() {
     })
   }
 
-  // Handle pin click - open sidebar
+  // Handle pin click - close day sidebar and open pin sidebar
   const handlePinClick = (pinId: string) => {
+    setSelectedDay(null)
     setSelectedPinId(pinId)
+  }
+
+  // Handle day click - open day sidebar
+  const handleDayClick = (date: Date) => {
+    setSelectedPinId(null)
+    setPinListOpen(false)
+    setSelectedDay(date)
+  }
+
+  // Handle day sidebar close
+  const handleDaySidebarClose = () => {
+    setSelectedDay(null)
   }
 
   return (
@@ -147,7 +176,9 @@ function CalendarPage() {
                 pins={scheduledPins}
                 allPins={filteredPins}
                 view={view || 'month'}
+                selectedDay={selectedDay}
                 onPinClick={handlePinClick}
+                onDayClick={handleDayClick}
                 onViewChange={handleViewChange}
                 onTogglePinList={() => setPinListOpen((prev) => !prev)}
                 pinListOpen={pinListOpen}
@@ -162,6 +193,15 @@ function CalendarPage() {
         pins={filteredPins}
         isOpen={pinListOpen}
         onClose={() => setPinListOpen(false)}
+        onPinClick={handlePinClick}
+      />
+
+      {/* Day detail Sidebar */}
+      <DaySidebar
+        date={selectedDay}
+        pins={selectedDayPins}
+        isOpen={selectedDay !== null}
+        onClose={handleDaySidebarClose}
         onPinClick={handlePinClick}
       />
 

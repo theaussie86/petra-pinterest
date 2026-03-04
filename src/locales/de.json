@@ -416,6 +416,7 @@
     "daySat": "Sa",
     "daySun": "So",
     "allPinsFor": "Alle Pins für {{date}}",
+    "noPinsForDay": "Keine Pins für diesen Tag",
     "pinListFilterAll": "Alle Datensätze",
     "pinListFilterWithDate": "Mit Daten",
     "pinListFilterWithoutDate": "Ohne Daten",

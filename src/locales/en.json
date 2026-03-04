@@ -416,6 +416,7 @@
     "daySat": "Sat",
     "daySun": "Sun",
     "allPinsFor": "All pins for {{date}}",
+    "noPinsForDay": "No pins for this day",
     "pinListFilterAll": "All Records",
     "pinListFilterWithDate": "With Date",
     "pinListFilterWithoutDate": "Without Date",

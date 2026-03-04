@@ -4,22 +4,18 @@ import { useTranslation } from 'react-i18next'
 import type { Pin } from '@/types/pins'
 import { PIN_STATUS } from '@/types/pins'
 import { PinMediaPreview } from '@/components/pins/pin-media-preview'
-import { useDateLocale } from '@/lib/date-locale'
 import { cn } from '@/lib/utils'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
 
 interface CalendarDayCellProps {
   date: Date
   pins: Pin[]
   isCurrentMonth: boolean
   isToday: boolean
+  isSelected: boolean
   view: 'month' | 'week'
   onPinClick: (pinId: string) => void
   onPinDrop: (pinId: string, targetDate: Date) => void
+  onDayClick: (date: Date) => void
 }
 
 // Map status colors to border classes
@@ -67,12 +63,13 @@ const CalendarDayCellComponent = ({
   pins,
   isCurrentMonth,
   isToday,
+  isSelected,
   view,
   onPinClick,
   onPinDrop,
+  onDayClick,
 }: CalendarDayCellProps) => {
   const { t } = useTranslation()
-  const locale = useDateLocale()
 
   // Determine thumbnail size and max visible count based on view
   const thumbnailSize = view === 'month' ? 32 : 48
@@ -129,13 +126,23 @@ const CalendarDayCellComponent = ({
     }
   }
 
+  // Handle cell click - select this day
+  const handleCellClick = (e: React.MouseEvent) => {
+    // Only trigger if clicking on the cell background, not on pins
+    if (e.target === e.currentTarget) {
+      onDayClick(date)
+    }
+  }
+
   return (
     <div
+      onClick={handleCellClick}
       className={cn(
-        'border-r border-b p-2 transition-colors',
+        'border-r border-b p-2 transition-colors cursor-pointer',
         view === 'month' ? 'min-h-[100px]' : 'min-h-[160px]',
         isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50',
         isToday && 'ring-2 ring-blue-400 ring-inset',
+        isSelected && 'ring-2 ring-slate-400 bg-slate-100',
         isDragOver && 'ring-2 ring-blue-400 bg-blue-50'
       )}
       onDragOver={handleDragOver}
@@ -145,8 +152,9 @@ const CalendarDayCellComponent = ({
     >
       {/* Day number */}
       <div
+        onClick={() => onDayClick(date)}
         className={cn(
-          'text-sm font-medium mb-2',
+          'text-sm font-medium mb-2 hover:underline cursor-pointer inline-block',
           isCurrentMonth ? 'text-slate-900' : 'text-slate-400'
         )}
       >
@@ -165,7 +173,10 @@ const CalendarDayCellComponent = ({
               draggable
               onDragStart={(e) => handleDragStart(e, pin)}
               onDragEnd={handleDragEnd}
-              onClick={() => onPinClick(pin.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onPinClick(pin.id)
+              }}
               className={cn(
                 'flex items-center gap-1 px-1 py-0.5 rounded cursor-pointer transition-opacity text-xs',
                 getStatusBgClass(pin.status),
@@ -189,7 +200,10 @@ const CalendarDayCellComponent = ({
               draggable
               onDragStart={(e) => handleDragStart(e, pin)}
               onDragEnd={handleDragEnd}
-              onClick={() => onPinClick(pin.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                onPinClick(pin.id)
+              }}
               className="cursor-pointer"
               title={pin.title || t('common.untitled')}
             >
@@ -212,46 +226,15 @@ const CalendarDayCellComponent = ({
 
         {/* Overflow button */}
         {overflowCount > 0 && (
-          <Popover>
-            <PopoverTrigger asChild>
-              <button className="w-full text-left text-xs text-slate-500 hover:text-slate-700 px-1 py-0.5 transition-colors">
-                {t('unscheduledPins.more', { count: overflowCount })}
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
-              <div>
-                {/* Header */}
-                <div className="flex items-center justify-between px-3 py-2 border-b">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {format(date, 'EEEE, d. MMMM', { locale })}
-                  </p>
-                </div>
-                {/* All pins */}
-                <div className="space-y-1 p-2 max-h-[360px] overflow-y-auto">
-                  {sortedPins.map((pin) => (
-                    <div
-                      key={pin.id}
-                      onClick={() => onPinClick(pin.id)}
-                      className={cn(
-                        'flex items-center gap-1.5 px-2 py-1 rounded cursor-pointer transition-opacity text-sm',
-                        getStatusBgClass(pin.status)
-                      )}
-                    >
-                      <span className="shrink-0 w-10 font-medium text-slate-700 tabular-nums text-xs">
-                        {getPinTime(pin)}
-                      </span>
-                      <span className="flex-1 min-w-0 truncate text-slate-900">
-                        {pin.title || t('common.untitled')}
-                      </span>
-                      <div className="shrink-0 w-8 h-8 rounded overflow-hidden">
-                        <PinMediaPreview pin={pin} displayWidth={48} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onDayClick(date)
+            }}
+            className="w-full text-left text-xs text-slate-500 hover:text-slate-700 px-1 py-0.5 transition-colors"
+          >
+            {t('unscheduledPins.more', { count: overflowCount })}
+          </button>
         )}
       </div>
     </div>
@@ -265,6 +248,7 @@ export const CalendarDayCell = memo(CalendarDayCellComponent, (prev, next) => {
   if (prev.view !== next.view) return false
   if (prev.isCurrentMonth !== next.isCurrentMonth) return false
   if (prev.isToday !== next.isToday) return false
+  if (prev.isSelected !== next.isSelected) return false
   if (prev.pins.length !== next.pins.length) return false
 
   // Check if pin IDs changed (shallow comparison)
