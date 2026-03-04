@@ -196,7 +196,7 @@ function PinDetail() {
                   className="overflow-hidden rounded-lg shadow-sm bg-white cursor-pointer w-full"
                   onClick={() => setImageDialogOpen(true)}
                 >
-                  <PinMediaPreview pin={pin} className="w-full h-auto object-contain" />
+                  <PinMediaPreview pin={pin} displayWidth={800} className="w-full h-auto object-contain" />
                 </button>
 
                 {/* AI Metadata generation */}
@@ -239,7 +239,7 @@ function PinDetail() {
           <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
             <DialogContent className="max-w-4xl p-0 overflow-hidden">
               <DialogTitle className="sr-only">{pin.title || 'Pin media'}</DialogTitle>
-              <PinMediaPreview pin={pin} controls className="w-full h-auto object-contain" />
+              <PinMediaPreview pin={pin} displayWidth={800} controls className="w-full h-auto object-contain" />
             </DialogContent>
           </Dialog>
         </>

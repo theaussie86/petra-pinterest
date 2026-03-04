@@ -128,7 +128,7 @@ function PinSidebarForm({
     <>
       {/* Pin media */}
       <div className="rounded-lg bg-slate-100 overflow-hidden">
-        <PinMediaPreview pin={pin} className="max-h-[200px] w-full object-contain" />
+        <PinMediaPreview pin={pin} displayWidth={300} className="max-h-[200px] w-full object-contain" />
       </div>
 
       {/* Inline edit form */}

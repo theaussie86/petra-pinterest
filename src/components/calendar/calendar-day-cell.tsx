@@ -179,7 +179,7 @@ const CalendarDayCellComponent = ({
                 {pin.title || t('common.untitled')}
               </span>
               <div className="shrink-0 w-7 h-7 rounded overflow-hidden">
-                <PinMediaPreview pin={pin} />
+                <PinMediaPreview pin={pin} displayWidth={48} />
               </div>
             </div>
           ) : (
@@ -204,7 +204,7 @@ const CalendarDayCellComponent = ({
                   height: `${thumbnailSize}px`,
                 }}
               >
-                <PinMediaPreview pin={pin} />
+                <PinMediaPreview pin={pin} displayWidth={48} />
               </div>
             </div>
           )
@@ -244,7 +244,7 @@ const CalendarDayCellComponent = ({
                         {pin.title || t('common.untitled')}
                       </span>
                       <div className="shrink-0 w-8 h-8 rounded overflow-hidden">
-                        <PinMediaPreview pin={pin} />
+                        <PinMediaPreview pin={pin} displayWidth={48} />
                       </div>
                     </div>
                   ))}
