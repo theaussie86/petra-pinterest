@@ -13,7 +13,7 @@ interface PinMediaPreviewProps {
   displayWidth?: number
 }
 
-export function PinMediaPreview({ pin, className, controls = false, displayWidth = 400 }: PinMediaPreviewProps) {
+export function PinMediaPreview({ pin, className, controls = false, displayWidth = 256 }: PinMediaPreviewProps) {
   const { t } = useTranslation()
 
   // Cleaned-up image: published pin with no storage image remaining

@@ -15,9 +15,7 @@ function useVercelOptimizedImageProps(src: string, width: number) {
   const encoded = encodeURIComponent(src)
   return {
     src: `/_vercel/image?url=${encoded}&w=${snapToAllowedSize(width)}&q=75`,
-    srcSet: [1, 2]
-      .map(d => `/_vercel/image?url=${encoded}&w=${snapToAllowedSize(width * d)}&q=75 ${d}x`)
-      .join(', '),
+    srcSet: `/_vercel/image?url=${encoded}&w=${snapToAllowedSize(width)}&q=75 1x`,
   }
 }
 

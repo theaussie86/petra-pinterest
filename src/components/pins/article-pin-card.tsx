@@ -33,7 +33,7 @@ export function ArticlePinCard({ pin, projectId }: ArticlePinCardProps) {
       className="flex items-center gap-3 rounded-lg border bg-card p-3 transition-colors hover:bg-accent/50"
     >
       <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-slate-100">
-        <PinMediaPreview pin={pin} />
+        <PinMediaPreview pin={pin} displayWidth={48} />
       </div>
       <div className="min-w-0 flex-1">
         <p className={cn('text-sm font-medium truncate', !pin.title && 'italic text-muted-foreground')}>

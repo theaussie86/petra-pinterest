@@ -148,7 +148,7 @@ export function PinDataTable({
         return (
           <TableCell key={colId}>
             <div className="h-12 w-12 overflow-hidden rounded bg-slate-100">
-              <PinMediaPreview pin={pin} />
+              <PinMediaPreview pin={pin} displayWidth={48} />
             </div>
           </TableCell>
         )

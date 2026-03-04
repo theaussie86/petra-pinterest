@@ -19,7 +19,7 @@ export function PinCard({ pin, selected, onToggleSelect }: PinCardProps) {
     <div className="group relative overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md">
       <Link to="/projects/$projectId/pins/$pinId" params={{ projectId: pin.blog_project_id, pinId: pin.id }} className="block">
         <div className="relative aspect-[2/3] w-full overflow-hidden bg-slate-100">
-          <PinMediaPreview pin={pin} />
+          <PinMediaPreview pin={pin} displayWidth={300} />
 
           {/* Bottom gradient overlay */}
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-3 pb-3 pt-8">

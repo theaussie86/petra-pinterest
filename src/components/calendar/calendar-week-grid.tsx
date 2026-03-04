@@ -394,7 +394,7 @@ export function CalendarWeekGrid({
                     >
                       <div className="flex items-center gap-1.5 h-full min-w-0">
                         <div className="w-6 h-6 rounded overflow-hidden shrink-0">
-                          <PinMediaPreview pin={pp.pin} />
+                          <PinMediaPreview pin={pp.pin} displayWidth={48} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-slate-900 truncate leading-tight">
