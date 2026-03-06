@@ -24,9 +24,6 @@ export async function getPinsPaginated(
     .from('pins')
     .select('*')
     .eq('blog_project_id', projectId)
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false }) // Secondary sort for consistent ordering
-    .limit(limit + 1) // Fetch one extra to determine if there's more
 
   // Initial load: filter by created_after date
   if (createdAfter) {
@@ -43,7 +40,11 @@ export async function getPinsPaginated(
     query = query.in('status', statusFilter)
   }
 
+  // Apply ordering and limit AFTER all filters for consistent results
   const { data, error } = await query
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(limit + 1) // Fetch one extra to determine if there's more
 
   if (error) throw error
 

@@ -31,7 +31,8 @@ vi.mock('./supabase', () => ({
 }))
 
 vi.mock('../../../server/lib/scraping', () => ({
-  discoverSitemapUrls: (...args: any[]) => mockDiscoverSitemapUrls(...args),
+  discoverSitemapUrls: (blogUrl: string, sitemapUrl?: string) =>
+    mockDiscoverSitemapUrls(blogUrl, sitemapUrl),
 }))
 
 describe('scrapeBlogFn', () => {
@@ -58,7 +59,7 @@ describe('scrapeBlogFn', () => {
       },
     })
 
-    expect(result).toEqual({ success: true, dispatched: 2 })
+    expect(result).toEqual({ success: true, dispatched: 2, useTrigger: false })
     expect(mockDiscoverSitemapUrls).toHaveBeenCalledWith('https://blog.com', undefined)
     expect(mockServiceClient.functions.invoke).toHaveBeenCalledTimes(2)
     expect(mockServiceClient.functions.invoke).toHaveBeenCalledWith('scrape-single', {
@@ -85,7 +86,7 @@ describe('scrapeBlogFn', () => {
       data: { blog_project_id: 'proj-1', blog_url: 'https://blog.com' },
     })
 
-    expect(result).toEqual({ success: true, dispatched: 0 })
+    expect(result).toEqual({ success: true, dispatched: 0, useTrigger: false })
     expect(mockServiceClient.functions.invoke).not.toHaveBeenCalled()
   })
 
