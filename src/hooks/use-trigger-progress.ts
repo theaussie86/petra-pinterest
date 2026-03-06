@@ -20,11 +20,18 @@ export function useTriggerBatchProgress(batchId: string | null, label: string) {
     try {
       const result = await batch.retrieve(id)
 
+      // Calculate failed count from processing errors
+      const failedCount = result.processing?.errors?.length ?? 0
+      // For completed batches, successful = total - failed
+      const completedCount = result.status === 'COMPLETED' || result.status === 'PARTIAL_FAILED'
+        ? result.runCount - failedCount
+        : 0
+
       const newProgress: BatchProgress = {
         total: result.runCount,
-        completed: result.successfulRunCount ?? 0,
-        failed: result.failedRunCount ?? 0,
-        status: result.status as BatchProgress['status'],
+        completed: completedCount,
+        failed: failedCount,
+        status: result.status,
       }
 
       setProgress(newProgress)
@@ -32,7 +39,7 @@ export function useTriggerBatchProgress(batchId: string | null, label: string) {
       if (result.status === 'COMPLETED') {
         toast.success(`${label} complete`, {
           id: toastId,
-          description: `${newProgress.completed} succeeded`,
+          description: `${newProgress.total} items processed`,
         })
         return true
       } else if (result.status === 'PARTIAL_FAILED') {
@@ -45,7 +52,8 @@ export function useTriggerBatchProgress(batchId: string | null, label: string) {
         toast.error(`${label} aborted`, { id: toastId })
         return true
       } else {
-        toast.loading(`${label}... ${newProgress.completed}/${newProgress.total} complete`, {
+        // Still processing - show runs count as proxy for progress
+        toast.loading(`${label}... processing ${result.runCount} items`, {
           id: toastId,
         })
         return false
