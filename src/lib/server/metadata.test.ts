@@ -323,7 +323,7 @@ describe('triggerBulkMetadataFn', () => {
       data: { pin_ids: ['pin-1', 'pin-2', 'pin-3'] },
     })
 
-    expect(result).toEqual({ success: true, pins_queued: 3 })
+    expect(result).toEqual({ success: true, pins_queued: 3, useTrigger: false })
     expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
     expect(statusUpdateQb.in).toHaveBeenCalledWith('id', ['pin-1', 'pin-2', 'pin-3'])
     expect(mockServiceClient.functions.invoke).toHaveBeenCalledTimes(3)
