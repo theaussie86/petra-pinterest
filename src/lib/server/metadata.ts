@@ -1,9 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
+import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
 import { sanitizeLanguage } from '@/lib/gemini/language'
 import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
+import { isTriggerDevEnabled } from '@/lib/config/feature-flags'
+import type { generateMetadataTask } from '@/trigger/generate-metadata'
 
 function getPinImageUrl(imagePath: string): string {
   return `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${imagePath}`
@@ -263,8 +266,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Server function: Trigger bulk metadata generation via edge functions (async).
- * Authenticates via cookies, invokes generate-metadata-single for each pin.
+ * Server function: Trigger bulk metadata generation via Trigger.dev or edge functions (async).
+ * Authenticates via cookies, dispatches jobs for each pin.
  */
 export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_ids: string[] }) => data)
@@ -289,7 +292,23 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
       .update({ status: 'generating_metadata' })
       .in('id', data.pin_ids)
 
-    // Invoke edge function for each pin (batched, concurrency 5)
+    if (isTriggerDevEnabled('metadata')) {
+      // Use Trigger.dev
+      const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
+        'generate-metadata',
+        data.pin_ids.map((pin_id) => ({
+          payload: { pin_id, tenant_id: profile.tenant_id },
+        }))
+      )
+      return {
+        success: true,
+        pins_queued: data.pin_ids.length,
+        batchId: batchHandle.batchId,
+        useTrigger: true,
+      }
+    }
+
+    // Fallback: Use Edge Functions
     const serviceClient = getSupabaseServiceClient()
     const results: PromiseSettledResult<unknown>[] = []
     for (let i = 0; i < data.pin_ids.length; i += 5) {
@@ -304,5 +323,5 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
       results.push(...batchResults)
     }
 
-    return { success: true, pins_queued: data.pin_ids.length }
+    return { success: true, pins_queued: data.pin_ids.length, useTrigger: false }
   })

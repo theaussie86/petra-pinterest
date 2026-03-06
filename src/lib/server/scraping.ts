@@ -1,7 +1,11 @@
 import { createServerFn } from '@tanstack/react-start'
+import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { discoverSitemapUrls } from '../../../server/lib/scraping'
 import type { ScrapeResponse } from '@/types/articles'
+import { isTriggerDevEnabled } from '@/lib/config/feature-flags'
+import type { scrapeBlogTask } from '@/trigger/scrape-blog'
+import type { scrapeSingleTask } from '@/trigger/scrape-single'
 
 async function batchInvoke<T>(
   items: T[],
@@ -19,8 +23,8 @@ async function batchInvoke<T>(
 
 /**
  * Server function: trigger a full blog scrape.
- * Discovers sitemap URLs, diffs against existing articles, then
- * invokes the scrape-single edge function for each new URL.
+ * Uses Trigger.dev or Edge Functions depending on feature flag.
+ * Discovers sitemap URLs, diffs against existing articles, then dispatches jobs.
  */
 export const scrapeBlogFn = createServerFn({ method: 'POST' })
   .inputValidator(
@@ -41,13 +45,28 @@ export const scrapeBlogFn = createServerFn({ method: 'POST' })
       .single()
     if (!profile) throw new Error('Profile not found')
 
-    // Discover URLs via sitemap
+    if (isTriggerDevEnabled('scraping')) {
+      // Use Trigger.dev - let the task handle sitemap discovery and batching
+      const handle = await tasks.trigger<typeof scrapeBlogTask>('scrape-blog', {
+        blog_project_id: data.blog_project_id,
+        blog_url: data.blog_url,
+        sitemap_url: data.sitemap_url,
+        tenant_id: profile.tenant_id,
+      })
+      return {
+        success: true,
+        dispatched: 1,
+        runId: handle.id,
+        useTrigger: true,
+      }
+    }
+
+    // Fallback: Use Edge Functions
     const discoveredUrls = await discoverSitemapUrls(
       data.blog_url,
       data.sitemap_url ?? undefined,
     )
 
-    // Diff against existing articles
     const { data: existingArticles } = await supabase
       .from('blog_articles')
       .select('url')
@@ -59,10 +78,9 @@ export const scrapeBlogFn = createServerFn({ method: 'POST' })
     const newUrls = discoveredUrls.filter((url) => !existingUrls.has(url))
 
     if (newUrls.length === 0) {
-      return { success: true, dispatched: 0 }
+      return { success: true, dispatched: 0, useTrigger: false }
     }
 
-    // Fan out: invoke scrape-single edge function for each new URL
     const serviceClient = getSupabaseServiceClient()
     await batchInvoke(newUrls, (url) =>
       serviceClient.functions.invoke('scrape-single', {
@@ -74,18 +92,18 @@ export const scrapeBlogFn = createServerFn({ method: 'POST' })
       }),
     )
 
-    return { success: true, dispatched: newUrls.length }
+    return { success: true, dispatched: newUrls.length, useTrigger: false }
   })
 
 /**
  * Server function: scrape a single article URL (fire-and-forget).
- * Authenticates via cookies, invokes the scrape-single edge function.
+ * Uses Trigger.dev or Edge Functions depending on feature flag.
  */
 export const scrapeSingleFn = createServerFn({ method: 'POST' })
   .inputValidator(
     (data: { blog_project_id: string; url: string }) => data,
   )
-  .handler(async ({ data }): Promise<ScrapeResponse> => {
+  .handler(async ({ data }): Promise<ScrapeResponse & { runId?: string; useTrigger?: boolean }> => {
     const supabase = getSupabaseServerClient()
     const {
       data: { user },
@@ -100,7 +118,26 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
       .single()
     if (!profile) throw new Error('Profile not found')
 
-    // Fire-and-forget: invoke edge function, don't await result
+    if (isTriggerDevEnabled('scraping')) {
+      // Use Trigger.dev
+      const handle = await tasks.trigger<typeof scrapeSingleTask>('scrape-single', {
+        blog_project_id: data.blog_project_id,
+        url: data.url,
+        tenant_id: profile.tenant_id,
+      })
+      return {
+        success: true,
+        articles_found: 1,
+        articles_created: 0,
+        articles_updated: 0,
+        method: 'single',
+        errors: [],
+        runId: handle.id,
+        useTrigger: true,
+      }
+    }
+
+    // Fallback: Fire-and-forget edge function
     const serviceClient = getSupabaseServiceClient()
     serviceClient.functions.invoke('scrape-single', {
       body: {
@@ -117,5 +154,6 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
       articles_updated: 0,
       method: 'single',
       errors: [],
+      useTrigger: false,
     }
   })

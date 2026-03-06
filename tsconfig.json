@@ -1,5 +1,9 @@
 {
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "trigger.config.ts"
+  ],
   "exclude": ["supabase/functions/**/*"],
   "compilerOptions": {
     "target": "ES2022",
