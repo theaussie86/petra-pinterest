@@ -4,7 +4,7 @@ import { discoverSitemapUrls } from '../../server/lib/scraping'
 import { scrapeSingleTask } from './scrape-single'
 
 const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
 
 export interface ScrapeBlogPayload {
   blog_project_id: string

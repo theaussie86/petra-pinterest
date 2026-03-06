@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { scrapeArticleWithGemini } from '../../server/lib/gemini-scraper'
 
 const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
 
 export interface ScrapeSinglePayload {
   blog_project_id: string

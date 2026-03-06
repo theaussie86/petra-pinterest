@@ -5,7 +5,7 @@ import { sanitizeLanguage } from '@/lib/gemini/language'
 import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
 
 const supabaseUrl = process.env.SUPABASE_URL!
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
 
 function getPinImageUrl(imagePath: string): string {
   return `${supabaseUrl}/storage/v1/object/public/pin-images/${imagePath}`
