@@ -1,6 +1,7 @@
 import type { PinSortField } from '@/types/pins'
 
 export type PinColumnId =
+  | 'expand'
   | 'select'
   | 'image'
   | 'title'
@@ -24,6 +25,7 @@ export interface PinColumnDef {
 }
 
 export const ALL_PIN_COLUMNS: PinColumnDef[] = [
+  { id: 'expand', labelKey: '', toggleable: false, width: 'w-[40px]', defaultVisible: true },
   { id: 'select', labelKey: '', toggleable: false, width: 'w-[40px]', defaultVisible: true },
   { id: 'image', labelKey: 'pinTable.columnImage', toggleable: false, width: 'w-[60px]', defaultVisible: true },
   { id: 'title', labelKey: 'pinTable.columnTitle', toggleable: false, sortField: 'title', defaultVisible: true },

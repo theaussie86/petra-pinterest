@@ -22,7 +22,7 @@ import type { Pin, PinSortField } from '@/types/pins'
 type SortDirection = 'asc' | 'desc'
 
 const TABLE_COLUMNS: PinColumnId[] = [
-  'select', 'image', 'title', 'project', 'status', 'scheduled_at', 'created_at',
+  'expand', 'select', 'image', 'title', 'project', 'status', 'scheduled_at', 'created_at',
 ]
 
 interface UnscheduledPinsListProps {

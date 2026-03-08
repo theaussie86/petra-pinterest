@@ -45,7 +45,7 @@ import type { PinStatus, PinSortField, PinViewMode, Pin } from '@/types/pins'
 type SortDirection = 'asc' | 'desc'
 
 const TABLE_COLUMNS: PinColumnId[] = [
-  'select', 'image', 'title', 'article', 'board', 'status',
+  'expand', 'select', 'image', 'title', 'article', 'board', 'status',
   'scheduled_at', 'published_at', 'created_at', 'updated_at', 'actions',
 ]
 
