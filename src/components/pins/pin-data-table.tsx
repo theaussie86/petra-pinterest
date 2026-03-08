@@ -1,9 +1,10 @@
-import { useMemo, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
+  ChevronRight,
 } from 'lucide-react'
 import {
   Table,
@@ -16,9 +17,11 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { PinMediaPreview } from '@/components/pins/pin-media-preview'
+import { PinRowExpansion } from './pin-row-expansion'
 import { getColumnsForIds } from './pin-data-table-columns'
 import type { PinColumnId } from './pin-data-table-columns'
 import type { Pin, PinSortField } from '@/types/pins'
+import { cn } from '@/lib/utils'
 
 interface PinDataTableProps {
   pins: Pin[]
@@ -52,6 +55,7 @@ export function PinDataTable({
   formatDate,
 }: PinDataTableProps) {
   const { t } = useTranslation()
+  const [expandedPinId, setExpandedPinId] = useState<string | null>(null)
 
   const columnDefs = useMemo(() => getColumnsForIds(columns), [columns])
 
@@ -132,8 +136,30 @@ export function PinDataTable({
     )
   }
 
+  const toggleExpand = (pinId: string) => {
+    setExpandedPinId((prev) => (prev === pinId ? null : pinId))
+  }
+
   const renderCell = (colId: PinColumnId, pin: Pin) => {
     switch (colId) {
+      case 'expand':
+        return (
+          <TableCell key={colId} className="w-[40px] p-0">
+            <button
+              type="button"
+              onClick={() => toggleExpand(pin.id)}
+              className="flex h-full w-full items-center justify-center p-2 hover:bg-muted/50 transition-colors"
+              aria-label={expandedPinId === pin.id ? 'Collapse row' : 'Expand row'}
+            >
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 text-muted-foreground transition-transform duration-200',
+                  expandedPinId === pin.id && 'rotate-90'
+                )}
+              />
+            </button>
+          </TableCell>
+        )
       case 'select':
         return (
           <TableCell key={colId}>
@@ -219,6 +245,9 @@ export function PinDataTable({
       <TableHeader>
         <TableRow>
           {visibleColumns.map((col) => {
+            if (col.id === 'expand') {
+              return <TableHead key={col.id} className={col.width} />
+            }
             if (col.id === 'select') {
               return (
                 <TableHead key={col.id} className={col.width}>
@@ -239,9 +268,35 @@ export function PinDataTable({
       </TableHeader>
       <TableBody>
         {sortedPins.map((pin) => (
-          <TableRow key={pin.id} data-state={selectedIds.has(pin.id) ? 'selected' : undefined}>
-            {visibleColumns.map((col) => renderCell(col.id, pin))}
-          </TableRow>
+          <>
+            <TableRow
+              key={pin.id}
+              data-state={selectedIds.has(pin.id) ? 'selected' : undefined}
+              className={cn(expandedPinId === pin.id && 'border-b-0')}
+            >
+              {visibleColumns.map((col) => renderCell(col.id, pin))}
+            </TableRow>
+            <TableRow
+              key={`${pin.id}-expansion`}
+              className={cn(
+                'hover:bg-transparent',
+                expandedPinId === pin.id ? 'border-b' : 'border-b-0'
+              )}
+            >
+              <TableCell colSpan={visibleColumns.length} className="p-0">
+                <div
+                  className={cn(
+                    'grid transition-all duration-200 ease-out',
+                    expandedPinId === pin.id ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <PinRowExpansion pin={pin} />
+                  </div>
+                </div>
+              </TableCell>
+            </TableRow>
+          </>
         ))}
       </TableBody>
     </Table>

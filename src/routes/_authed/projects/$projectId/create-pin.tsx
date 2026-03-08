@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils'
 import { MediaUploadZone } from '@/components/pins/media-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useCreatePins } from '@/lib/hooks/use-pins'
+import { useTriggerMetadataViaTriggerDev } from '@/lib/hooks/use-metadata'
 import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { uploadPinMedia } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
@@ -49,6 +50,7 @@ function CreatePinPage() {
   const isConnected = connectionData?.connected === true && connectionData?.connection?.is_active !== false
   const { data: boards = [] } = usePinterestBoards(projectId)
   const createPinsMutation = useCreatePins()
+  const triggerMetadata = useTriggerMetadataViaTriggerDev()
 
   const handleSubmit = async () => {
     if (files.length === 0) {
@@ -71,7 +73,7 @@ function CreatePinPage() {
       }
 
       const selectedBoard = boards.find((b) => b.pinterest_board_id === selectedBoardId)
-      await createPinsMutation.mutateAsync(
+      const createdPins = await createPinsMutation.mutateAsync(
         uploadedFiles.map(({ path, mediaType }) => ({
           blog_project_id: projectId,
           blog_article_id: selectedArticleId || null,
@@ -81,6 +83,10 @@ function CreatePinPage() {
           pinterest_board_name: selectedBoard?.name || null,
         }))
       )
+
+      // Trigger metadata generation via Trigger.dev for all created pins
+      const pinIds = createdPins.map((pin) => pin.id)
+      triggerMetadata.mutate({ pin_ids: pinIds })
 
       navigate({ to: '/projects/$projectId/pins', params: { projectId } })
     } catch (error) {

@@ -325,3 +325,45 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
 
     return { success: true, pins_queued: data.pin_ids.length, useTrigger: false }
   })
+
+/**
+ * Server function: Trigger metadata generation via Trigger.dev (always).
+ * Used for auto-triggering after pin creation. Always uses Trigger.dev, no fallback.
+ */
+export const triggerMetadataViaTriggerDevFn = createServerFn({ method: 'POST' })
+  .inputValidator((data: { pin_ids: string[] }) => data)
+  .handler(async ({ data }) => {
+    const supabase = getSupabaseServerClient()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+    if (error || !user) throw new Error('Not authenticated')
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+    if (!profile) throw new Error('Profile not found')
+
+    // Update all pins status to 'generating_metadata'
+    await supabase
+      .from('pins')
+      .update({ status: 'generating_metadata' })
+      .in('id', data.pin_ids)
+
+    // Always use Trigger.dev
+    const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
+      'generate-metadata',
+      data.pin_ids.map((pin_id) => ({
+        payload: { pin_id, tenant_id: profile.tenant_id },
+      }))
+    )
+
+    return {
+      success: true,
+      pins_queued: data.pin_ids.length,
+      batchId: batchHandle.batchId,
+    }
+  })

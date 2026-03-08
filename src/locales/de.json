@@ -14,7 +14,8 @@
     "signOut": "Abmelden",
     "goHome": "Startseite",
     "untitled": "Ohne Titel",
-    "notAssigned": "Nicht zugewiesen"
+    "notAssigned": "Nicht zugewiesen",
+    "empty": "Nicht gesetzt"
   },
   "meta": {
     "title": "Pinfinity",
@@ -427,6 +428,10 @@
     "noRecentPins": "Keine neuen Pins in den letzten 3 Tagen.",
     "loadOlderPins": "Ältere Pins laden",
     "loadMore": "Mehr laden"
+  },
+  "pinRowExpansion": {
+    "description": "Beschreibung",
+    "altText": "Alternativtext"
   },
   "pinTable": {
     "columns": "Spalten",

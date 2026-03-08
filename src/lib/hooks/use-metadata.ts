@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
-import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn } from '@/lib/server/metadata'
+import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn, triggerMetadataViaTriggerDevFn } from '@/lib/server/metadata'
 import { getMetadataHistory, restoreMetadataGeneration } from '@/lib/api/metadata'
 
 /**
@@ -74,6 +74,26 @@ export function useTriggerBulkMetadata() {
     },
     onSuccess: (data) => {
       toast.success(i18n.t('toast.metadata.bulkStarted', { count: data.pins_queued }))
+      queryClient.invalidateQueries({ queryKey: ['pins'] })
+    },
+    onError: () => {
+      toast.error(i18n.t('toast.metadata.bulkFailed'))
+    },
+  })
+}
+
+/**
+ * Mutation hook: Trigger metadata generation via Trigger.dev (always).
+ * Used for auto-triggering after pin creation. No toast on success (silent).
+ */
+export function useTriggerMetadataViaTriggerDev() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ pin_ids }: { pin_ids: string[] }) => {
+      return await triggerMetadataViaTriggerDevFn({ data: { pin_ids } })
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: () => {
