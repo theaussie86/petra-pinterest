@@ -26,3 +26,5 @@ Follow these steps exactly:
    ```
 
 8. **Report the result.** Show the PR URL and remind the user that merging will auto-create the git tag and GitHub Release.
+
+**Note:** Trigger.dev tasks (`src/trigger/`, `server/lib/`, `trigger.config.ts`) are automatically deployed by CI when changes to those files are pushed to `main`. No manual deployment is required.
