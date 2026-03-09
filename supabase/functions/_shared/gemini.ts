@@ -143,12 +143,14 @@ export type GeneratedMetadata = z.infer<typeof generatedMetadataSchema>
 export type ScrapedArticle = z.infer<typeof scrapedArticleSchema>
 
 /**
- * Escape literal control characters (newlines, carriage returns, tabs) inside
- * JSON string values. Gemini sometimes emits these unescaped despite using
+ * Escape literal control characters inside JSON string values.
+ * Gemini sometimes emits these unescaped despite using
  * responseMimeType: 'application/json', which causes JSON.parse to fail with
  * "Unterminated string".
+ *
+ * JSON requires ALL control characters (U+0000 through U+001F) to be escaped.
  */
-function sanitizeJsonResponse(text: string): string {
+export function sanitizeJsonResponse(text: string): string {
   let inString = false
   let escaped = false
   let result = ''
@@ -162,12 +164,33 @@ function sanitizeJsonResponse(text: string): string {
     } else if (char === '"') {
       result += char
       inString = !inString
-    } else if (inString && char === '\n') {
-      result += '\\n'
-    } else if (inString && char === '\r') {
-      result += '\\r'
-    } else if (inString && char === '\t') {
-      result += '\\t'
+    } else if (inString) {
+      const code = char.charCodeAt(0)
+      // Escape all control characters (U+0000 through U+001F)
+      if (code <= 0x1f) {
+        switch (char) {
+          case '\n':
+            result += '\\n'
+            break
+          case '\r':
+            result += '\\r'
+            break
+          case '\t':
+            result += '\\t'
+            break
+          case '\b':
+            result += '\\b'
+            break
+          case '\f':
+            result += '\\f'
+            break
+          default:
+            // Other control characters use \uXXXX format
+            result += '\\u' + code.toString(16).padStart(4, '0')
+        }
+      } else {
+        result += char
+      }
     } else {
       result += char
     }
