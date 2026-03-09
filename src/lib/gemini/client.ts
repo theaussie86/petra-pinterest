@@ -22,7 +22,7 @@ function getAiClient(apiKey: string) {
  *
  * JSON requires ALL control characters (U+0000 through U+001F) to be escaped.
  */
-function sanitizeJsonResponse(text: string): string {
+export function sanitizeJsonResponse(text: string): string {
   let inString = false
   let escaped = false
   let result = ''
