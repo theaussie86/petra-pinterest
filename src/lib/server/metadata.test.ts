@@ -55,6 +55,26 @@ beforeAll(() => {
   process.env.SUPABASE_URL = 'https://test.supabase.co'
 })
 
+beforeEach(() => {
+  vi.clearAllMocks()
+  // Reset default mock implementations
+  mockGenerateMetadata.mockResolvedValue({
+    title: 'Generated Title',
+    description: 'Generated description',
+    alt_text: 'Generated alt',
+  })
+  mockGenerateWithFeedback.mockResolvedValue({
+    title: 'Feedback Title',
+    description: 'Feedback description',
+    alt_text: 'Feedback alt',
+  })
+  mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
+  mockServerClient.auth.getUser.mockResolvedValue({
+    data: { user: { id: 'test-user-id' } },
+    error: null,
+  })
+})
+
 const mockPin = {
   id: 'pin-1',
   blog_project_id: 'proj-1',
@@ -307,6 +327,197 @@ describe('generateMetadataWithFeedbackFn', () => {
     await expect(
       generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-1', feedback: 'test' } }),
     ).rejects.toThrow('No previous generation found')
+  })
+})
+
+describe('generateMetadataFn - Error Handling', () => {
+  it('sets error status with message when Gemini returns JSON parse error', async () => {
+    // Reset mock to avoid pollution
+    mockServerClient.from.mockReset()
+    mockGenerateMetadata.mockReset()
+    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
+
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = createMockQueryBuilder({ data: null })
+    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
+    const errorUpdateQb = createMockQueryBuilder({ data: null })
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)
+      .mockReturnValueOnce(statusUpdateQb as any)
+      .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)
+      .mockReturnValueOnce(errorUpdateQb as any)
+
+    // Simulate the exact error that was happening in production
+    mockGenerateMetadata.mockRejectedValue(
+      new SyntaxError('Unterminated string in JSON at position 282 (line 3 column 174)')
+    )
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
+      'Unterminated string in JSON at position 282'
+    )
+
+    expect(errorUpdateQb.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'error',
+        error_message: expect.stringContaining('Unterminated string'),
+      })
+    )
+  })
+
+  it('sets error status when Gemini API key is missing', async () => {
+    // Reset mock to avoid pollution
+    mockServerClient.from.mockReset()
+    mockGenerateMetadata.mockReset()
+    mockGetVaultKey.mockReset()
+
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = createMockQueryBuilder({ data: null })
+    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    // Note: vault key fetch happens BEFORE blog_projects fetch, so error handler is called
+    // without needing projectQb in the chain
+    const errorUpdateQb = createMockQueryBuilder({ data: null })
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)      // 1. profiles
+      .mockReturnValueOnce(statusUpdateQb as any) // 2. pins - set status
+      .mockReturnValueOnce(pinFetchQb as any)     // 3. pins - fetch pin
+      // vault key fails here, skipping blog_projects query
+      .mockReturnValueOnce(errorUpdateQb as any)  // 4. pins - error update
+
+    mockGetVaultKey.mockRejectedValue(new Error('No Gemini API key configured for project'))
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
+      'No Gemini API key configured'
+    )
+
+    expect(errorUpdateQb.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'error' })
+    )
+  })
+
+  it('sets error status when Gemini returns empty response', async () => {
+    // Reset mock to avoid pollution
+    mockServerClient.from.mockReset()
+    mockGenerateMetadata.mockReset()
+    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
+
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = createMockQueryBuilder({ data: null })
+    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
+    const errorUpdateQb = createMockQueryBuilder({ data: null })
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)
+      .mockReturnValueOnce(statusUpdateQb as any)
+      .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)
+      .mockReturnValueOnce(errorUpdateQb as any)
+
+    mockGenerateMetadata.mockRejectedValue(new Error('Gemini returned empty response'))
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
+      'Gemini returned empty response'
+    )
+
+    expect(errorUpdateQb.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'error',
+        error_message: expect.stringContaining('empty response'),
+      })
+    )
+  })
+})
+
+describe('Status Transition Tests', () => {
+  it('transitions: -> generating_metadata -> metadata_created on success', async () => {
+    // Reset mock to avoid pollution
+    mockServerClient.from.mockReset()
+    mockGenerateMetadata.mockReset()
+    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
+    mockGenerateMetadata.mockResolvedValue({
+      title: 'Generated Title',
+      description: 'Generated description',
+      alt_text: 'Generated alt',
+    })
+
+    const statusUpdates: string[] = []
+
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = {
+      ...createMockQueryBuilder({ data: null }),
+      update: vi.fn((data: { status: string }) => {
+        statusUpdates.push(data.status)
+        return statusUpdateQb
+      }),
+    }
+    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
+    const insertGenQb = createMockQueryBuilder({ data: null })
+    const updatePinQb = {
+      ...createMockQueryBuilder({ data: null }),
+      update: vi.fn((data: { status?: string }) => {
+        if (data.status) statusUpdates.push(data.status)
+        return updatePinQb
+      }),
+    }
+    const pruneSelectQb = createMockQueryBuilder({ data: [] })
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)
+      .mockReturnValueOnce(statusUpdateQb as any)
+      .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)
+      .mockReturnValueOnce(insertGenQb as any)
+      .mockReturnValueOnce(updatePinQb as any)
+      .mockReturnValueOnce(pruneSelectQb as any)
+
+    await generateMetadataFn({ data: { pin_id: 'pin-1' } })
+
+    expect(statusUpdates).toEqual(['generating_metadata', 'metadata_created'])
+  })
+
+  it('transitions: -> generating_metadata -> error on failure', async () => {
+    // Reset mock to avoid pollution
+    mockServerClient.from.mockReset()
+    mockGenerateMetadata.mockReset()
+    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
+
+    const statusUpdates: string[] = []
+
+    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
+    const statusUpdateQb = {
+      ...createMockQueryBuilder({ data: null }),
+      update: vi.fn((data: { status: string }) => {
+        statusUpdates.push(data.status)
+        return statusUpdateQb
+      }),
+    }
+    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
+    const projectQb = createMockQueryBuilder({ data: { language: null } })
+    const errorUpdateQb = {
+      ...createMockQueryBuilder({ data: null }),
+      update: vi.fn((data: { status?: string }) => {
+        if (data.status) statusUpdates.push(data.status)
+        return errorUpdateQb
+      }),
+    }
+
+    mockServerClient.from
+      .mockReturnValueOnce(profileQb as any)
+      .mockReturnValueOnce(statusUpdateQb as any)
+      .mockReturnValueOnce(pinFetchQb as any)
+      .mockReturnValueOnce(projectQb as any)
+      .mockReturnValueOnce(errorUpdateQb as any)
+
+    mockGenerateMetadata.mockRejectedValue(new Error('Gemini API error'))
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow()
+
+    expect(statusUpdates).toEqual(['generating_metadata', 'error'])
   })
 })
 

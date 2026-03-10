@@ -627,4 +627,77 @@ describe('sanitizeJsonResponse()', () => {
       expect(parsed.alt_text).toBe('Image\ndescription')
     })
   })
+
+  describe('Unicode Edge Cases (U+2028, U+2029, BOM)', () => {
+    it('escapes LINE SEPARATOR (U+2028) inside strings', () => {
+      // U+2028 is valid JSON but breaks JavaScript string literals
+      const input = '{"text":"line\u2028separator"}'
+      const result = sanitizeJsonResponse(input)
+      expect(result).toBe('{"text":"line\\u2028separator"}')
+      expect(() => JSON.parse(result)).not.toThrow()
+      const parsed = JSON.parse(result)
+      expect(parsed.text).toBe('line\u2028separator')
+    })
+
+    it('escapes PARAGRAPH SEPARATOR (U+2029) inside strings', () => {
+      // U+2029 is valid JSON but breaks JavaScript string literals
+      const input = '{"text":"para\u2029separator"}'
+      const result = sanitizeJsonResponse(input)
+      expect(result).toBe('{"text":"para\\u2029separator"}')
+      expect(() => JSON.parse(result)).not.toThrow()
+      const parsed = JSON.parse(result)
+      expect(parsed.text).toBe('para\u2029separator')
+    })
+
+    it('strips BOM (U+FEFF) from start of input', () => {
+      const input = '\uFEFF{"text":"with BOM"}'
+      const result = sanitizeJsonResponse(input)
+      expect(result).toBe('{"text":"with BOM"}')
+      expect(() => JSON.parse(result)).not.toThrow()
+    })
+
+    it('escapes DEL character (U+007F) inside strings', () => {
+      const input = '{"text":"delete\x7Fchar"}'
+      const result = sanitizeJsonResponse(input)
+      expect(result).toBe('{"text":"delete\\u007fchar"}')
+      expect(() => JSON.parse(result)).not.toThrow()
+    })
+
+    it('preserves emoji (surrogate pairs) inside strings', () => {
+      const input = '{"text":"emoji 😀 here"}'
+      const result = sanitizeJsonResponse(input)
+      expect(result).toBe(input) // Emoji should be unchanged
+      expect(() => JSON.parse(result)).not.toThrow()
+      const parsed = JSON.parse(result)
+      expect(parsed.text).toBe('emoji 😀 here')
+    })
+
+    it('handles mixed Unicode separators and control chars', () => {
+      const input = '{"text":"Line1\u2028Line2\nLine3\u2029Para2"}'
+      const result = sanitizeJsonResponse(input)
+      expect(() => JSON.parse(result)).not.toThrow()
+      const parsed = JSON.parse(result)
+      expect(parsed.text).toBe('Line1\u2028Line2\nLine3\u2029Para2')
+    })
+
+    it('leaves LINE/PARAGRAPH SEPARATOR outside strings unchanged', () => {
+      // These are whitespace outside strings
+      const input = '{\u2028"text": "value"\u2029}'
+      const result = sanitizeJsonResponse(input)
+      expect(result).toBe(input)
+    })
+
+    it('handles real-world failure at position 282', () => {
+      // Simulate the exact structure that failed in production
+      // Position 282 is likely in the middle of the description field
+      const title = 'x'.repeat(100)
+      const descPrefix = 'y'.repeat(140)
+      const input = `{\n  "title": "${title}",\n  "description": "${descPrefix}\u2028This line separator caused the failure",\n  "alt_text": "Alt text"\n}`
+
+      const result = sanitizeJsonResponse(input)
+      expect(() => JSON.parse(result)).not.toThrow()
+      const parsed = JSON.parse(result)
+      expect(parsed.description).toContain('\u2028')
+    })
+  })
 })

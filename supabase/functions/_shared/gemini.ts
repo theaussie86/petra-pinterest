@@ -148,13 +148,24 @@ export type ScrapedArticle = z.infer<typeof scrapedArticleSchema>
  * responseMimeType: 'application/json', which causes JSON.parse to fail with
  * "Unterminated string".
  *
- * JSON requires ALL control characters (U+0000 through U+001F) to be escaped.
+ * Handles:
+ * - Control characters U+0000 through U+001F (required by JSON spec)
+ * - DEL character U+007F (can cause parsing issues)
+ * - LINE SEPARATOR U+2028 (valid JSON but breaks JS string literals)
+ * - PARAGRAPH SEPARATOR U+2029 (valid JSON but breaks JS string literals)
+ * - BOM U+FEFF at start of input (strip it)
  */
 export function sanitizeJsonResponse(text: string): string {
+  // Strip BOM if present at start
+  let input = text
+  if (input.charCodeAt(0) === 0xfeff) {
+    input = input.slice(1)
+  }
+
   let inString = false
   let escaped = false
   let result = ''
-  for (const char of text) {
+  for (const char of input) {
     if (escaped) {
       result += char
       escaped = false
@@ -166,7 +177,7 @@ export function sanitizeJsonResponse(text: string): string {
       inString = !inString
     } else if (inString) {
       const code = char.charCodeAt(0)
-      // Escape all control characters (U+0000 through U+001F)
+      // Escape control characters (U+0000 through U+001F)
       if (code <= 0x1f) {
         switch (char) {
           case '\n':
@@ -188,6 +199,13 @@ export function sanitizeJsonResponse(text: string): string {
             // Other control characters use \uXXXX format
             result += '\\u' + code.toString(16).padStart(4, '0')
         }
+      } else if (code === 0x7f) {
+        // DEL character
+        result += '\\u007f'
+      } else if (code === 0x2028 || code === 0x2029) {
+        // LINE SEPARATOR (U+2028) and PARAGRAPH SEPARATOR (U+2029)
+        // Valid in JSON strings but break JavaScript string literals
+        result += '\\u' + code.toString(16).padStart(4, '0')
       } else {
         result += char
       }
