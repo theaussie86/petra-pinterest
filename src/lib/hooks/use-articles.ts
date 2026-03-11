@@ -193,7 +193,7 @@ export function useBulkRestoreArticles() {
   })
 }
 
-// Paginated articles (active)
+// Paginated articles (active) - offset-based
 export function useArticlesPaginated(
   projectId: string,
   options: { pageSize?: number } = {}
@@ -202,20 +202,20 @@ export function useArticlesPaginated(
 
   return useInfiniteQuery({
     queryKey: ['articles', projectId, 'paginated'],
-    queryFn: ({ pageParam }: { pageParam: { cursor?: string } }) =>
+    queryFn: ({ pageParam }) =>
       getArticlesPaginated(projectId, {
-        cursor: pageParam.cursor,
+        offset: pageParam,
         limit: pageSize,
       }),
-    initialPageParam: {} as { cursor?: string },
-    getNextPageParam: (lastPage) =>
-      lastPage.nextCursor ? { cursor: lastPage.nextCursor } : undefined,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.length * pageSize : undefined,
     enabled: !!projectId,
     staleTime: 30000,
   })
 }
 
-// Paginated archived articles
+// Paginated archived articles - offset-based
 export function useArchivedArticlesPaginated(
   projectId: string,
   options: { pageSize?: number } = {}
@@ -224,14 +224,14 @@ export function useArchivedArticlesPaginated(
 
   return useInfiniteQuery({
     queryKey: ['articles', projectId, 'archived', 'paginated'],
-    queryFn: ({ pageParam }: { pageParam: { cursor?: string } }) =>
+    queryFn: ({ pageParam }) =>
       getArchivedArticlesPaginated(projectId, {
-        cursor: pageParam.cursor,
+        offset: pageParam,
         limit: pageSize,
       }),
-    initialPageParam: {} as { cursor?: string },
-    getNextPageParam: (lastPage) =>
-      lastPage.nextCursor ? { cursor: lastPage.nextCursor } : undefined,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.hasMore ? allPages.length * pageSize : undefined,
     enabled: !!projectId,
     staleTime: 30000,
   })

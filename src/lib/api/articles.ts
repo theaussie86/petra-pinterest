@@ -4,11 +4,11 @@ import type { Article, ScrapeRequest, ScrapeResponse } from '@/types/articles'
 
 export interface PaginatedArticlesResult {
   articles: Article[]
-  nextCursor: string | null
+  hasMore: boolean
 }
 
 export interface GetArticlesPaginatedOptions {
-  cursor?: string
+  offset?: number
   limit?: number
 }
 
@@ -142,64 +142,52 @@ export async function restoreArticles(ids: string[]): Promise<void> {
   if (error) throw error
 }
 
-// Paginated fetch for active articles
+// Paginated fetch for active articles (offset-based)
 export async function getArticlesPaginated(
   projectId: string,
   options: GetArticlesPaginatedOptions = {}
 ): Promise<PaginatedArticlesResult> {
-  const { cursor, limit = 20 } = options
+  const { offset = 0, limit = 20 } = options
 
-  let query = supabase
+  // Fetch limit + 1 to check if there are more items
+  const { data, error } = await supabase
     .from('blog_articles')
     .select('*')
     .eq('blog_project_id', projectId)
     .is('archived_at', null)
-
-  if (cursor) {
-    query = query.lt('published_at', cursor)
-  }
-
-  const { data, error } = await query
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('id', { ascending: false })
-    .limit(limit + 1)
+    .range(offset, offset + limit)
 
   if (error) throw error
 
   const hasMore = data.length > limit
   const articles = hasMore ? data.slice(0, limit) : data
-  const nextCursor = hasMore ? articles[articles.length - 1].published_at : null
 
-  return { articles, nextCursor }
+  return { articles, hasMore }
 }
 
-// Paginated fetch for archived articles
+// Paginated fetch for archived articles (offset-based)
 export async function getArchivedArticlesPaginated(
   projectId: string,
   options: GetArticlesPaginatedOptions = {}
 ): Promise<PaginatedArticlesResult> {
-  const { cursor, limit = 20 } = options
+  const { offset = 0, limit = 20 } = options
 
-  let query = supabase
+  // Fetch limit + 1 to check if there are more items
+  const { data, error } = await supabase
     .from('blog_articles')
     .select('*')
     .eq('blog_project_id', projectId)
     .not('archived_at', 'is', null)
-
-  if (cursor) {
-    query = query.lt('archived_at', cursor)
-  }
-
-  const { data, error } = await query
     .order('archived_at', { ascending: false })
     .order('id', { ascending: false })
-    .limit(limit + 1)
+    .range(offset, offset + limit)
 
   if (error) throw error
 
   const hasMore = data.length > limit
   const articles = hasMore ? data.slice(0, limit) : data
-  const nextCursor = hasMore ? articles[articles.length - 1].archived_at : null
 
-  return { articles, nextCursor }
+  return { articles, hasMore }
 }
