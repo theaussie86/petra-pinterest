@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
@@ -10,7 +10,13 @@ import {
   restoreArticle,
   updateArticleContent,
   scrapeBlog,
-  addArticleManually
+  addArticleManually,
+  deleteArticle,
+  deleteArticles,
+  archiveArticles,
+  restoreArticles,
+  getArticlesPaginated,
+  getArchivedArticlesPaginated,
 } from '@/lib/api/articles'
 
 export function useAllArticles() {
@@ -120,5 +126,113 @@ export function useAddArticle() {
     onError: () => {
       toast.error(i18n.t('toast.article.addFailed'))
     }
+  })
+}
+
+// Delete single article
+export function useDeleteArticle() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteArticle,
+    onSuccess: () => {
+      toast.success(i18n.t('toast.article.deleted'))
+      queryClient.invalidateQueries({ queryKey: ['articles'] })
+    },
+    onError: () => {
+      toast.error(i18n.t('toast.article.deleteFailed'))
+    }
+  })
+}
+
+// Bulk delete articles
+export function useBulkDeleteArticles() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteArticles,
+    onSuccess: (_data, ids) => {
+      toast.success(i18n.t('toast.article.multipleDeleted', { count: ids.length }))
+      queryClient.invalidateQueries({ queryKey: ['articles'] })
+    },
+    onError: () => {
+      toast.error(i18n.t('toast.article.multipleDeleteFailed'))
+    }
+  })
+}
+
+// Bulk archive articles
+export function useBulkArchiveArticles() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: archiveArticles,
+    onSuccess: (_data, ids) => {
+      toast.success(i18n.t('toast.article.multipleArchived', { count: ids.length }))
+      queryClient.invalidateQueries({ queryKey: ['articles'] })
+    },
+    onError: () => {
+      toast.error(i18n.t('toast.article.multipleArchiveFailed'))
+    }
+  })
+}
+
+// Bulk restore articles
+export function useBulkRestoreArticles() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: restoreArticles,
+    onSuccess: (_data, ids) => {
+      toast.success(i18n.t('toast.article.multipleRestored', { count: ids.length }))
+      queryClient.invalidateQueries({ queryKey: ['articles'] })
+    },
+    onError: () => {
+      toast.error(i18n.t('toast.article.multipleRestoreFailed'))
+    }
+  })
+}
+
+// Paginated articles (active)
+export function useArticlesPaginated(
+  projectId: string,
+  options: { pageSize?: number } = {}
+) {
+  const { pageSize = 20 } = options
+
+  return useInfiniteQuery({
+    queryKey: ['articles', projectId, 'paginated'],
+    queryFn: ({ pageParam }: { pageParam: { cursor?: string } }) =>
+      getArticlesPaginated(projectId, {
+        cursor: pageParam.cursor,
+        limit: pageSize,
+      }),
+    initialPageParam: {} as { cursor?: string },
+    getNextPageParam: (lastPage) =>
+      lastPage.nextCursor ? { cursor: lastPage.nextCursor } : undefined,
+    enabled: !!projectId,
+    staleTime: 30000,
+  })
+}
+
+// Paginated archived articles
+export function useArchivedArticlesPaginated(
+  projectId: string,
+  options: { pageSize?: number } = {}
+) {
+  const { pageSize = 20 } = options
+
+  return useInfiniteQuery({
+    queryKey: ['articles', projectId, 'archived', 'paginated'],
+    queryFn: ({ pageParam }: { pageParam: { cursor?: string } }) =>
+      getArchivedArticlesPaginated(projectId, {
+        cursor: pageParam.cursor,
+        limit: pageSize,
+      }),
+    initialPageParam: {} as { cursor?: string },
+    getNextPageParam: (lastPage) =>
+      lastPage.nextCursor ? { cursor: lastPage.nextCursor } : undefined,
+    enabled: !!projectId,
+    staleTime: 30000,
   })
 }

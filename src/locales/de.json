@@ -5,6 +5,7 @@
     "saving": "Speichern...",
     "delete": "Löschen",
     "deleting": "Löschen...",
+    "archiving": "Archivieren...",
     "edit": "Bearbeiten",
     "create": "Erstellen",
     "update": "Aktualisieren",
@@ -211,7 +212,19 @@
     "tabActive": "Aktiv",
     "tabArchived": "Archiviert",
     "restore": "Wiederherstellen",
-    "archive": "Archivieren"
+    "archive": "Archivieren",
+    "loadMore": "Mehr laden",
+    "selectAll": "Alle auswählen",
+    "selected": "{{count}} ausgewählt",
+    "bulkArchive": "Archivieren ({{count}})",
+    "bulkRestore": "Wiederherstellen ({{count}})",
+    "bulkDelete": "Löschen ({{count}})",
+    "bulkDeleteTitle": "{{count}} Artikel löschen",
+    "bulkDeleteMessage": "Bist du sicher, dass du {{count}} Artikel dauerhaft löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "bulkArchiveTitle": "{{count}} Artikel archivieren",
+    "bulkArchiveMessage": "Bist du sicher, dass du {{count}} Artikel archivieren möchtest? Du kannst sie später im Archiv-Tab wiederherstellen.",
+    "deleteSingleTitle": "Artikel löschen",
+    "deleteSingleMessage": "Bist du sicher, dass du diesen Artikel dauerhaft löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden."
   },
   "scrapeButton": {
     "scrapeBlog": "Blog scrapen",
@@ -532,7 +545,15 @@
       "added": "Artikel erfolgreich hinzugefügt",
       "addFailed": "Artikel konnte nicht hinzugefügt werden. Überprüfe die URL und versuche es erneut.",
       "contentUpdated": "Artikelinhalt aktualisiert",
-      "contentUpdateFailed": "Artikelinhalt konnte nicht aktualisiert werden"
+      "contentUpdateFailed": "Artikelinhalt konnte nicht aktualisiert werden",
+      "deleted": "Artikel gelöscht",
+      "deleteFailed": "Artikel konnte nicht gelöscht werden",
+      "multipleDeleted": "{{count}} Artikel gelöscht",
+      "multipleDeleteFailed": "Artikel konnten nicht gelöscht werden",
+      "multipleArchived": "{{count}} Artikel archiviert",
+      "multipleArchiveFailed": "Artikel konnten nicht archiviert werden",
+      "multipleRestored": "{{count}} Artikel wiederhergestellt",
+      "multipleRestoreFailed": "Artikel konnten nicht wiederhergestellt werden"
     },
     "pin": {
       "created": "Pin erstellt",

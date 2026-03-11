@@ -5,6 +5,7 @@
     "saving": "Saving...",
     "delete": "Delete",
     "deleting": "Deleting...",
+    "archiving": "Archiving...",
     "edit": "Edit",
     "create": "Create",
     "update": "Update",
@@ -211,7 +212,19 @@
     "tabActive": "Active",
     "tabArchived": "Archived",
     "restore": "Restore",
-    "archive": "Archive"
+    "archive": "Archive",
+    "loadMore": "Load more",
+    "selectAll": "Select all",
+    "selected": "{{count}} selected",
+    "bulkArchive": "Archive ({{count}})",
+    "bulkRestore": "Restore ({{count}})",
+    "bulkDelete": "Delete ({{count}})",
+    "bulkDeleteTitle": "Delete {{count}} Articles",
+    "bulkDeleteMessage": "Are you sure you want to permanently delete {{count}} article(s)? This action cannot be undone.",
+    "bulkArchiveTitle": "Archive {{count}} Articles",
+    "bulkArchiveMessage": "Are you sure you want to archive {{count}} article(s)? You can restore them later from the Archived tab.",
+    "deleteSingleTitle": "Delete Article",
+    "deleteSingleMessage": "Are you sure you want to permanently delete this article? This action cannot be undone."
   },
   "scrapeButton": {
     "scrapeBlog": "Scrape Blog",
@@ -532,7 +545,15 @@
       "added": "Article added successfully",
       "addFailed": "Failed to add article. Check the URL and try again.",
       "contentUpdated": "Article content updated",
-      "contentUpdateFailed": "Failed to update article content"
+      "contentUpdateFailed": "Failed to update article content",
+      "deleted": "Article deleted",
+      "deleteFailed": "Failed to delete article",
+      "multipleDeleted": "{{count}} articles deleted",
+      "multipleDeleteFailed": "Failed to delete articles",
+      "multipleArchived": "{{count}} articles archived",
+      "multipleArchiveFailed": "Failed to archive articles",
+      "multipleRestored": "{{count}} articles restored",
+      "multipleRestoreFailed": "Failed to restore articles"
     },
     "pin": {
       "created": "Pin created",

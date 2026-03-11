@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { ArticlesTable } from '@/components/articles/articles-table'
+import { ArticlesList } from '@/components/articles/articles-list'
 import { AddArticleDialog } from '@/components/articles/add-article-dialog'
 import { ScrapeButton } from '@/components/articles/scrape-button'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
@@ -39,7 +39,7 @@ function ArticlesPage() {
           )}
         </div>
 
-        <ArticlesTable projectId={projectId} />
+        <ArticlesList projectId={projectId} />
       </PageLayout>
 
       <AddArticleDialog
