@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   startOfMonth,
   startOfWeek,
@@ -20,30 +20,74 @@ import { CalendarWeekGrid } from './calendar-week-grid'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
 
 interface CalendarGridProps {
+  projectId: string
   pins: Pin[]
   allPins: Pin[]
-  view: 'month' | 'week'
   selectedDay: Date | null
   onPinClick: (pinId: string) => void
   onDayClick: (date: Date) => void
-  onViewChange: (view: 'month' | 'week') => void
   onTogglePinList: () => void
   pinListOpen: boolean
 }
 
 export function CalendarGrid({
+  projectId,
   pins,
   allPins,
-  view,
   selectedDay,
   onPinClick,
   onDayClick,
-  onViewChange,
   onTogglePinList,
   pinListOpen,
 }: CalendarGridProps) {
   const { t } = useTranslation()
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [view, setView] = useState<'month' | 'week'>(() => {
+    if (typeof window === 'undefined') return 'month'
+    try {
+      const stored = window.localStorage.getItem(`pinma-calendar-view-${projectId}`)
+      if (stored === 'month' || stored === 'week') return stored
+    } catch {
+      // ignore
+    }
+    return 'month'
+  })
+
+  // Persist last-selected view per project
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(`pinma-calendar-view-${projectId}`, view)
+    } catch {
+      // ignore
+    }
+  }, [view, projectId])
+
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    if (typeof window === 'undefined') return new Date()
+    try {
+      const stored = window.localStorage.getItem(`pinma-calendar-month-${projectId}`)
+      if (stored) {
+        const parsed = new Date(stored)
+        if (!Number.isNaN(parsed.getTime())) return parsed
+      }
+    } catch {
+      // ignore (private mode, quota, etc.)
+    }
+    return new Date()
+  })
+
+  // Persist last-viewed date per project so the calendar restores it on return.
+  // Stores the raw currentDate (not startOfMonth) so week view is also restored
+  // correctly — the grid derives startOfMonth/startOfWeek from currentDate.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const dateKey = format(currentDate, 'yyyy-MM-dd')
+      window.localStorage.setItem(`pinma-calendar-month-${projectId}`, dateKey)
+    } catch {
+      // ignore
+    }
+  }, [currentDate, projectId])
   const updatePin = useUpdatePin()
 
   const DAYS_OF_WEEK = [
@@ -134,7 +178,7 @@ export function CalendarGrid({
         currentDate={currentDate}
         view={view}
         onNavigate={handleNavigate}
-        onViewChange={onViewChange}
+        onViewChange={setView}
         onTogglePinList={onTogglePinList}
         pinListOpen={pinListOpen}
       />
