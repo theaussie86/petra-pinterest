@@ -23,7 +23,6 @@ function getStatusFilterFromTab(tab: StatusTab): string[] | undefined {
 // Search params validation schema
 type CalendarSearch = {
   statusTab?: StatusTab
-  view?: 'month' | 'week'
 }
 
 export const Route = createFileRoute('/_authed/projects/$projectId/calendar')({
@@ -32,10 +31,6 @@ export const Route = createFileRoute('/_authed/projects/$projectId/calendar')({
       statusTab: (STATUS_TABS as readonly string[]).includes(search.statusTab as string)
         ? (search.statusTab as StatusTab)
         : undefined,
-      view:
-        search.view === 'month' || search.view === 'week'
-          ? search.view
-          : 'month',
     }
   },
   component: CalendarPage,
@@ -55,7 +50,7 @@ function CalendarPage() {
 
   const { data: pins, isLoading } = usePins(projectId)
 
-  const { statusTab = 'all', view } = searchParams
+  const { statusTab = 'all' } = searchParams
 
   // Sidebar state
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null)
@@ -94,16 +89,6 @@ function CalendarPage() {
       search: (prev) => ({
         ...prev,
         statusTab: newStatusTab === 'all' ? undefined : newStatusTab,
-      }),
-    })
-  }
-
-  // Handle view change
-  const handleViewChange = (newView: 'month' | 'week') => {
-    navigate({
-      search: (prev) => ({
-        ...prev,
-        view: newView,
       }),
     })
   }
@@ -179,13 +164,13 @@ function CalendarPage() {
               </div>
             ) : (
               <CalendarGrid
+                key={projectId}
+                projectId={projectId}
                 pins={scheduledPins}
                 allPins={filteredPins}
-                view={view || 'month'}
                 selectedDay={selectedDay}
                 onPinClick={handlePinClick}
                 onDayClick={handleDayClick}
-                onViewChange={handleViewChange}
                 onTogglePinList={() => setPinListOpen((prev) => !prev)}
                 pinListOpen={pinListOpen}
               />
