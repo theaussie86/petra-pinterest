@@ -46,6 +46,16 @@ jobs:
         if: steps.changes.outputs.trigger_changed == 'true'
         run: npm ci
 
+      # Bump @trigger.dev/sdk + @trigger.dev/build to the latest patch right
+      # before the deploy. Trigger.dev refuses to deploy when the CLI version
+      # differs from the installed SDK version, so we install latest here and
+      # then run the CLI as @latest in the next step — both resolve to the
+      # same version within the same CI run, so they always match.
+      # `--no-save` keeps package.json / package-lock.json untouched.
+      - name: Update Trigger.dev SDK to latest
+        if: steps.changes.outputs.trigger_changed == 'true'
+        run: npm install --no-save @trigger.dev/sdk@latest @trigger.dev/build@latest
+
       - name: Deploy to Trigger.dev
         if: steps.changes.outputs.trigger_changed == 'true'
         env:
