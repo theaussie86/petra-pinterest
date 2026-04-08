@@ -19,22 +19,47 @@ interface PinterestPinResponse {
   created_at?: string
 }
 
+type PinterestMediaSource =
+  | { source_type: 'image_url'; url: string }
+  | {
+      source_type: 'video_id'
+      media_id: string
+      cover_image_url?: string
+      cover_image_content_type?: 'image/jpeg' | 'image/png'
+      cover_image_data?: string
+      cover_image_key_frame_time?: number
+      is_standard?: boolean
+    }
+
 interface PinterestCreatePinPayload {
   board_id: string
-  media_source: {
-    source_type: 'image_url'
-    url: string
-  }
+  media_source: PinterestMediaSource
   title?: string
   description?: string
   alt_text?: string
   link?: string
 }
 
+interface PinterestMediaRegisterResponse {
+  media_id: string
+  media_type: 'video'
+  upload_url: string
+  upload_parameters: Record<string, string>
+}
+
+interface PinterestMediaStatusResponse {
+  media_id: string
+  media_type: 'video'
+  status: 'registered' | 'processing' | 'succeeded' | 'failed'
+}
+
 export type {
   PinterestTokenResponse,
   PinterestPinResponse,
   PinterestCreatePinPayload,
+  PinterestMediaSource,
+  PinterestMediaRegisterResponse,
+  PinterestMediaStatusResponse,
 }
 
 /**
@@ -115,6 +140,107 @@ export async function createPinterestPin(
   }
 
   throw new Error('Unexpected error in createPinterestPin')
+}
+
+/**
+ * Register a video upload with Pinterest (step 1 of the video publish flow).
+ *
+ * Returns a one-time-use `media_id` plus the signed S3 URL and parameters
+ * needed to upload the actual video bytes.
+ */
+export async function registerPinterestMedia(
+  accessToken: string
+): Promise<PinterestMediaRegisterResponse> {
+  return pinterestFetch<PinterestMediaRegisterResponse>('/media', accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ media_type: 'video' }),
+  })
+}
+
+/**
+ * Upload video bytes to Pinterest's S3 bucket (step 2 of the video publish flow).
+ *
+ * The signed-POST parameters must be appended first, followed by the `file`
+ * field containing the raw bytes — S3 requires this field order.
+ */
+export async function uploadVideoToPinterestS3(
+  register: PinterestMediaRegisterResponse,
+  videoBytes: Uint8Array,
+  filename: string,
+  contentType = 'video/mp4'
+): Promise<void> {
+  const form = new FormData()
+
+  for (const [key, value] of Object.entries(register.upload_parameters)) {
+    form.append(key, value)
+  }
+
+  const blob = new Blob([videoBytes as BlobPart], { type: contentType })
+  form.append('file', blob, filename)
+
+  const response = await fetch(register.upload_url, {
+    method: 'POST',
+    body: form,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
+    throw new Error(
+      `Pinterest S3 upload failed: ${response.status} ${response.statusText}${
+        errorText ? ` — ${errorText.slice(0, 300)}` : ''
+      }`
+    )
+  }
+}
+
+/**
+ * Get the processing status of a registered Pinterest media upload.
+ */
+export async function getPinterestMediaStatus(
+  accessToken: string,
+  mediaId: string
+): Promise<PinterestMediaStatusResponse> {
+  return pinterestFetch<PinterestMediaStatusResponse>(
+    `/media/${encodeURIComponent(mediaId)}`,
+    accessToken,
+    { method: 'GET' }
+  )
+}
+
+/**
+ * Poll GET /v5/media/{id} until Pinterest reports the upload as `succeeded`.
+ * Backoff: 5s, 10s, 15s, 30s, 30s, ...  Default timeout: 5 minutes.
+ */
+export async function waitForPinterestMediaReady(
+  accessToken: string,
+  mediaId: string,
+  options: { timeoutMs?: number } = {}
+): Promise<PinterestMediaStatusResponse> {
+  const timeoutMs = options.timeoutMs ?? 5 * 60 * 1000
+  const deadline = Date.now() + timeoutMs
+  const backoffSequenceMs = [5_000, 10_000, 15_000, 30_000]
+  let step = 0
+
+  while (true) {
+    const status = await getPinterestMediaStatus(accessToken, mediaId)
+
+    if (status.status === 'succeeded') {
+      return status
+    }
+    if (status.status === 'failed') {
+      throw new Error(`Pinterest media upload failed for media_id=${mediaId}`)
+    }
+
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `Pinterest media upload did not reach 'succeeded' within ${timeoutMs}ms (last status: ${status.status})`
+      )
+    }
+
+    const delay = backoffSequenceMs[Math.min(step, backoffSequenceMs.length - 1)]!
+    step++
+    await new Promise((resolve) => setTimeout(resolve, delay))
+  }
 }
 
 /**
