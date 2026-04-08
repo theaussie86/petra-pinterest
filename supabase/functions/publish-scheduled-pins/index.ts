@@ -5,6 +5,7 @@ import {
   createPinterestPin,
   type PinterestCreatePinPayload,
 } from '../_shared/pinterest-api.ts'
+import { notifyPinError } from '../_shared/notifications.ts'
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req)
@@ -53,14 +54,21 @@ Deno.serve(async (req) => {
       const connectionId = pin.blog_projects?.pinterest_connection_id
       if (!connectionId) {
         // Mark pin as error — no connection
+        const noConnectionError =
+          'No Pinterest account connected to this project'
         await supabase
           .from('pins')
           .update({
             status: 'error',
-            error_message: 'No Pinterest account connected to this project',
+            error_message: noConnectionError,
           })
           .eq('id', pin.id)
           .eq('status', 'metadata_created')
+        await notifyPinError({
+          supabase,
+          pinId: pin.id,
+          errorMessage: noConnectionError,
+        })
         continue
       }
 
@@ -88,15 +96,22 @@ Deno.serve(async (req) => {
 
       if (tokenError || !tokenData) {
         // Mark all pins for this connection as failed
+        const tokenErrorMessage = `Failed to retrieve Pinterest access token: ${tokenError?.message || 'Unknown error'}`
         for (const pin of connectionPins) {
           await supabase
             .from('pins')
             .update({
               status: 'error',
-              error_message: `Failed to retrieve Pinterest access token: ${tokenError?.message || 'Unknown error'}`,
+              error_message: tokenErrorMessage,
             })
             .eq('id', pin.id)
             .eq('status', 'metadata_created')
+
+          await notifyPinError({
+            supabase,
+            pinId: pin.id,
+            errorMessage: tokenErrorMessage,
+          })
 
           results.push({
             pin_id: pin.id,
@@ -179,6 +194,12 @@ Deno.serve(async (req) => {
             })
             .eq('id', pin.id)
             .eq('status', 'metadata_created')
+
+          await notifyPinError({
+            supabase,
+            pinId: pin.id,
+            errorMessage,
+          })
 
           results.push({
             pin_id: pin.id,

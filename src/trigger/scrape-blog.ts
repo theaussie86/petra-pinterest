@@ -2,6 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { discoverSitemapUrls } from '../../server/lib/scraping'
 import { scrapeSingleTask } from './scrape-single'
+import { notifyProjectError } from '@/lib/server/notifications'
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
@@ -65,5 +66,19 @@ export const scrapeBlogTask = task({
       dispatched: newUrls.length,
       batchId: batchHandle.batchId,
     }
+  },
+  // Fires once after all retries are exhausted — perfect place for the
+  // user-facing error mail (avoids one mail per retry attempt).
+  onFailure: async (payload, error) => {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    await notifyProjectError({
+      supabase,
+      projectId: payload.blog_project_id,
+      subject: '[Pinfinity] Fehler beim Blog-Scraping',
+      errorMessage,
+      context: `Sitemap-Discovery für ${payload.blog_url}`,
+    })
   },
 })

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { generatePinMetadata } from '@/lib/gemini/client'
 import { sanitizeLanguage } from '@/lib/gemini/language'
 import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
+import { notifyPinError } from '@/lib/server/notifications'
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
@@ -133,5 +134,15 @@ export const generateMetadataTask = task({
 
       throw error
     }
+  },
+  // Fires once after all retries are exhausted — ensures the user only
+  // gets a single error mail per failure episode (rather than one per retry).
+  onFailure: async (payload, error) => {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    await notifyPinError({
+      supabase,
+      pinId: payload.pin_id,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    })
   },
 })

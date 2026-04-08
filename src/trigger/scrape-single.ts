@@ -1,6 +1,7 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { scrapeArticleWithGemini } from '../../server/lib/gemini-scraper'
+import { notifyProjectError } from '@/lib/server/notifications'
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
@@ -65,5 +66,18 @@ export const scrapeSingleTask = task({
       url: payload.url,
       title: article.title,
     }
+  },
+  // Fires once after all retries are exhausted.
+  onFailure: async (payload, error) => {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    await notifyProjectError({
+      supabase,
+      projectId: payload.blog_project_id,
+      subject: '[Pinfinity] Fehler beim Artikel-Scraping',
+      errorMessage,
+      context: `URL: ${payload.url}`,
+    })
   },
 })

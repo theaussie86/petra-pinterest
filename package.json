@@ -9,7 +9,8 @@
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "release": "node scripts/release.cjs"
+    "release": "node scripts/release.cjs",
+    "test:notifications": "node --env-file=.env.local scripts/test-error-notification.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.40.0",
@@ -50,6 +51,7 @@
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.71.1",
     "react-i18next": "^16.5.4",
+    "resend": "^6.10.0",
     "sonner": "^2.0.0",
     "tailwind-merge": "^3.0.0",
     "tailwindcss": "^4.0.6",
