@@ -135,6 +135,8 @@
     "placeholderDescription": "Brief project description",
     "fieldLanguage": "Language",
     "placeholderLanguage": "e.g. English, German",
+    "fieldNotificationEmail": "Error notification e-mail",
+    "placeholderNotificationEmail": "Leave empty to use your login e-mail",
     "languageHint": "Enter language name in English, e.g. Portuguese, Chinese",
     "languageCustomPlaceholder": "Search or enter a language...",
     "languageUseCustom": "Use: \"{{value}}\"",

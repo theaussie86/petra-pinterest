@@ -1,6 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { createPinterestPin } from './pinterest-api'
+import { notifyPinError } from './notifications'
 import type { PinterestCreatePinPayload } from '@/types/pinterest'
 
 interface PublishResult {
@@ -111,6 +112,13 @@ export async function publishSinglePin(
         error_message: errorMessage,
       })
       .eq('id', pinId)
+
+    // Fire-and-forget error mail (never throws)
+    await notifyPinError({
+      supabase: serviceClient,
+      pinId,
+      errorMessage,
+    })
 
     return {
       success: false,
