@@ -32,3 +32,6 @@ scripts/migration/data/
 coverage
 
 .trigger
+
+# Git worktrees
+.worktrees
