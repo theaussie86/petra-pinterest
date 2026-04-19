@@ -1,5 +1,6 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import React, { useMemo, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
+import { usePinterestBoards } from '@/lib/hooks/use-pinterest-connection'
 import {
   ArrowUp,
   ArrowDown,
@@ -56,6 +57,8 @@ export function PinDataTable({
 }: PinDataTableProps) {
   const { t } = useTranslation()
   const [expandedPinId, setExpandedPinId] = useState<string | null>(null)
+  const blogProjectId = pins[0]?.blog_project_id ?? ''
+  const { data: boards, isLoading: boardsLoading } = usePinterestBoards(blogProjectId)
 
   const columnDefs = useMemo(() => getColumnsForIds(columns), [columns])
 
@@ -268,9 +271,8 @@ export function PinDataTable({
       </TableHeader>
       <TableBody>
         {sortedPins.map((pin) => (
-          <>
+          <React.Fragment key={pin.id}>
             <TableRow
-              key={pin.id}
               data-state={selectedIds.has(pin.id) ? 'selected' : undefined}
               className={cn(expandedPinId === pin.id && 'border-b-0')}
             >
@@ -291,12 +293,16 @@ export function PinDataTable({
                   )}
                 >
                   <div className="overflow-hidden">
-                    <PinRowExpansion pin={pin} />
+                    <PinRowExpansion
+                      pin={pin}
+                      boards={expandedPinId === pin.id ? boards : undefined}
+                      boardsLoading={expandedPinId === pin.id ? boardsLoading : false}
+                    />
                   </div>
                 </div>
               </TableCell>
             </TableRow>
-          </>
+          </React.Fragment>
         ))}
       </TableBody>
     </Table>
