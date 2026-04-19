@@ -446,7 +446,11 @@
   },
   "pinRowExpansion": {
     "description": "Description",
-    "altText": "Alt Text"
+    "altText": "Alt Text",
+    "board": "Board",
+    "noBoard": "No board",
+    "placeholderBoard": "Select a board",
+    "pinterestNotConnected": "Pinterest not connected. Connect in project settings."
   },
   "pinTable": {
     "columns": "Columns",

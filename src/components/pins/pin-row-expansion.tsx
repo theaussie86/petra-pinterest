@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { CalendarIcon, Clock, X } from 'lucide-react'
@@ -17,8 +17,15 @@ import {
 } from '@/components/ui/select'
 import { ACTIVE_STATUSES, type Pin, type PinStatus } from '@/types/pins'
 
+interface Board {
+  pinterest_board_id: string
+  name: string
+}
+
 interface PinRowExpansionProps {
   pin: Pin
+  boards: Board[] | undefined
+  boardsLoading: boolean
 }
 
 const PRESET_TIMES = [
@@ -30,7 +37,7 @@ const PRESET_TIMES = [
   { label: '21:00', value: '21:00' },
 ]
 
-export function PinRowExpansion({ pin }: PinRowExpansionProps) {
+export const PinRowExpansion = memo(function PinRowExpansion({ pin, boards, boardsLoading }: PinRowExpansionProps) {
   const { t } = useTranslation()
   const locale = useDateLocale()
   const hasMetadata = !!pin.title && !!pin.description
@@ -43,6 +50,21 @@ export function PinRowExpansion({ pin }: PinRowExpansionProps) {
   )
 
   const updatePin = useUpdatePin()
+
+  const handleBoardChange = (value: string) => {
+    if (value === '__none__') {
+      updatePin.mutate({ id: pin.id, pinterest_board_id: null, pinterest_board_name: null })
+    } else {
+      const board = boards?.find((b) => b.pinterest_board_id === value)
+      if (board) {
+        updatePin.mutate({
+          id: pin.id,
+          pinterest_board_id: board.pinterest_board_id,
+          pinterest_board_name: board.name,
+        })
+      }
+    }
+  }
 
   const handleSchedule = () => {
     if (!date || !time) return
@@ -127,6 +149,38 @@ export function PinRowExpansion({ pin }: PinRowExpansionProps) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Board Selection */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide block mb-2">
+              {t('pinRowExpansion.board')}
+            </label>
+            {boards === undefined && !boardsLoading ? (
+              <p className="text-sm text-muted-foreground">
+                {t('pinRowExpansion.pinterestNotConnected')}
+              </p>
+            ) : (
+              <Select
+                value={pin.pinterest_board_id ?? '__none__'}
+                onValueChange={handleBoardChange}
+                disabled={updatePin.isPending || boardsLoading}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t('pinRowExpansion.placeholderBoard')} />
+                </SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  <SelectItem value="__none__">
+                    {t('pinRowExpansion.noBoard')}
+                  </SelectItem>
+                  {boards?.map((board) => (
+                    <SelectItem key={board.pinterest_board_id} value={board.pinterest_board_id}>
+                      {board.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Scheduling */}
@@ -228,4 +282,4 @@ export function PinRowExpansion({ pin }: PinRowExpansionProps) {
       </div>
     </div>
   )
-}
+})
