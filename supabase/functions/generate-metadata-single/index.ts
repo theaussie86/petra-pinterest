@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { generatePinMetadata, sanitizeLanguage, buildPinterestSeoSystemPrompt } from '../_shared/gemini.ts'
+import { extractKeyframe } from '../_shared/ffmpeg-client.ts'
 
 interface MetadataRequest {
   pin_id: string
@@ -80,6 +81,19 @@ Deno.serve(async (req) => {
     const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
     const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
+    // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
+    let inlineImageData: { data: string; mimeType: string } | undefined
+    if (mediaType === 'video') {
+      const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
+      // Deno-compatible chunked btoa
+      const chunkSize = 8192
+      let binary = ''
+      for (let i = 0; i < keyframe.bytes.length; i += chunkSize) {
+        binary += String.fromCharCode(...keyframe.bytes.subarray(i, i + chunkSize))
+      }
+      inlineImageData = { data: btoa(binary), mimeType: keyframe.contentType }
+    }
+
     // Generate metadata with Gemini (article may be null)
     const metadata = await generatePinMetadata(
       pin.blog_articles?.title ?? null,
@@ -87,7 +101,8 @@ Deno.serve(async (req) => {
       imageUrl,
       systemPrompt,
       apiKey,
-      mediaType
+      mediaType,
+      inlineImageData
     )
 
     // Insert generation history

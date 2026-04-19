@@ -7,7 +7,12 @@ import {
   generateCodeVerifier,
   generateCodeChallenge,
   generateState,
+  registerPinterestMedia,
+  uploadVideoToPinterestS3,
+  getPinterestMediaStatus,
+  waitForPinterestMediaReady,
 } from './pinterest-api'
+import type { PinterestMediaRegisterResponse } from '@/types/pinterest'
 
 // Store original env
 const originalEnv = { ...process.env }
@@ -373,5 +378,205 @@ describe('generateState', () => {
     const a = generateState()
     const b = generateState()
     expect(a).not.toBe(b)
+  })
+})
+
+// ─── Video upload flow ───────────────────────────────────────────
+
+describe('registerPinterestMedia', () => {
+  it('POSTs media_type=video and returns media_id + upload info', async () => {
+    const mockResponse = {
+      media_id: 'media-123',
+      media_type: 'video',
+      upload_url: 'https://pinterest-media-upload.s3-accelerate.amazonaws.com/',
+      upload_parameters: {
+        key: 'uploads/abc',
+        policy: 'signed-policy',
+        'x-amz-signature': 'sig',
+      },
+    }
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify(mockResponse), { status: 200 }),
+    )
+
+    const result = await registerPinterestMedia('access-token-xyz')
+
+    expect(result).toEqual(mockResponse)
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.pinterest.com/v5/media',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ media_type: 'video' }),
+      }),
+    )
+    const call = fetchSpy.mock.calls[0]!
+    const init = call[1] as RequestInit
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      'Bearer access-token-xyz',
+    )
+  })
+
+  it('throws when Pinterest returns an error', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ message: 'nope' }), { status: 500 }),
+    )
+    await expect(registerPinterestMedia('token')).rejects.toThrow(
+      'Pinterest API error: nope',
+    )
+  })
+})
+
+describe('uploadVideoToPinterestS3', () => {
+  const register: PinterestMediaRegisterResponse = {
+    media_id: 'media-42',
+    media_type: 'video',
+    upload_url: 'https://pinterest-media-upload.s3-accelerate.amazonaws.com/',
+    upload_parameters: {
+      key: 'uploads/xy',
+      policy: 'sig-policy',
+      'x-amz-signature': 'sig-abc',
+      'x-amz-date': '20260408T000000Z',
+    },
+  }
+
+  it('sends all upload_parameters as form fields followed by the file', async () => {
+    const fetchSpy = vi
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+
+    const bytes = new Uint8Array([0x00, 0x01, 0x02, 0x03])
+    await uploadVideoToPinterestS3(register, bytes, 'pin.mp4')
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe(register.upload_url)
+    expect(init.method).toBe('POST')
+
+    // Body must be FormData with all parameters and the file field last.
+    const body = init.body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    const keys = Array.from(body.keys())
+    expect(keys).toContain('key')
+    expect(keys).toContain('policy')
+    expect(keys).toContain('x-amz-signature')
+    expect(keys).toContain('x-amz-date')
+    expect(keys[keys.length - 1]).toBe('file')
+    expect(body.get('key')).toBe('uploads/xy')
+    expect(body.get('policy')).toBe('sig-policy')
+    const file = body.get('file') as File
+    expect(file).toBeInstanceOf(File)
+    expect(file.name).toBe('pin.mp4')
+  })
+
+  it('throws when S3 rejects the upload', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response('<Error>AccessDenied</Error>', {
+        status: 403,
+        statusText: 'Forbidden',
+      }),
+    )
+    await expect(
+      uploadVideoToPinterestS3(register, new Uint8Array([1, 2]), 'p.mp4'),
+    ).rejects.toThrow(/Pinterest S3 upload failed: 403/)
+  })
+})
+
+describe('getPinterestMediaStatus', () => {
+  it('GETs /media/{id} with bearer auth', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          media_id: 'm1',
+          media_type: 'video',
+          status: 'succeeded',
+        }),
+        { status: 200 },
+      ),
+    )
+
+    const result = await getPinterestMediaStatus('tok', 'm1')
+    expect(result.status).toBe('succeeded')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.pinterest.com/v5/media/m1',
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
+
+  it('url-encodes the media id', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          media_id: 'a/b',
+          media_type: 'video',
+          status: 'succeeded',
+        }),
+        { status: 200 },
+      ),
+    )
+    await getPinterestMediaStatus('tok', 'a/b')
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.pinterest.com/v5/media/a%2Fb',
+      expect.objectContaining({ method: 'GET' }),
+    )
+  })
+})
+
+describe('waitForPinterestMediaReady', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const responseFor = (status: string) =>
+    new Response(
+      JSON.stringify({ media_id: 'm', media_type: 'video', status }),
+      { status: 200 },
+    )
+
+  it('returns when status becomes succeeded on first poll', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(responseFor('succeeded'))
+
+    const result = await waitForPinterestMediaReady('tok', 'm')
+    expect(result.status).toBe('succeeded')
+  })
+
+  it('polls with backoff until succeeded', async () => {
+    vi.spyOn(global, 'fetch')
+      .mockResolvedValueOnce(responseFor('registered'))
+      .mockResolvedValueOnce(responseFor('processing'))
+      .mockResolvedValueOnce(responseFor('succeeded'))
+
+    const promise = waitForPinterestMediaReady('tok', 'm')
+    // Advance enough to cover the first two backoff steps (5s + 10s).
+    await vi.advanceTimersByTimeAsync(16_000)
+    const result = await promise
+    expect(result.status).toBe('succeeded')
+    expect(global.fetch).toHaveBeenCalledTimes(3)
+  })
+
+  it('throws when Pinterest reports failed', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(responseFor('failed'))
+    await expect(waitForPinterestMediaReady('tok', 'm-failed')).rejects.toThrow(
+      /failed for media_id=m-failed/,
+    )
+  })
+
+  it('throws when the deadline is exceeded before succeeded', async () => {
+    // Return a *fresh* Response each call — a single Response can only be
+    // read once, so mockResolvedValue would reuse an already-drained body.
+    vi.spyOn(global, 'fetch').mockImplementation(() =>
+      Promise.resolve(responseFor('processing')),
+    )
+
+    const promise = waitForPinterestMediaReady('tok', 'm', {
+      timeoutMs: 20_000,
+    })
+    const assertion = expect(promise).rejects.toThrow(
+      /did not reach 'succeeded' within 20000ms/,
+    )
+    await vi.advanceTimersByTimeAsync(120_000)
+    await assertion
   })
 })

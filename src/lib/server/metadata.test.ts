@@ -1,7 +1,7 @@
 import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn } from './metadata'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
-const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateWithFeedback, mockGetVaultKey } =
+const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateWithFeedback, mockGetVaultKey, mockExtractKeyframe } =
   vi.hoisted(() => ({
     mockServerClient: {
       from: vi.fn(),
@@ -27,6 +27,7 @@ const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateW
       alt_text: 'Feedback alt',
     }),
     mockGetVaultKey: vi.fn().mockResolvedValue('test-gemini-api-key'),
+    mockExtractKeyframe: vi.fn().mockResolvedValue({ bytes: new Uint8Array([1, 2, 3]), contentType: 'image/jpeg' }),
   }))
 
 vi.mock('@tanstack/react-start', () => ({
@@ -45,6 +46,10 @@ vi.mock('./supabase', () => ({
 vi.mock('@/lib/gemini/client', () => ({
   generatePinMetadata: (...args: any[]) => mockGenerateMetadata(...args),
   generatePinMetadataWithFeedback: (...args: any[]) => mockGenerateWithFeedback(...args),
+}))
+
+vi.mock('./ffmpeg-client', () => ({
+  extractKeyframe: (...args: any[]) => mockExtractKeyframe(...args),
 }))
 
 vi.mock('../../../server/lib/vault-helpers', () => ({
@@ -126,6 +131,7 @@ describe('generateMetadataFn', () => {
       expect.any(String),
       'test-gemini-api-key',
       'image',
+      undefined,
     )
 
     // Verify API key was fetched from vault
@@ -197,6 +203,7 @@ describe('generateMetadataFn', () => {
       expect.any(String),
       'test-gemini-api-key',
       'image',
+      undefined,
     )
     // API key fetched using pin.blog_project_id directly
     expect(mockGetVaultKey).toHaveBeenCalledWith(mockServiceClient, 'proj-1')
@@ -268,6 +275,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       'test-gemini-api-key',
       'image',
       expect.any(String),
+      undefined,
     )
 
     // Verify new generation was stored with feedback text
@@ -309,6 +317,7 @@ describe('generateMetadataWithFeedbackFn', () => {
       'test-gemini-api-key',
       'image',
       expect.any(String),
+      undefined,
     )
   })
 

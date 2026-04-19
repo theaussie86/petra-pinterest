@@ -33,6 +33,8 @@ export interface Pin {
   pinterest_board_name: string | null
   image_path: string | null
   media_type: 'image' | 'video'
+  cover_image_path: string | null
+  cover_keyframe_seconds: number | null
   title: string | null
   description: string | null
   alt_text: string | null
@@ -53,6 +55,8 @@ export interface PinInsert {
   blog_article_id: string | null
   image_path: string
   media_type?: 'image' | 'video'
+  cover_image_path?: string | null
+  cover_keyframe_seconds?: number | null
   pinterest_board_id?: string | null
   pinterest_board_name?: string | null
   title?: string | null
@@ -70,6 +74,8 @@ export interface PinUpdate {
   status?: PinStatus
   error_message?: string | null
   scheduled_at?: string | null
+  cover_image_path?: string | null
+  cover_keyframe_seconds?: number | null
 }
 
 export interface PinMetadataGeneration {

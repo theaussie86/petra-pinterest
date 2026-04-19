@@ -18,6 +18,8 @@ export function buildPin(overrides: Partial<Pin> = {}): Pin {
     pinterest_board_name: null,
     image_path: `test-tenant-id/${id}.png`,
     media_type: 'image',
+    cover_image_path: null,
+    cover_keyframe_seconds: 1,
     title: 'Test Pin Title',
     description: 'Test pin description',
     alt_text: 'Test alt text',

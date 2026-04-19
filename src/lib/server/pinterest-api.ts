@@ -6,6 +6,8 @@ import type {
   PinterestBoardsListResponse,
   PinterestPinResponse,
   PinterestCreatePinPayload,
+  PinterestMediaRegisterResponse,
+  PinterestMediaStatusResponse,
 } from '@/types/pinterest'
 
 const PINTEREST_API_BASE = 'https://api.pinterest.com/v5'
@@ -243,6 +245,120 @@ export async function createPinterestPin(
 
   // Should never reach here, but TypeScript needs this
   throw new Error('Unexpected error in createPinterestPin')
+}
+
+/**
+ * Register a video upload with Pinterest (step 1 of the video publish flow).
+ *
+ * Returns a one-time-use `media_id` plus the signed S3 URL and parameters
+ * needed to upload the actual video bytes. The upload parameters include
+ * short-lived AWS credentials — the upload must happen within a few minutes.
+ */
+export async function registerPinterestMedia(
+  accessToken: string,
+): Promise<PinterestMediaRegisterResponse> {
+  return pinterestFetch<PinterestMediaRegisterResponse>('/media', accessToken, {
+    method: 'POST',
+    body: JSON.stringify({ media_type: 'video' }),
+  })
+}
+
+/**
+ * Upload video bytes to Pinterest's S3 bucket (step 2 of the video publish flow).
+ *
+ * Pinterest returns a signed POST policy in `upload_parameters` that we must
+ * send as multipart/form-data to `upload_url`. All key/value pairs from
+ * `upload_parameters` go first, then the file itself as the `file` field —
+ * S3 signed POST requires this exact field order.
+ */
+export async function uploadVideoToPinterestS3(
+  register: PinterestMediaRegisterResponse,
+  videoBytes: Uint8Array,
+  filename: string,
+  contentType = 'video/mp4',
+): Promise<void> {
+  const form = new FormData()
+
+  // Append signed-POST parameters first (order matters for S3)
+  for (const [key, value] of Object.entries(register.upload_parameters)) {
+    form.append(key, value)
+  }
+
+  // The `file` field must come last and must contain the raw bytes.
+  const blob = new Blob([videoBytes as BlobPart], { type: contentType })
+  form.append('file', blob, filename)
+
+  const response = await fetch(register.upload_url, {
+    method: 'POST',
+    body: form,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
+    throw new Error(
+      `Pinterest S3 upload failed: ${response.status} ${response.statusText}${
+        errorText ? ` — ${errorText.slice(0, 300)}` : ''
+      }`,
+    )
+  }
+}
+
+/**
+ * Get the processing status of a registered Pinterest media upload (step 3).
+ */
+export async function getPinterestMediaStatus(
+  accessToken: string,
+  mediaId: string,
+): Promise<PinterestMediaStatusResponse> {
+  return pinterestFetch<PinterestMediaStatusResponse>(
+    `/media/${encodeURIComponent(mediaId)}`,
+    accessToken,
+    { method: 'GET' },
+  )
+}
+
+/**
+ * Poll GET /v5/media/{id} until Pinterest reports the upload as `succeeded`.
+ *
+ * Throws if the status becomes `failed` or if the poll loop exceeds the
+ * timeout. Backoff steps (in milliseconds): 5s, 10s, 15s, 30s, 30s, 30s, ...
+ * Total default timeout: 5 minutes, which covers realistic MP4 processing
+ * times for pin-sized clips (<= ~50 MB).
+ */
+export async function waitForPinterestMediaReady(
+  accessToken: string,
+  mediaId: string,
+  options: { timeoutMs?: number; signal?: AbortSignal } = {},
+): Promise<PinterestMediaStatusResponse> {
+  const timeoutMs = options.timeoutMs ?? 5 * 60 * 1000
+  const deadline = Date.now() + timeoutMs
+  const backoffSequenceMs = [5_000, 10_000, 15_000, 30_000]
+  let step = 0
+
+  while (true) {
+    if (options.signal?.aborted) {
+      throw new Error('waitForPinterestMediaReady aborted')
+    }
+
+    const status = await getPinterestMediaStatus(accessToken, mediaId)
+
+    if (status.status === 'succeeded') {
+      return status
+    }
+    if (status.status === 'failed') {
+      throw new Error(`Pinterest media upload failed for media_id=${mediaId}`)
+    }
+
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `Pinterest media upload did not reach 'succeeded' within ${timeoutMs}ms (last status: ${status.status})`,
+      )
+    }
+
+    const delay = backoffSequenceMs[Math.min(step, backoffSequenceMs.length - 1)]!
+    step++
+    await new Promise((resolve) => setTimeout(resolve, delay))
+  }
 }
 
 /**
