@@ -124,6 +124,19 @@ function PinDetail() {
                       </p>
                     </div>
 
+                    {/* Video cover keyframe (video pins only) */}
+                    {pin.media_type === 'video' && (
+                      <div>
+                        <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.coverKeyframe')}</h3>
+                        <p className="text-sm text-slate-700">
+                          {pin.cover_image_path
+                            ? <span className="text-blue-600">{t('common.customImage')}</span>
+                            : `${pin.cover_keyframe_seconds ?? 1}s`
+                          }
+                        </p>
+                      </div>
+                    )}
+
                     {/* Andere URL */}
                     <div>
                       <h3 className="text-xs font-medium text-slate-500 uppercase mb-1">{t('pinDetail.alternateUrl')}</h3>

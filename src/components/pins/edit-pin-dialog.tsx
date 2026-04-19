@@ -54,6 +54,7 @@ const editPinSchema = z.object({
   alternate_url: z.string().url('Ungültige URL').or(z.literal('')).optional(),
   pinterest_board_id: z.string(),
   status: z.string(),
+  cover_keyframe_seconds: z.number().int().min(0).optional(),
 })
 
 type EditPinFormData = z.infer<typeof editPinSchema>
@@ -82,6 +83,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
       alternate_url: '',
       pinterest_board_id: '',
       status: 'draft',
+      cover_keyframe_seconds: 1,
     },
   })
 
@@ -107,6 +109,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         alternate_url: pin.alternate_url || '',
         pinterest_board_id: pin.pinterest_board_id || '__none__',
         status: pin.status,
+        cover_keyframe_seconds: pin.cover_keyframe_seconds ?? 1,
       })
     }
   }, [open, pin, reset])
@@ -125,6 +128,9 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         pinterest_board_id: selectedBoard?.pinterest_board_id || null,
         pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
+        ...(pin.media_type === 'video' && {
+          cover_keyframe_seconds: data.cover_keyframe_seconds ?? 1,
+        }),
       })
       onOpenChange(false)
     } catch (error) {
@@ -201,6 +207,24 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
               <p className="text-sm text-red-600">{errors.alternate_url.message}</p>
             )}
           </div>
+
+          {pin.media_type === 'video' && (
+            <div className="space-y-2">
+              <Label htmlFor="edit-cover-keyframe">{t('editPin.fieldCoverKeyframe')}</Label>
+              <Input
+                id="edit-cover-keyframe"
+                type="number"
+                min={0}
+                {...register('cover_keyframe_seconds', { valueAsNumber: true })}
+                placeholder={t('editPin.placeholderCoverKeyframe')}
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-slate-500">{t('editPin.helpCoverKeyframe')}</p>
+              {errors.cover_keyframe_seconds && (
+                <p className="text-sm text-red-600">{errors.cover_keyframe_seconds.message}</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="edit-board">{t('editPin.fieldBoard')}</Label>

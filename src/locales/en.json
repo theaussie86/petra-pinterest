@@ -16,7 +16,8 @@
     "goHome": "Go home",
     "untitled": "Untitled",
     "notAssigned": "Not assigned",
-    "empty": "Not set"
+    "empty": "Not set",
+    "customImage": "Custom image"
   },
   "meta": {
     "title": "Pinfinity",
@@ -337,7 +338,10 @@
     "validationAltTextTooLong": "Alt text too long",
     "pinterestNotConnected": "Pinterest is not connected. Connect Pinterest in the project settings to select a board.",
     "searchBoard": "Search boards...",
-    "noBoardsFound": "No boards found."
+    "noBoardsFound": "No boards found.",
+    "fieldCoverKeyframe": "Cover Keyframe (seconds)",
+    "placeholderCoverKeyframe": "1",
+    "helpCoverKeyframe": "Pinterest extracts the cover thumbnail from this second of the video."
   },
   "imageUpload": {
     "dropMessage": "Drop files here or ",
@@ -502,6 +506,7 @@
     "unknownError": "An unknown error occurred.",
     "resetStatus": "Reset Status",
     "resetting": "Resetting...",
+    "coverKeyframe": "Cover Keyframe",
     "scheduledAt": "Scheduled"
   },
   "articleDetail": {

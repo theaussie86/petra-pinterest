@@ -1,8 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
-import { createPinterestPin } from './pinterest-api'
+import {
+  createPinterestPin,
+  registerPinterestMedia,
+  uploadVideoToPinterestS3,
+  waitForPinterestMediaReady,
+} from './pinterest-api'
 import { notifyPinError } from './notifications'
-import type { PinterestCreatePinPayload } from '@/types/pinterest'
+import type { PinterestCreatePinPayload, PinterestMediaSource } from '@/types/pinterest'
 
 interface PublishResult {
   success: boolean
@@ -56,16 +61,49 @@ export async function publishSinglePin(
 
     const accessToken = tokenData as string
 
-    // Get public URL for pin image
-    const imagePublicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${pin.image_path}`
+    const mediaPublicUrl = `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${pin.image_path}`
+
+    let mediaSource: PinterestMediaSource
+
+    if (pin.media_type === 'video') {
+      // Step 1: Register a media slot with Pinterest
+      const registration = await registerPinterestMedia(accessToken)
+
+      // Step 2: Fetch video bytes from Supabase Storage
+      const videoResponse = await fetch(mediaPublicUrl)
+      if (!videoResponse.ok) {
+        throw new Error(
+          `Failed to fetch video from storage: ${videoResponse.status} ${videoResponse.statusText}`,
+        )
+      }
+      const videoBytes = new Uint8Array(await videoResponse.arrayBuffer())
+      const filename = pin.image_path!.split('/').pop() ?? 'video.mp4'
+
+      // Step 3: Upload bytes to Pinterest's S3
+      await uploadVideoToPinterestS3(registration, videoBytes, filename)
+
+      // Step 4: Poll until Pinterest finishes processing
+      await waitForPinterestMediaReady(accessToken, registration.media_id)
+
+      // Step 5: Build video source with cover
+      const videoSource: Extract<PinterestMediaSource, { source_type: 'video_id' }> = {
+        source_type: 'video_id',
+        media_id: registration.media_id,
+      }
+      if (pin.cover_image_path) {
+        videoSource.cover_image_url = `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${pin.cover_image_path}`
+      } else {
+        videoSource.cover_image_key_frame_time = pin.cover_keyframe_seconds ?? 1
+      }
+      mediaSource = videoSource
+    } else {
+      mediaSource = { source_type: 'image_url', url: mediaPublicUrl }
+    }
 
     // Build Pinterest API payload
     const payload: PinterestCreatePinPayload = {
       board_id: pin.pinterest_board_id,
-      media_source: {
-        source_type: 'image_url',
-        url: imagePublicUrl,
-      },
+      media_source: mediaSource,
     }
 
     // Add optional fields (with length limits)
