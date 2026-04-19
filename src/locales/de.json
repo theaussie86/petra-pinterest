@@ -390,7 +390,9 @@
   "publishPin": {
     "published": "Veröffentlicht",
     "publishing": "Veröffentlichen...",
+    "publishingVideo": "Video wird hochgeladen...",
     "retrying": "Erneut versuchen...",
+    "retryingVideo": "Video wird hochgeladen...",
     "retryGenerate": "Erneut generieren",
     "retryPublish": "Erneut veröffentlichen",
     "publish": "Veröffentlichen",

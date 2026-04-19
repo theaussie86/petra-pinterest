@@ -18,6 +18,7 @@ interface PublishPinButtonProps {
   hasPinterestConnection: boolean
   hasPinterestBoard: boolean
   pinterestPinUrl?: string | null
+  mediaType?: 'image' | 'video'
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'default' | 'sm'
 }
@@ -28,6 +29,7 @@ export function PublishPinButton({
   hasPinterestConnection,
   hasPinterestBoard,
   pinterestPinUrl,
+  mediaType = 'image',
   variant = 'outline',
   size = 'sm',
 }: PublishPinButtonProps) {
@@ -71,7 +73,9 @@ export function PublishPinButton({
         className="border-red-300 text-red-600 hover:bg-red-50"
       >
         <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-        {publishMutation.isPending ? t('publishPin.retrying') : t('publishPin.retryPublish')}
+        {publishMutation.isPending
+          ? t(mediaType === 'video' ? 'publishPin.retryingVideo' : 'publishPin.retrying')
+          : t('publishPin.retryPublish')}
       </Button>
     )
   }
@@ -127,7 +131,9 @@ export function PublishPinButton({
       disabled={publishMutation.isPending}
     >
       <Send className="mr-1.5 h-3.5 w-3.5" />
-      {publishMutation.isPending ? t('publishPin.publishing') : t('publishPin.publish')}
+      {publishMutation.isPending
+        ? t(mediaType === 'video' ? 'publishPin.publishingVideo' : 'publishPin.publishing')
+        : t('publishPin.publish')}
     </Button>
   )
 }

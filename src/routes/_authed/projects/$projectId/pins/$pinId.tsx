@@ -187,6 +187,7 @@ function PinDetail() {
                     hasPinterestConnection={connectionData?.connected ?? false}
                     hasPinterestBoard={!!pin.pinterest_board_id}
                     pinterestPinUrl={pin.pinterest_pin_url}
+                    mediaType={pin.media_type ?? 'image'}
                   />
                   {pin.pinterest_pin_url && (
                     <a

@@ -390,7 +390,9 @@
   "publishPin": {
     "published": "Published",
     "publishing": "Publishing...",
+    "publishingVideo": "Uploading video...",
     "retrying": "Retrying...",
+    "retryingVideo": "Uploading video...",
     "retryGenerate": "Retry generation",
     "retryPublish": "Retry Publish",
     "publish": "Publish",
