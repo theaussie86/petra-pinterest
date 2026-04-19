@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
 // Use hoisted to define mocks that are accessed during module initialization
-const { mockSupabase, mockGeneratePinMetadata, capturedTaskConfig } = vi.hoisted(() => {
+const { mockSupabase, mockGeneratePinMetadata, mockExtractKeyframe, capturedTaskConfig } = vi.hoisted(() => {
   // Set env vars FIRST before any imports that use them
   process.env.SUPABASE_URL = 'https://test.supabase.co'
   process.env.SUPABASE_SECRET_KEY = 'test-service-key'
@@ -14,6 +14,7 @@ const { mockSupabase, mockGeneratePinMetadata, capturedTaskConfig } = vi.hoisted
       rpc: vi.fn(),
     },
     mockGeneratePinMetadata: vi.fn(),
+    mockExtractKeyframe: vi.fn(),
     capturedTaskConfig: { current: taskConfig },
   }
 })
@@ -24,6 +25,10 @@ vi.mock('@supabase/supabase-js', () => ({
 
 vi.mock('@/lib/gemini/client', () => ({
   generatePinMetadata: (...args: any[]) => mockGeneratePinMetadata(...args),
+}))
+
+vi.mock('@/lib/server/ffmpeg-client', () => ({
+  extractKeyframe: (...args: any[]) => mockExtractKeyframe(...args),
 }))
 
 vi.mock('@/lib/gemini/language', () => ({
@@ -75,6 +80,10 @@ describe('generateMetadataTask', () => {
     vi.clearAllMocks()
     mockGeneratePinMetadata.mockResolvedValue(mockMetadata)
     mockSupabase.rpc.mockResolvedValue({ data: 'test-api-key', error: null })
+    mockExtractKeyframe.mockResolvedValue({
+      bytes: new Uint8Array([1, 2, 3]),
+      contentType: 'image/jpeg',
+    })
   })
 
   describe('task configuration', () => {
@@ -117,7 +126,7 @@ describe('generateMetadataTask', () => {
       // Verify status was set to generating_metadata
       expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
 
-      // Verify Gemini was called with correct parameters
+      // Verify Gemini was called with correct parameters (image pin: no inlineImageData)
       expect(mockGeneratePinMetadata).toHaveBeenCalledWith(
         'Article Title',
         'Article Content',
@@ -125,6 +134,7 @@ describe('generateMetadataTask', () => {
         'test-system-prompt',
         'test-api-key',
         'image',
+        undefined,
       )
 
       // Verify pin was updated with metadata and status
@@ -161,6 +171,7 @@ describe('generateMetadataTask', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
+        undefined,
       )
     })
 
@@ -189,11 +200,12 @@ describe('generateMetadataTask', () => {
         expect.anything(),
         'test-api-key',
         'image',
+        undefined,
       )
     })
 
-    it('detects video media type from file extension', async () => {
-      const videoPin = { ...mockPin, image_path: 'tenant/video.mp4' }
+    it('detects video media type and extracts keyframe via ffmpeg', async () => {
+      const videoPin = { ...mockPin, image_path: 'tenant/video.mp4', cover_keyframe_seconds: 2 }
       const statusUpdateQb = createMockQueryBuilder({ data: null })
       const pinFetchQb = createMockQueryBuilder({ data: videoPin })
       const projectQb = createMockQueryBuilder({ data: { language: null } })
@@ -211,13 +223,21 @@ describe('generateMetadataTask', () => {
 
       await runTask(payload)
 
+      // Should have called extractKeyframe at the configured second
+      expect(mockExtractKeyframe).toHaveBeenCalledWith(
+        expect.stringContaining('video.mp4'),
+        { second: 2 },
+      )
+
+      // Should pass keyframe data to Gemini, not the raw video
       expect(mockGeneratePinMetadata).toHaveBeenCalledWith(
         expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        'video', // Should detect video type
+        'video',
+        { data: expect.any(String), mimeType: 'image/jpeg' },
       )
     })
 

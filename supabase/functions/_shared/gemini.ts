@@ -255,13 +255,14 @@ export async function generatePinMetadata(
   pinImageUrl: string,
   systemPrompt: string | undefined,
   apiKey: string,
-  mediaType: 'image' | 'video' = 'image'
+  mediaType: 'image' | 'video' = 'image',
+  inlineImageData?: { data: string; mimeType: string }
 ): Promise<GeneratedMetadata> {
   const articleSection = articleTitle
     ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
     : `\n\n[No article linked — generate metadata based solely on the image.]`
   const promptText = `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
-  const imageData = await fetchImageAsBase64(pinImageUrl)
+  const imageData = inlineImageData ?? await fetchImageAsBase64(pinImageUrl)
 
   const ai = new GoogleGenAI({ apiKey })
   const response = await ai.models.generateContent({

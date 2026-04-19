@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
+import { extractKeyframe } from '@/lib/server/ffmpeg-client'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
 import { sanitizeLanguage } from '@/lib/gemini/language'
 import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
@@ -67,6 +68,16 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
+      // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
+      let inlineImageData: { data: string; mimeType: string } | undefined
+      if (mediaType === 'video') {
+        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
+        inlineImageData = {
+          data: Buffer.from(keyframe.bytes).toString('base64'),
+          mimeType: keyframe.contentType,
+        }
+      }
+
       // Call Gemini to generate metadata (article may be null)
       const metadata = await generatePinMetadata(
         pin.blog_articles?.title ?? null,
@@ -74,7 +85,8 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
         imageUrl,
         systemPrompt,
         apiKey,
-        mediaType
+        mediaType,
+        inlineImageData
       )
 
       // Insert into pin_metadata_generations table
@@ -197,6 +209,16 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
+      // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
+      let inlineImageData: { data: string; mimeType: string } | undefined
+      if (mediaType === 'video') {
+        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
+        inlineImageData = {
+          data: Buffer.from(keyframe.bytes).toString('base64'),
+          mimeType: keyframe.contentType,
+        }
+      }
+
       // Call Gemini with feedback (multi-turn conversation, article may be null)
       const metadata = await generatePinMetadataWithFeedback(
         pin.blog_articles?.title ?? null,
@@ -210,7 +232,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
         data.feedback,
         apiKey,
         mediaType,
-        systemPrompt
+        systemPrompt,
+        inlineImageData
       )
 
       // Store new generation in pin_metadata_generations WITH feedback text

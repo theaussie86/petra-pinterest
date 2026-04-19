@@ -135,13 +135,14 @@ export async function generatePinMetadata(
   pinImageUrl: string,
   systemPrompt: string | undefined,
   apiKey: string,
-  mediaType: 'image' | 'video' = 'image'
+  mediaType: 'image' | 'video' = 'image',
+  inlineImageData?: { data: string; mimeType: string }
 ): Promise<GeneratedMetadata> {
   const articleSection = articleTitle
     ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
     : `\n\n[No article linked — generate metadata based solely on the image.]`
   const promptText = `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
-  const imageData = await fetchImageAsBase64(pinImageUrl)
+  const imageData = inlineImageData ?? await fetchImageAsBase64(pinImageUrl)
 
   const response = await getAiClient(apiKey).models.generateContent({
     model: 'gemini-2.5-flash',
@@ -182,13 +183,14 @@ export async function generatePinMetadataWithFeedback(
   feedback: string,
   apiKey: string,
   mediaType: 'image' | 'video' = 'image',
-  systemPrompt?: string
+  systemPrompt?: string,
+  inlineImageData?: { data: string; mimeType: string }
 ): Promise<GeneratedMetadata> {
   const articleSection = articleTitle
     ? `\n\nArticle Title: ${articleTitle}\n\nArticle Content: ${(articleContent ?? '').slice(0, 4000)}`
     : `\n\n[No article linked — generate metadata based solely on the image.]`
   const promptText = `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
-  const imageData = await fetchImageAsBase64(pinImageUrl)
+  const imageData = inlineImageData ?? await fetchImageAsBase64(pinImageUrl)
 
   const chat = getAiClient(apiKey).chats.create({
     model: 'gemini-2.5-flash',

@@ -1,6 +1,7 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { generatePinMetadata } from '@/lib/gemini/client'
+import { extractKeyframe } from '@/lib/server/ffmpeg-client'
 import { sanitizeLanguage } from '@/lib/gemini/language'
 import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
 import { notifyPinError } from '@/lib/server/notifications'
@@ -74,6 +75,16 @@ export const generateMetadataTask = task({
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
+      // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
+      let inlineImageData: { data: string; mimeType: string } | undefined
+      if (mediaType === 'video') {
+        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
+        inlineImageData = {
+          data: Buffer.from(keyframe.bytes).toString('base64'),
+          mimeType: keyframe.contentType,
+        }
+      }
+
       // Generate metadata with Gemini
       const metadata = await generatePinMetadata(
         pin.blog_articles?.title ?? null,
@@ -81,7 +92,8 @@ export const generateMetadataTask = task({
         imageUrl,
         systemPrompt,
         apiKey,
-        mediaType
+        mediaType,
+        inlineImageData
       )
 
       // Insert generation history
