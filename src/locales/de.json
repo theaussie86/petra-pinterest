@@ -452,7 +452,11 @@
   },
   "pinRowExpansion": {
     "description": "Beschreibung",
-    "altText": "Alternativtext"
+    "altText": "Alternativtext",
+    "board": "Board",
+    "noBoard": "Kein Board",
+    "placeholderBoard": "Board auswaehlen",
+    "pinterestNotConnected": "Pinterest nicht verbunden. Verbinde Pinterest in den Projekteinstellungen."
   },
   "pinTable": {
     "columns": "Spalten",

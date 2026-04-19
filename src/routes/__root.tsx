@@ -13,6 +13,7 @@ import { Toaster } from 'sonner'
 import { I18nextProvider, useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
 import { fetchUser } from '@/lib/server/auth'
+import { detectLanguageFn } from '@/lib/server/detect-language'
 import '@/styles.css'
 
 const queryClient = new QueryClient({
@@ -36,6 +37,18 @@ export const Route = createRootRoute({
   }),
   beforeLoad: async () => {
     const user = await fetchUser()
+
+    // Server-side only: detect language from cookie or Accept-Language header
+    // to avoid hydration mismatch with client-side LanguageDetector.
+    // The typeof check prevents detectLanguageFn from making an HTTP round-trip
+    // on every client-side navigation.
+    if (typeof window === 'undefined') {
+      const lang = await detectLanguageFn()
+      if (i18n.language !== lang) {
+        await i18n.changeLanguage(lang)
+      }
+    }
+
     return { user }
   },
   component: RootComponent,
