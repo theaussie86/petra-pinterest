@@ -9,7 +9,7 @@
  * `getModel(apiKey)`.
  */
 
-import { generateObject, type LanguageModel } from 'ai'
+import { generateObject, type LanguageModel, type ModelMessage } from 'ai'
 import { getModel } from './model'
 import { repairText } from './repair'
 import { ARTICLE_SCRAPER_SYSTEM_PROMPT, PINTEREST_SEO_SYSTEM_PROMPT } from './prompts'
@@ -97,38 +97,40 @@ function buildPinMetadataPromptText({
 }
 
 /**
- * Generate Pinterest-optimized metadata (title, description, alt text) for a pin.
- *
- * Builds a multimodal prompt — a text section plus a `Uint8Array` image part —
- * and wraps `generateObject` with the metadata Zod schema. Image and video pins
- * share the same image part (video pins pass the ffmpeg keyframe bytes). The
- * Google `thinkingBudget: 0` and `temperature: 0.7` behavior of the old path is
- * preserved via provider options; the control-char repair only fires on parse
- * failure (ADR 0002 / PRD #40).
+ * Build the multimodal user turn: the pin prompt text plus a `Uint8Array` image
+ * part. Image and video pins share this part (video pins pass keyframe bytes).
  */
-export async function generatePinMetadata({
+function buildPinMetadataUserMessage({
   article,
-  image,
   mediaType,
-  systemPrompt,
-  apiKey,
-  model,
-}: GeneratePinMetadataOptions): Promise<GeneratedMetadata> {
-  const promptText = buildPinMetadataPromptText({ article, mediaType })
+  image,
+}: Pick<GeneratePinMetadataOptions, 'article' | 'mediaType' | 'image'>): ModelMessage {
+  return {
+    role: 'user',
+    content: [
+      { type: 'text', text: buildPinMetadataPromptText({ article, mediaType }) },
+      { type: 'image', image: image.bytes, mediaType: image.mimeType },
+    ],
+  }
+}
 
+/**
+ * Shared `generateObject` call for both pin-metadata paths.
+ *
+ * Wraps the metadata Zod schema with the same temperature, token, and Google
+ * provider-option settings the old `@google/genai` path used (`thinkingBudget: 0`,
+ * `temperature: 0.7`); the control-char repair only fires on parse failure
+ * (ADR 0002 / PRD #40).
+ */
+async function generatePinMetadataObject(
+  messages: ModelMessage[],
+  { model, apiKey, systemPrompt }: Pick<GeneratePinMetadataOptions, 'model' | 'apiKey' | 'systemPrompt'>,
+): Promise<GeneratedMetadata> {
   const { object } = await generateObject({
     model: model ?? getModel(apiKey),
     schema: generatedMetadataSchema,
     system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: promptText },
-          { type: 'image', image: image.bytes, mediaType: image.mimeType },
-        ],
-      },
-    ],
+    messages,
     temperature: 0.7,
     maxOutputTokens: 8192,
     providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
@@ -136,6 +138,18 @@ export async function generatePinMetadata({
   })
 
   return object
+}
+
+/**
+ * Generate Pinterest-optimized metadata (title, description, alt text) for a pin.
+ *
+ * Sends a single multimodal user turn — a text section plus the image part — to
+ * the shared metadata generator.
+ */
+export async function generatePinMetadata(
+  options: GeneratePinMetadataOptions,
+): Promise<GeneratedMetadata> {
+  return generatePinMetadataObject([buildPinMetadataUserMessage(options)], options)
 }
 
 export interface GeneratePinMetadataWithFeedbackOptions extends GeneratePinMetadataOptions {
@@ -149,35 +163,17 @@ export interface GeneratePinMetadataWithFeedbackOptions extends GeneratePinMetad
  * Regenerate pin metadata from operator feedback.
  *
  * Replaces the old chat-session API with an explicit `[user, assistant, user]`
- * messages array: the original multimodal request (prompt text + the same
- * `Uint8Array` image part as the base path), the previous generation replayed
- * as JSON, then the feedback. Same schema, temperature, token, and Google
- * provider-option settings as `generatePinMetadata` (ADR 0002 / PRD #40).
+ * messages array: the original multimodal request, the previous generation
+ * replayed as JSON, then the feedback.
  */
-export async function generatePinMetadataWithFeedback({
-  article,
-  image,
-  mediaType,
-  systemPrompt,
-  apiKey,
-  previousMetadata,
-  feedback,
-  model,
-}: GeneratePinMetadataWithFeedbackOptions): Promise<GeneratedMetadata> {
-  const promptText = buildPinMetadataPromptText({ article, mediaType })
+export async function generatePinMetadataWithFeedback(
+  options: GeneratePinMetadataWithFeedbackOptions,
+): Promise<GeneratedMetadata> {
+  const { previousMetadata, feedback } = options
 
-  const { object } = await generateObject({
-    model: model ?? getModel(apiKey),
-    schema: generatedMetadataSchema,
-    system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: promptText },
-          { type: 'image', image: image.bytes, mediaType: image.mimeType },
-        ],
-      },
+  return generatePinMetadataObject(
+    [
+      buildPinMetadataUserMessage(options),
       {
         role: 'assistant',
         content: [{ type: 'text', text: JSON.stringify(previousMetadata) }],
@@ -189,11 +185,6 @@ export async function generatePinMetadataWithFeedback({
         ],
       },
     ],
-    temperature: 0.7,
-    maxOutputTokens: 8192,
-    providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
-    experimental_repairText: repairText,
-  })
-
-  return object
+    options,
+  )
 }
