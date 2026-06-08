@@ -6,7 +6,7 @@ import {
   getModel,
   getRepairFireCount,
   resetRepairFireCount,
-  sanitizeJsonResponse,
+  sanitizeJsonControlChars,
 } from './ai.ts'
 
 // Deno-side mirror of src/lib/ai/{model,repair,image,generate}.test.ts. The
@@ -57,17 +57,17 @@ describe('getModel() [edge mirror]', () => {
   })
 })
 
-describe('sanitizeJsonResponse() [edge mirror]', () => {
+describe('sanitizeJsonControlChars() [edge mirror]', () => {
   it('escapes literal control chars inside JSON strings so it parses', () => {
     const broken = '{"title":"Line 1\nLine 2"}'
     expect(() => JSON.parse(broken)).toThrow()
-    const repaired = sanitizeJsonResponse(broken)
+    const repaired = sanitizeJsonControlChars(broken)
     expect(JSON.parse(repaired)).toEqual({ title: 'Line 1\nLine 2' })
   })
 
   it('leaves already-valid JSON untouched', () => {
     const valid = JSON.stringify(metadata)
-    expect(sanitizeJsonResponse(valid)).toBe(valid)
+    expect(sanitizeJsonControlChars(valid)).toBe(valid)
   })
 })
 

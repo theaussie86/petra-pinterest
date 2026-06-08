@@ -62,7 +62,7 @@ export function resetRepairFireCount(): void {
  * - PARAGRAPH SEPARATOR U+2029 (valid JSON but breaks JS string literals)
  * - BOM U+FEFF at start of input (strip it)
  */
-export function sanitizeJsonResponse(text: string): string {
+export function sanitizeJsonControlChars(text: string): string {
   // Strip BOM if present at start
   let input = text
   if (input.charCodeAt(0) === 0xfeff) {
@@ -130,7 +130,7 @@ export function sanitizeJsonResponse(text: string): string {
  */
 export const repairText: RepairTextFunction = async ({ text }) => {
   repairFireCount++
-  return sanitizeJsonResponse(text)
+  return sanitizeJsonControlChars(text)
 }
 
 // --- Image bytes helper (mirror of lib/ai/image.ts) ---
