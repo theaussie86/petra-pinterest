@@ -148,7 +148,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         status: data.status as PinStatus,
         // synthetic_performer always implies ai_modified (defensive: the UI
         // lock already guarantees this, but persist the invariant regardless).
-        ai_modified: data.synthetic_performer ? true : data.ai_modified,
+        ai_modified: data.synthetic_performer || data.ai_modified,
         synthetic_performer: data.synthetic_performer,
         ...(pin.media_type === 'video' && {
           cover_keyframe_seconds: data.cover_keyframe_seconds ?? 1,
@@ -365,7 +365,7 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
               </Label>
               <Switch
                 id="edit-ai-modified"
-                checked={syntheticPerformer ? true : aiModified}
+                checked={syntheticPerformer || aiModified}
                 onCheckedChange={(checked) => setValue('ai_modified', checked)}
                 disabled={syntheticPerformer || isSubmitting}
               />
