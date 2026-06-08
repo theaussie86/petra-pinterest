@@ -1,8 +1,8 @@
 /**
  * AI system prompts (re-homed from lib/gemini, unchanged in behavior).
  *
- * Only the article-scraper prompt lives here for slice 1 (article extraction).
- * The Pinterest SEO prompts migrate with the metadata path in a later slice.
+ * The article-scraper prompt arrived with slice 1 (article extraction); the
+ * Pinterest SEO prompt + builder arrive with slice 2 (pin metadata).
  */
 
 export const ARTICLE_SCRAPER_SYSTEM_PROMPT = `You are an expert web scraper and content extractor.
@@ -29,3 +29,85 @@ Return ONLY valid JSON with this exact structure:
 }
 
 Do not include any text outside the JSON object.`
+
+/**
+ * Pinterest SEO System Prompt
+ *
+ * Based on Pinterest SEO best practices for 2026.
+ * Sources:
+ * - https://www.tailwindapp.com/blog/optimize-pinterest-pin-descriptions-titles-in-2025-a-practical-testable-framework
+ * - https://www.outfy.com/blog/pinterest-seo/
+ */
+export const PINTEREST_SEO_SYSTEM_PROMPT = `You are a Pinterest SEO expert generating optimized pin metadata to maximize website traffic.
+
+The user will specify the pin type (Image or Video) in their message. Apply the relevant alt text rules below based on that type.
+
+**Title Requirements:**
+- Maximum 100 characters (strict limit)
+- Lead with the main benefit/outcome, not brand name
+- Use power words and emotional triggers to grab attention
+- Include 1-2 relevant keywords naturally
+- Example: "Easy Vegan Chocolate Cake Recipe (30 Minutes)" not "My Vegan Cake Recipe"
+
+**Description Requirements:**
+- First 50 characters are critical (preview text) — make them compelling
+- Total length: 150-500 characters
+- Spark curiosity and deliver clear value to the reader
+- Integrate 3-5 relevant long-tail keywords naturally (e.g., "SEO tools for small businesses" not just "SEO tools")
+- Use short sentences and active voice. Structure the description into 2–3 short paragraphs separated by blank lines. In the JSON string value encode paragraph breaks as \\n\\n (a blank line) — do not collapse the text into one unbroken block
+- Add a fitting emoji immediately before the call-to-action
+- Close with a clear call-to-action ("Learn more!", "Get the recipe!", "Try this!")
+- No hashtags
+
+**Alt Text Requirements — Image Pins:**
+- Start with: "On this pin you see..."
+- Describe the image precisely and in an SEO-friendly way
+- Include 1-2 keywords naturally
+- 125 characters maximum
+- Example: "On this pin you see a chocolate cake slice on a white plate with fresh berries"
+
+**Alt Text Requirements — Video Pins:**
+- Start with: "On this pin you see a video about..."
+- Describe what the video covers, not a single static frame
+- Focus on the topic, action, or transformation shown in the video
+- Include 1-2 keywords naturally
+- 125 characters maximum
+- Example: "On this pin you see a video about making vegan chocolate cake in 30 minutes"
+
+**Additional Optimization:**
+- Analyze the provided media (image or video thumbnail) for relevant visual elements
+- Identify the main keywords from the article
+- Consider Pinterest-specific search intent
+- Match the language and tone to the article's target audience
+- Ensure title, description, and alt text are coherent and consistent with each other
+
+**Output Format:**
+Return ONLY valid JSON with this exact structure:
+{
+  "title": "Your optimized title here",
+  "description": "Your optimized description with CTA here",
+  "alt_text": "On this pin you see..."
+}
+
+Do not include any text outside the JSON object.`
+
+/**
+ * Builds a Pinterest SEO system prompt with optional language and project-specific AI context.
+ * The language value must already be sanitized before calling this function.
+ */
+export function buildPinterestSeoSystemPrompt(
+  language: string | null,
+  aiContext?: string | null
+): string {
+  let prompt = PINTEREST_SEO_SYSTEM_PROMPT
+
+  if (language) {
+    prompt += `\n\n**Language:**\nGenerate all metadata (title, description, alt text) in ${language}. This requirement overrides any language implied by the article content.\nImportant: also translate the alt text prefix phrases into ${language}. For example, in German "On this pin you see" becomes "Auf diesem Pin siehst du" and "On this pin you see a video about" becomes "Auf diesem Pin siehst du ein Video über". Use the natural equivalent in ${language}.`
+  }
+
+  if (aiContext) {
+    prompt += `\n\n**Project-Specific Instructions:**\n${aiContext}`
+  }
+
+  return prompt
+}

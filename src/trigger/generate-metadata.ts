@@ -1,9 +1,10 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
-import { generatePinMetadata } from '@/lib/gemini/client'
+import { generatePinMetadata } from '@/lib/ai/generate'
+import { fetchImageBytes } from '@/lib/ai/image'
 import { extractKeyframe } from '@/lib/server/ffmpeg-client'
-import { sanitizeLanguage } from '@/lib/gemini/language'
-import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
+import { sanitizeLanguage } from '@/lib/ai/language'
+import { buildPinterestSeoSystemPrompt } from '@/lib/ai/prompts'
 import { notifyPinError } from '@/lib/server/notifications'
 
 const supabaseUrl = process.env.SUPABASE_URL!
@@ -75,26 +76,23 @@ export const generateMetadataTask = task({
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
-      // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
-      let inlineImageData: { data: string; mimeType: string } | undefined
-      if (mediaType === 'video') {
-        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
-        inlineImageData = {
-          data: Buffer.from(keyframe.bytes).toString('base64'),
-          mimeType: keyframe.contentType,
-        }
-      }
+      // Fetch the image bytes ourselves so private/signed URLs stay reachable.
+      // For video pins: extract a keyframe and pass its bytes through the same part.
+      const image =
+        mediaType === 'video'
+          ? await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 }).then(
+              (keyframe) => ({ bytes: keyframe.bytes, mimeType: keyframe.contentType })
+            )
+          : await fetchImageBytes(imageUrl)
 
-      // Generate metadata with Gemini
-      const metadata = await generatePinMetadata(
-        pin.blog_articles?.title ?? null,
-        pin.blog_articles?.content ?? null,
-        imageUrl,
+      // Generate metadata via the AI SDK wrapper (article may be null)
+      const metadata = await generatePinMetadata({
+        article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
+        image,
+        mediaType,
         systemPrompt,
         apiKey,
-        mediaType,
-        inlineImageData
-      )
+      })
 
       // Insert generation history
       await supabase.from('pin_metadata_generations').insert({

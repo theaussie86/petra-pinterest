@@ -8,7 +8,7 @@
 
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
-import { PINTEREST_SEO_SYSTEM_PROMPT } from './prompts'
+import { PINTEREST_SEO_SYSTEM_PROMPT } from '@/lib/ai/prompts'
 
 function getAiClient(apiKey: string) {
   return new GoogleGenAI({ apiKey })

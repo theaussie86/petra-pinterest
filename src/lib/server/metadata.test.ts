@@ -1,7 +1,7 @@
 import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn } from './metadata'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
-const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateWithFeedback, mockGetVaultKey, mockExtractKeyframe } =
+const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateWithFeedback, mockGetVaultKey, mockExtractKeyframe, mockFetchImageBytes } =
   vi.hoisted(() => ({
     mockServerClient: {
       from: vi.fn(),
@@ -28,6 +28,7 @@ const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateW
     }),
     mockGetVaultKey: vi.fn().mockResolvedValue('test-gemini-api-key'),
     mockExtractKeyframe: vi.fn().mockResolvedValue({ bytes: new Uint8Array([1, 2, 3]), contentType: 'image/jpeg' }),
+    mockFetchImageBytes: vi.fn().mockResolvedValue({ bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' }),
   }))
 
 vi.mock('@tanstack/react-start', () => ({
@@ -43,8 +44,15 @@ vi.mock('./supabase', () => ({
   getSupabaseServiceClient: () => mockServiceClient,
 }))
 
-vi.mock('@/lib/gemini/client', () => ({
+vi.mock('@/lib/ai/generate', () => ({
   generatePinMetadata: (...args: any[]) => mockGenerateMetadata(...args),
+}))
+
+vi.mock('@/lib/ai/image', () => ({
+  fetchImageBytes: (...args: any[]) => mockFetchImageBytes(...args),
+}))
+
+vi.mock('@/lib/gemini/client', () => ({
   generatePinMetadataWithFeedback: (...args: any[]) => mockGenerateWithFeedback(...args),
 }))
 
@@ -74,6 +82,7 @@ beforeEach(() => {
     alt_text: 'Feedback alt',
   })
   mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
+  mockFetchImageBytes.mockResolvedValue({ bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' })
   mockServerClient.auth.getUser.mockResolvedValue({
     data: { user: { id: 'test-user-id' } },
     error: null,
@@ -123,15 +132,17 @@ describe('generateMetadataFn', () => {
     // Verify status was set to generating_metadata
     expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
 
-    // Verify Gemini was called with article content, image URL, and system prompt
-    expect(mockGenerateMetadata).toHaveBeenCalledWith(
-      'Article Title',
-      'Article Content',
+    // Verify the AI wrapper was called with article content, fetched image bytes, and system prompt
+    expect(mockGenerateMetadata).toHaveBeenCalledWith({
+      article: { title: 'Article Title', content: 'Article Content' },
+      image: { bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' },
+      mediaType: 'image',
+      systemPrompt: expect.any(String),
+      apiKey: 'test-gemini-api-key',
+    })
+    // Image bytes fetched from the public pin URL
+    expect(mockFetchImageBytes).toHaveBeenCalledWith(
       'https://test.supabase.co/storage/v1/object/public/pin-images/tenant/image.png',
-      expect.any(String),
-      'test-gemini-api-key',
-      'image',
-      undefined,
     )
 
     // Verify API key was fetched from vault
@@ -195,16 +206,15 @@ describe('generateMetadataFn', () => {
 
     await generateMetadataFn({ data: { pin_id: 'pin-2' } })
 
-    // Gemini called with null title and content (image-only generation)
+    // AI wrapper called with no article title/content (image-only generation)
     expect(mockGenerateMetadata).toHaveBeenCalledWith(
-      null,
-      null,
-      expect.stringContaining('pin-images'),
-      expect.any(String),
-      'test-gemini-api-key',
-      'image',
-      undefined,
+      expect.objectContaining({
+        article: { title: undefined, content: undefined },
+        mediaType: 'image',
+        apiKey: 'test-gemini-api-key',
+      }),
     )
+    expect(mockFetchImageBytes).toHaveBeenCalledWith(expect.stringContaining('pin-images'))
     // API key fetched using pin.blog_project_id directly
     expect(mockGetVaultKey).toHaveBeenCalledWith(mockServiceClient, 'proj-1')
   })

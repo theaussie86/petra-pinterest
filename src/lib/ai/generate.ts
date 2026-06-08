@@ -12,10 +12,17 @@
 import { generateObject, type LanguageModel } from 'ai'
 import { getModel } from './model'
 import { repairText } from './repair'
-import { ARTICLE_SCRAPER_SYSTEM_PROMPT } from './prompts'
-import { scrapedArticleSchema, type ScrapedArticle } from './schemas'
+import { ARTICLE_SCRAPER_SYSTEM_PROMPT, PINTEREST_SEO_SYSTEM_PROMPT } from './prompts'
+import {
+  scrapedArticleSchema,
+  generatedMetadataSchema,
+  type ScrapedArticle,
+  type GeneratedMetadata,
+} from './schemas'
+import type { ImageBytes } from './image'
 
 const MAX_HTML_CHARS = 100000
+const MAX_ARTICLE_CONTENT_CHARS = 4000
 
 export interface GenerateArticleOptions {
   html: string
@@ -46,6 +53,85 @@ export async function generateArticleFromHtml({
     system: ARTICLE_SCRAPER_SYSTEM_PROMPT,
     prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
     temperature: 0.1,
+    experimental_repairText: repairText,
+  })
+
+  return object
+}
+
+export interface PinMetadataArticle {
+  title?: string | null
+  content?: string | null
+}
+
+export interface GeneratePinMetadataOptions {
+  /** Linked article context; null/undefined (or no title) → image-only branch. */
+  article?: PinMetadataArticle | null
+  /** Pre-fetched image bytes. Video pins pass the ffmpeg keyframe bytes here. */
+  image: ImageBytes
+  mediaType: 'image' | 'video'
+  /** Language- and aiContext-aware system prompt (built by the caller). */
+  systemPrompt?: string
+  apiKey: string
+  /** Injected model for tests; defaults to `getModel(apiKey)`. */
+  model?: LanguageModel
+}
+
+/**
+ * Build the multimodal user prompt text for pin metadata.
+ *
+ * Mirrors the former `@google/genai` path: a pin-type line plus the article
+ * section, or the image-only branch when no article (title) is linked.
+ */
+function buildPinMetadataPromptText({
+  article,
+  mediaType,
+}: {
+  article?: PinMetadataArticle | null
+  mediaType: 'image' | 'video'
+}): string {
+  const articleSection = article?.title
+    ? `\n\nArticle Title: ${article.title}\n\nArticle Content: ${(article.content ?? '').slice(0, MAX_ARTICLE_CONTENT_CHARS)}`
+    : `\n\n[No article linked — generate metadata based solely on the image.]`
+  return `Pin Type: ${mediaType === 'video' ? 'Video' : 'Image'}${articleSection}`
+}
+
+/**
+ * Generate Pinterest-optimized metadata (title, description, alt text) for a pin.
+ *
+ * Builds a multimodal prompt — a text section plus a `Uint8Array` image part —
+ * and wraps `generateObject` with the metadata Zod schema. Image and video pins
+ * share the same image part (video pins pass the ffmpeg keyframe bytes). The
+ * Google `thinkingBudget: 0` and `temperature: 0.7` behavior of the old path is
+ * preserved via provider options; the control-char repair only fires on parse
+ * failure (ADR 0002 / PRD #40).
+ */
+export async function generatePinMetadata({
+  article,
+  image,
+  mediaType,
+  systemPrompt,
+  apiKey,
+  model,
+}: GeneratePinMetadataOptions): Promise<GeneratedMetadata> {
+  const promptText = buildPinMetadataPromptText({ article, mediaType })
+
+  const { object } = await generateObject({
+    model: model ?? getModel(apiKey),
+    schema: generatedMetadataSchema,
+    system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: promptText },
+          { type: 'image', image: image.bytes, mediaType: image.mimeType },
+        ],
+      },
+    ],
+    temperature: 0.7,
+    maxOutputTokens: 8192,
+    providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
     experimental_repairText: repairText,
   })
 

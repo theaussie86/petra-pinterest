@@ -1,11 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
-import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/gemini/client'
+import { generatePinMetadata } from '@/lib/ai/generate'
+import { fetchImageBytes } from '@/lib/ai/image'
+import { generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { extractKeyframe } from '@/lib/server/ffmpeg-client'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
-import { sanitizeLanguage } from '@/lib/gemini/language'
-import { buildPinterestSeoSystemPrompt } from '@/lib/gemini/prompts'
+import { sanitizeLanguage } from '@/lib/ai/language'
+import { buildPinterestSeoSystemPrompt } from '@/lib/ai/prompts'
 import { isTriggerDevEnabled } from '@/lib/config/feature-flags'
 import type { generateMetadataTask } from '@/trigger/generate-metadata'
 
@@ -68,26 +70,23 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
       const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
       const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
-      // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
-      let inlineImageData: { data: string; mimeType: string } | undefined
-      if (mediaType === 'video') {
-        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
-        inlineImageData = {
-          data: Buffer.from(keyframe.bytes).toString('base64'),
-          mimeType: keyframe.contentType,
-        }
-      }
+      // Fetch the image bytes ourselves so private/signed URLs stay reachable.
+      // For video pins: extract a keyframe and pass its bytes through the same part.
+      const image =
+        mediaType === 'video'
+          ? await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 }).then(
+              (keyframe) => ({ bytes: keyframe.bytes, mimeType: keyframe.contentType })
+            )
+          : await fetchImageBytes(imageUrl)
 
-      // Call Gemini to generate metadata (article may be null)
-      const metadata = await generatePinMetadata(
-        pin.blog_articles?.title ?? null,
-        pin.blog_articles?.content ?? null,
-        imageUrl,
+      // Generate metadata via the AI SDK wrapper (article may be null)
+      const metadata = await generatePinMetadata({
+        article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
+        image,
+        mediaType,
         systemPrompt,
         apiKey,
-        mediaType,
-        inlineImageData
-      )
+      })
 
       // Insert into pin_metadata_generations table
       await supabase.from('pin_metadata_generations').insert({
