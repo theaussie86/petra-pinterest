@@ -10,6 +10,7 @@ import {
   type PinterestMediaSource,
 } from '../_shared/pinterest-api.ts'
 import { notifyPinError } from '../_shared/notifications.ts'
+import { buildAiDisclosures } from '../_shared/ai-disclosure.ts'
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req)
@@ -191,6 +192,18 @@ Deno.serve(async (req) => {
           const linkUrl = pin.alternate_url ?? pin.blog_articles?.url
           if (linkUrl) {
             payload.link = linkUrl
+          }
+
+          // AI disclosure (Pinterest Pflicht-Kennzeichnung): map the persisted
+          // booleans to ai_disclosures.values; omit the field entirely when
+          // neither applies. DB defaults (ai_modified=true) make this the
+          // default-on case. Mirrors the manual publish path (publishSinglePin).
+          const aiDisclosures = buildAiDisclosures(
+            pin.ai_modified ?? true,
+            pin.synthetic_performer ?? false
+          )
+          if (aiDisclosures) {
+            payload.ai_disclosures = aiDisclosures
           }
 
           // Call Pinterest API
