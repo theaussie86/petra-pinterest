@@ -23,6 +23,8 @@ export function buildPin(overrides: Partial<Pin> = {}): Pin {
     title: 'Test Pin Title',
     description: 'Test pin description',
     alt_text: 'Test alt text',
+    ai_modified: true,
+    synthetic_performer: false,
     alternate_url: null,
     status: 'draft',
     error_message: null,
