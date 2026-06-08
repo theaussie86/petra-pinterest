@@ -34,6 +34,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { AlertTriangle, Check, ChevronsUpDown } from 'lucide-react'
@@ -55,6 +56,8 @@ const editPinSchema = z.object({
   pinterest_board_id: z.string(),
   status: z.string(),
   cover_keyframe_seconds: z.number().int().min(0).optional(),
+  ai_modified: z.boolean(),
+  synthetic_performer: z.boolean(),
 })
 
 type EditPinFormData = z.infer<typeof editPinSchema>
@@ -84,6 +87,8 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
       pinterest_board_id: '',
       status: 'draft',
       cover_keyframe_seconds: 1,
+      ai_modified: true,
+      synthetic_performer: false,
     },
   })
 
@@ -98,6 +103,17 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
 
   const currentStatus = watch('status')
   const currentBoardId = watch('pinterest_board_id')
+  const aiModified = watch('ai_modified')
+  const syntheticPerformer = watch('synthetic_performer')
+
+  // synthetic_performer implies ai_modified: enabling it forces ai_modified on
+  // and locks the switch; disabling it releases the lock.
+  const handleSyntheticChange = (checked: boolean) => {
+    setValue('synthetic_performer', checked)
+    if (checked) {
+      setValue('ai_modified', true)
+    }
+  }
 
   // Reset form when dialog opens or pin changes
   useEffect(() => {
@@ -110,6 +126,8 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         pinterest_board_id: pin.pinterest_board_id || '__none__',
         status: pin.status,
         cover_keyframe_seconds: pin.cover_keyframe_seconds ?? 1,
+        ai_modified: pin.ai_modified,
+        synthetic_performer: pin.synthetic_performer,
       })
     }
   }, [open, pin, reset])
@@ -128,6 +146,10 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
         pinterest_board_id: selectedBoard?.pinterest_board_id || null,
         pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
+        // synthetic_performer always implies ai_modified (defensive: the UI
+        // lock already guarantees this, but persist the invariant regardless).
+        ai_modified: data.synthetic_performer ? true : data.ai_modified,
+        synthetic_performer: data.synthetic_performer,
         ...(pin.media_type === 'video' && {
           cover_keyframe_seconds: data.cover_keyframe_seconds ?? 1,
         }),
@@ -331,6 +353,39 @@ export function EditPinDialog({ open, onOpenChange, pin, projectId }: EditPinDia
                 })}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-3 rounded-md border border-slate-200 p-3">
+            <Label className="text-sm font-medium">
+              {t('editPin.aiDisclosureSection')}
+            </Label>
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="edit-ai-modified" className="font-normal">
+                {t('editPin.aiModifiedLabel')}
+              </Label>
+              <Switch
+                id="edit-ai-modified"
+                checked={syntheticPerformer ? true : aiModified}
+                onCheckedChange={(checked) => setValue('ai_modified', checked)}
+                disabled={syntheticPerformer || isSubmitting}
+              />
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="edit-synthetic-performer" className="font-normal">
+                  {t('editPin.syntheticPerformerLabel')}
+                </Label>
+                <p className="text-xs text-slate-500">
+                  {t('editPin.syntheticPerformerHint')}
+                </p>
+              </div>
+              <Switch
+                id="edit-synthetic-performer"
+                checked={syntheticPerformer}
+                onCheckedChange={handleSyntheticChange}
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
 
           <DialogFooter>

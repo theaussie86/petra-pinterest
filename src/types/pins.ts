@@ -71,6 +71,8 @@ export interface PinUpdate {
   description?: string | null
   alt_text?: string | null
   alternate_url?: string | null
+  ai_modified?: boolean
+  synthetic_performer?: boolean
   pinterest_board_id?: string | null
   pinterest_board_name?: string | null
   status?: PinStatus

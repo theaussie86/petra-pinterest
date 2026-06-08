@@ -149,6 +149,28 @@ describe('updatePin()', () => {
     expect(qb.eq).toHaveBeenCalledWith('id', 'pin-1')
     expect(result).toEqual(updated)
   })
+
+  it('persists AI disclosure booleans and round-trips them on load', async () => {
+    // Save: synthetic performer on, ai_modified on
+    const stored = buildPin({ id: 'pin-1', ai_modified: true, synthetic_performer: true })
+    const qb = createMockQueryBuilder({ data: stored })
+    mockFrom.mockReturnValue(qb as any)
+
+    const result = await updatePin({
+      id: 'pin-1',
+      ai_modified: true,
+      synthetic_performer: true,
+    })
+
+    // Both booleans are written to the pins row...
+    expect(qb.update).toHaveBeenCalledWith({
+      ai_modified: true,
+      synthetic_performer: true,
+    })
+    // ...and survive the load round-trip.
+    expect(result.ai_modified).toBe(true)
+    expect(result.synthetic_performer).toBe(true)
+  })
 })
 
 describe('deletePin()', () => {
