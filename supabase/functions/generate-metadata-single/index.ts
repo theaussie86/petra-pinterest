@@ -1,7 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
-import { generatePinMetadata, sanitizeLanguage, buildPinterestSeoSystemPrompt } from '../_shared/gemini.ts'
+import {
+  generatePinMetadata,
+  fetchImageBytes,
+  sanitizeLanguage,
+  buildPinterestSeoSystemPrompt,
+  type ImageBytes,
+} from '../_shared/ai.ts'
 import { extractKeyframe } from '../_shared/ffmpeg-client.ts'
 
 interface MetadataRequest {
@@ -81,29 +87,24 @@ Deno.serve(async (req) => {
     const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
     const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
 
-    // For video pins: extract a keyframe and pass it to Gemini instead of the raw video
-    let inlineImageData: { data: string; mimeType: string } | undefined
+    // Fetch the image bytes ourselves so private/signed URLs stay reachable.
+    // For video pins: extract a keyframe and pass its bytes through the same part.
+    let image: ImageBytes
     if (mediaType === 'video') {
       const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
-      // Deno-compatible chunked btoa
-      const chunkSize = 8192
-      let binary = ''
-      for (let i = 0; i < keyframe.bytes.length; i += chunkSize) {
-        binary += String.fromCharCode(...keyframe.bytes.subarray(i, i + chunkSize))
-      }
-      inlineImageData = { data: btoa(binary), mimeType: keyframe.contentType }
+      image = { bytes: keyframe.bytes, mimeType: keyframe.contentType }
+    } else {
+      image = await fetchImageBytes(imageUrl)
     }
 
-    // Generate metadata with Gemini (article may be null)
-    const metadata = await generatePinMetadata(
-      pin.blog_articles?.title ?? null,
-      pin.blog_articles?.content ?? null,
-      imageUrl,
+    // Generate metadata via the AI SDK wrapper (article may be null)
+    const metadata = await generatePinMetadata({
+      article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
+      image,
+      mediaType,
       systemPrompt,
       apiKey,
-      mediaType,
-      inlineImageData
-    )
+    })
 
     // Insert generation history
     await supabase.from('pin_metadata_generations').insert({
