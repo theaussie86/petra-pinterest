@@ -38,6 +38,8 @@ export interface Pin {
   title: string | null
   description: string | null
   alt_text: string | null
+  ai_modified: boolean
+  synthetic_performer: boolean
   status: PinStatus
   error_message: string | null
   previous_status: PinStatus | null

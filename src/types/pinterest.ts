@@ -82,6 +82,12 @@ export type PinterestMediaSource =
       is_standard?: boolean
     }
 
+/**
+ * AI disclosure enum values accepted by the Pinterest Pin API (`POST /v5/pins`).
+ * UPPERCASE on the Pin API — the Catalog API uses lowercase variants; do not mix.
+ */
+export type AiDisclosureItem = 'AI_MODIFIED' | 'SYNTHETIC_PERFORMER'
+
 export interface PinterestCreatePinPayload {
   board_id: string
   title?: string
@@ -89,6 +95,8 @@ export interface PinterestCreatePinPayload {
   alt_text?: string
   link?: string
   media_source: PinterestMediaSource
+  /** Omitted entirely when no disclosure applies (see buildAiDisclosures). */
+  ai_disclosures?: { values: AiDisclosureItem[] }
 }
 
 /** Response from `POST /v5/media` (media upload registration) */

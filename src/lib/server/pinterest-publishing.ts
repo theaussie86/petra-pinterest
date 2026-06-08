@@ -7,6 +7,7 @@ import {
   waitForPinterestMediaReady,
 } from './pinterest-api'
 import { notifyPinError } from './notifications'
+import { buildAiDisclosures } from '@/lib/ai-disclosure'
 import type { PinterestCreatePinPayload, PinterestMediaSource } from '@/types/pinterest'
 
 interface PublishResult {
@@ -119,6 +120,17 @@ export async function publishSinglePin(
     const linkUrl = pin.alternate_url ?? pin.blog_articles?.url
     if (linkUrl) {
       payload.link = linkUrl
+    }
+
+    // AI disclosure (Pinterest Pflicht-Kennzeichnung): map the persisted
+    // booleans to ai_disclosures.values; omit the field entirely when neither
+    // applies. DB defaults (ai_modified=true) make this the default-on case.
+    const aiDisclosures = buildAiDisclosures(
+      pin.ai_modified ?? true,
+      pin.synthetic_performer ?? false,
+    )
+    if (aiDisclosures) {
+      payload.ai_disclosures = aiDisclosures
     }
 
     // Call Pinterest API

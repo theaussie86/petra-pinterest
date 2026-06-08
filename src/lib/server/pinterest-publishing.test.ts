@@ -102,6 +102,65 @@ describe('publishSinglePin()', () => {
     }))
   })
 
+  it('sends ai_disclosures with AI_MODIFIED when ai_modified is set (default case)', async () => {
+    const { supabase, serviceClient } = createMockClients()
+
+    const pin = buildPinWithRelations({ ai_modified: true, synthetic_performer: false })
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const successUpdateQb = createMockQueryBuilder({ data: null })
+
+    supabase.from
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(successUpdateQb as any)
+
+    serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    await publishSinglePin(supabase as any, serviceClient as any, 'pin-1')
+
+    const payload = mockCreatePinterestPin.mock.calls[0][1]
+    expect(payload.ai_disclosures).toEqual({ values: ['AI_MODIFIED'] })
+  })
+
+  it('sends both disclosure values when synthetic_performer is set', async () => {
+    const { supabase, serviceClient } = createMockClients()
+
+    const pin = buildPinWithRelations({ ai_modified: true, synthetic_performer: true })
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const successUpdateQb = createMockQueryBuilder({ data: null })
+
+    supabase.from
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(successUpdateQb as any)
+
+    serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    await publishSinglePin(supabase as any, serviceClient as any, 'pin-1')
+
+    const payload = mockCreatePinterestPin.mock.calls[0][1]
+    expect(payload.ai_disclosures).toEqual({
+      values: ['AI_MODIFIED', 'SYNTHETIC_PERFORMER'],
+    })
+  })
+
+  it('omits ai_disclosures when both disclosure booleans are false', async () => {
+    const { supabase, serviceClient } = createMockClients()
+
+    const pin = buildPinWithRelations({ ai_modified: false, synthetic_performer: false })
+    const fetchQb = createMockQueryBuilder({ data: pin })
+    const successUpdateQb = createMockQueryBuilder({ data: null })
+
+    supabase.from
+      .mockReturnValueOnce(fetchQb as any)
+      .mockReturnValueOnce(successUpdateQb as any)
+
+    serviceClient.rpc.mockResolvedValueOnce({ data: 'token', error: null })
+
+    await publishSinglePin(supabase as any, serviceClient as any, 'pin-1')
+
+    const payload = mockCreatePinterestPin.mock.calls[0][1]
+    expect(payload.ai_disclosures).toBeUndefined()
+  })
+
   it('returns error when pin has no board assigned', async () => {
     const { supabase, serviceClient } = createMockClients()
 
