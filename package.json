@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "release": "node scripts/release.cjs",
+    "sandcastle": "npx tsx .sandcastle/main.ts",
     "test:notifications": "node --env-file=.env.local scripts/test-error-notification.mjs"
   },
   "dependencies": {
@@ -59,6 +60,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@ai-hero/sandcastle": "^0.7.0",
     "@tanstack/devtools-vite": "^0.3.11",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
