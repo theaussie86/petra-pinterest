@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
-import { generateArticleFromHtml } from '../_shared/gemini.ts'
+import { generateArticleFromHtml } from '../_shared/ai.ts'
 
 interface ScrapeRequest {
   blog_project_id: string
@@ -90,8 +90,12 @@ Deno.serve(async (req) => {
     const html = await response.text()
     const cleanedHtml = cleanHtml(html)
 
-    // Extract article with Gemini
-    const article = await generateArticleFromHtml(cleanedHtml, url, apiKey)
+    // Extract article via the AI SDK wrapper
+    const article = await generateArticleFromHtml({
+      html: cleanedHtml,
+      url,
+      apiKey,
+    })
 
     // Upsert into blog_articles
     // Gemini may return "null" as a string when no date is found
