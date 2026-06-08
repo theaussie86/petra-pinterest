@@ -341,7 +341,11 @@
     "noBoardsFound": "Keine Boards gefunden.",
     "fieldCoverKeyframe": "Cover-Keyframe (Sekunden)",
     "placeholderCoverKeyframe": "1",
-    "helpCoverKeyframe": "Pinterest extrahiert das Cover-Bild aus dieser Sekunde des Videos."
+    "helpCoverKeyframe": "Pinterest extrahiert das Cover-Bild aus dieser Sekunde des Videos.",
+    "aiDisclosureSection": "KI-Kennzeichnung",
+    "aiModifiedLabel": "Mit KI erstellt/bearbeitet",
+    "syntheticPerformerLabel": "KI-generierte Person",
+    "syntheticPerformerHint": "Nur wenn das Bild eine KI-erfundene Person zeigt"
   },
   "imageUpload": {
     "dropMessage": "Dateien hier ablegen oder ",

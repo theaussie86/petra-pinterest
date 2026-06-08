@@ -341,7 +341,11 @@
     "noBoardsFound": "No boards found.",
     "fieldCoverKeyframe": "Cover Keyframe (seconds)",
     "placeholderCoverKeyframe": "1",
-    "helpCoverKeyframe": "Pinterest extracts the cover thumbnail from this second of the video."
+    "helpCoverKeyframe": "Pinterest extracts the cover thumbnail from this second of the video.",
+    "aiDisclosureSection": "AI labeling",
+    "aiModifiedLabel": "Created/edited with AI",
+    "syntheticPerformerLabel": "AI-generated person",
+    "syntheticPerformerHint": "Only if the image shows an AI-invented person"
   },
   "imageUpload": {
     "dropMessage": "Drop files here or ",
