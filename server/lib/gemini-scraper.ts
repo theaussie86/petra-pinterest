@@ -1,5 +1,6 @@
 import { parse } from 'node-html-parser'
-import { generateArticleFromHtml, type ScrapedArticle } from '../../src/lib/gemini/client'
+import { generateArticleFromHtml } from '../../src/lib/ai/generate'
+import type { ScrapedArticle } from '../../src/lib/ai/schemas'
 
 /**
  * Clean HTML to reduce token usage and noise.
@@ -47,7 +48,7 @@ export async function scrapeArticleWithGemini(url: string, apiKey: string): Prom
     const cleanedHtml = cleanHtml(html)
     console.log(`[GeminiScraper] Cleaned HTML (${cleanedHtml.length} chars). Sending to Gemini...`)
 
-    const article = await generateArticleFromHtml(cleanedHtml, url, apiKey)
+    const article = await generateArticleFromHtml({ html: cleanedHtml, url, apiKey })
     console.log(`[GeminiScraper] Successfully extracted: ${article.title}`)
 
     return {

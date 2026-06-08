@@ -8,7 +8,7 @@
 
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
-import { PINTEREST_SEO_SYSTEM_PROMPT, ARTICLE_SCRAPER_SYSTEM_PROMPT } from './prompts'
+import { PINTEREST_SEO_SYSTEM_PROMPT } from './prompts'
 
 function getAiClient(apiKey: string) {
   return new GoogleGenAI({ apiKey })
@@ -96,21 +96,11 @@ const generatedMetadataSchema = z.object({
   alt_text: z.string(),
 })
 
-const scrapedArticleSchema = z.object({
-  title: z.string(),
-  content: z.string(),
-  published_at: z.string().optional(),
-  author: z.string().optional(),
-  excerpt: z.string().optional(),
-})
-
 export type GeneratedMetadata = z.infer<typeof generatedMetadataSchema>
-export type ScrapedArticle = z.infer<typeof scrapedArticleSchema>
 
 // --- JSON schemas for Gemini structured output ---
 
 const metadataJsonSchema = z.toJSONSchema(generatedMetadataSchema)
-const articleJsonSchema = z.toJSONSchema(scrapedArticleSchema)
 
 /**
  * Fetch an image URL and return it as base64 for Gemini inline data.
@@ -229,33 +219,3 @@ export async function generatePinMetadataWithFeedback(
 
   return generatedMetadataSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
 }
-
-/**
- * Extract article content from HTML using Gemini.
- */
-export async function generateArticleFromHtml(
-    htmlContent: string,
-    url: string,
-    apiKey: string
-  ): Promise<ScrapedArticle> {
-    const truncatedHtml = htmlContent.slice(0, 100000)
-
-    const response = await getAiClient(apiKey).models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        { text: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}` },
-      ],
-      config: {
-        systemInstruction: ARTICLE_SCRAPER_SYSTEM_PROMPT,
-        temperature: 0.1,
-        responseMimeType: 'application/json',
-        responseJsonSchema: articleJsonSchema,
-      },
-    })
-
-    if (!response.text) {
-      throw new Error('Gemini returned empty response')
-    }
-
-    return scrapedArticleSchema.parse(JSON.parse(sanitizeJsonResponse(response.text)))
-  }
