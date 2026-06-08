@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { generatePinMetadata } from '@/lib/ai/generate'
-import { fetchImageBytes } from '@/lib/ai/image'
+import { fetchImageBytes, type ImageBytes } from '@/lib/ai/image'
 import { generatePinMetadataWithFeedback } from '@/lib/gemini/client'
 import { extractKeyframe } from '@/lib/server/ffmpeg-client'
 import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
@@ -72,12 +72,13 @@ export const generateMetadataFn = createServerFn({ method: 'POST' })
 
       // Fetch the image bytes ourselves so private/signed URLs stay reachable.
       // For video pins: extract a keyframe and pass its bytes through the same part.
-      const image =
-        mediaType === 'video'
-          ? await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 }).then(
-              (keyframe) => ({ bytes: keyframe.bytes, mimeType: keyframe.contentType })
-            )
-          : await fetchImageBytes(imageUrl)
+      let image: ImageBytes
+      if (mediaType === 'video') {
+        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
+        image = { bytes: keyframe.bytes, mimeType: keyframe.contentType }
+      } else {
+        image = await fetchImageBytes(imageUrl)
+      }
 
       // Generate metadata via the AI SDK wrapper (article may be null)
       const metadata = await generatePinMetadata({

@@ -1,7 +1,7 @@
 import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { generatePinMetadata } from '@/lib/ai/generate'
-import { fetchImageBytes } from '@/lib/ai/image'
+import { fetchImageBytes, type ImageBytes } from '@/lib/ai/image'
 import { extractKeyframe } from '@/lib/server/ffmpeg-client'
 import { sanitizeLanguage } from '@/lib/ai/language'
 import { buildPinterestSeoSystemPrompt } from '@/lib/ai/prompts'
@@ -78,12 +78,13 @@ export const generateMetadataTask = task({
 
       // Fetch the image bytes ourselves so private/signed URLs stay reachable.
       // For video pins: extract a keyframe and pass its bytes through the same part.
-      const image =
-        mediaType === 'video'
-          ? await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 }).then(
-              (keyframe) => ({ bytes: keyframe.bytes, mimeType: keyframe.contentType })
-            )
-          : await fetchImageBytes(imageUrl)
+      let image: ImageBytes
+      if (mediaType === 'video') {
+        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
+        image = { bytes: keyframe.bytes, mimeType: keyframe.contentType }
+      } else {
+        image = await fetchImageBytes(imageUrl)
+      }
 
       // Generate metadata via the AI SDK wrapper (article may be null)
       const metadata = await generatePinMetadata({
