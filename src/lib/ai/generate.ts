@@ -137,3 +137,63 @@ export async function generatePinMetadata({
 
   return object
 }
+
+export interface GeneratePinMetadataWithFeedbackOptions extends GeneratePinMetadataOptions {
+  /** The previous generation being refined; replayed as the assistant turn. */
+  previousMetadata: GeneratedMetadata
+  /** Operator feedback steering the refinement; sent as the final user turn. */
+  feedback: string
+}
+
+/**
+ * Regenerate pin metadata from operator feedback.
+ *
+ * Replaces the old chat-session API with an explicit `[user, assistant, user]`
+ * messages array: the original multimodal request (prompt text + the same
+ * `Uint8Array` image part as the base path), the previous generation replayed
+ * as JSON, then the feedback. Same schema, temperature, token, and Google
+ * provider-option settings as `generatePinMetadata` (ADR 0002 / PRD #40).
+ */
+export async function generatePinMetadataWithFeedback({
+  article,
+  image,
+  mediaType,
+  systemPrompt,
+  apiKey,
+  previousMetadata,
+  feedback,
+  model,
+}: GeneratePinMetadataWithFeedbackOptions): Promise<GeneratedMetadata> {
+  const promptText = buildPinMetadataPromptText({ article, mediaType })
+
+  const { object } = await generateObject({
+    model: model ?? getModel(apiKey),
+    schema: generatedMetadataSchema,
+    system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: promptText },
+          { type: 'image', image: image.bytes, mediaType: image.mimeType },
+        ],
+      },
+      {
+        role: 'assistant',
+        content: [{ type: 'text', text: JSON.stringify(previousMetadata) }],
+      },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: `Please regenerate the metadata with this feedback: ${feedback}` },
+        ],
+      },
+    ],
+    temperature: 0.7,
+    maxOutputTokens: 8192,
+    providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
+    experimental_repairText: repairText,
+  })
+
+  return object
+}

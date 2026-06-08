@@ -46,14 +46,11 @@ vi.mock('./supabase', () => ({
 
 vi.mock('@/lib/ai/generate', () => ({
   generatePinMetadata: (...args: any[]) => mockGenerateMetadata(...args),
+  generatePinMetadataWithFeedback: (...args: any[]) => mockGenerateWithFeedback(...args),
 }))
 
 vi.mock('@/lib/ai/image', () => ({
   fetchImageBytes: (...args: any[]) => mockFetchImageBytes(...args),
-}))
-
-vi.mock('@/lib/gemini/client', () => ({
-  generatePinMetadataWithFeedback: (...args: any[]) => mockGenerateWithFeedback(...args),
 }))
 
 vi.mock('./ffmpeg-client', () => ({
@@ -275,17 +272,18 @@ describe('generateMetadataWithFeedbackFn', () => {
       metadata: { title: 'Feedback Title', description: 'Feedback description', alt_text: 'Feedback alt' },
     })
 
-    // Verify Gemini was called with previous metadata, feedback, and system prompt
+    // Verify the AI SDK feedback wrapper was called with image bytes, previous
+    // metadata, feedback, and the built system prompt.
     expect(mockGenerateWithFeedback).toHaveBeenCalledWith(
-      'Article Title',
-      'Article Content',
-      expect.stringContaining('pin-images/tenant/image.png'),
-      previousGen,
-      'Make it more catchy',
-      'test-gemini-api-key',
-      'image',
-      expect.any(String),
-      undefined,
+      expect.objectContaining({
+        article: { title: 'Article Title', content: 'Article Content' },
+        image: { bytes: expect.any(Uint8Array), mimeType: 'image/png' },
+        mediaType: 'image',
+        systemPrompt: expect.any(String),
+        apiKey: 'test-gemini-api-key',
+        previousMetadata: previousGen,
+        feedback: 'Make it more catchy',
+      }),
     )
 
     // Verify new generation was stored with feedback text
@@ -319,15 +317,14 @@ describe('generateMetadataWithFeedbackFn', () => {
     await generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-2', feedback: 'More minimal' } })
 
     expect(mockGenerateWithFeedback).toHaveBeenCalledWith(
-      null,
-      null,
-      expect.stringContaining('pin-images'),
-      previousGen,
-      'More minimal',
-      'test-gemini-api-key',
-      'image',
-      expect.any(String),
-      undefined,
+      expect.objectContaining({
+        article: { title: undefined, content: undefined },
+        image: { bytes: expect.any(Uint8Array), mimeType: 'image/png' },
+        mediaType: 'image',
+        previousMetadata: previousGen,
+        feedback: 'More minimal',
+        apiKey: 'test-gemini-api-key',
+      }),
     )
   })
 
