@@ -1,7 +1,6 @@
 import {
   generatePinMetadata,
   generatePinMetadataWithFeedback,
-  generateArticleFromHtml,
   sanitizeJsonResponse,
 } from './client'
 
@@ -203,58 +202,6 @@ describe('generatePinMetadataWithFeedback()', () => {
         'feedback',
         'key',
       ),
-    ).rejects.toThrow('Gemini returned empty response')
-  })
-})
-
-describe('generateArticleFromHtml()', () => {
-  it('extracts article content from HTML via Gemini', async () => {
-    const article = {
-      title: 'Blog Post Title',
-      content: '# Blog Post\n\nContent here',
-      published_at: '2025-01-15',
-      author: 'Jane Doe',
-      excerpt: 'A summary',
-    }
-    mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(article) })
-
-    const result = await generateArticleFromHtml(
-      '<html><body><h1>Blog Post Title</h1></body></html>',
-      'https://blog.com/post',
-      'test-api-key',
-    )
-
-    expect(result).toEqual(article)
-    expect(mockGenerateContent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        model: 'gemini-2.5-flash',
-        contents: [{ text: expect.stringContaining('https://blog.com/post') }],
-        config: expect.objectContaining({
-          temperature: 0.1,
-          responseMimeType: 'application/json',
-        }),
-      }),
-    )
-  })
-
-  it('truncates HTML to 100000 characters', async () => {
-    const article = { title: 'T', content: 'C' }
-    mockGenerateContent.mockResolvedValueOnce({ text: JSON.stringify(article) })
-
-    const hugeHtml = 'x'.repeat(200000)
-    await generateArticleFromHtml(hugeHtml, 'https://blog.com', 'key')
-
-    const callArgs = mockGenerateContent.mock.calls[0][0]
-    const textContent = callArgs.contents[0].text
-    // 100000 chars of HTML + "URL: ...\n\nHTML Content:\n" prefix
-    expect(textContent.length).toBeLessThanOrEqual(100100)
-  })
-
-  it('throws on empty response', async () => {
-    mockGenerateContent.mockResolvedValueOnce({ text: null })
-
-    await expect(
-      generateArticleFromHtml('<html></html>', 'https://blog.com', 'key'),
     ).rejects.toThrow('Gemini returned empty response')
   })
 })
