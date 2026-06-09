@@ -1,11 +1,18 @@
-import { pinsPaginatedQueryOptions, pinsPaginatedQueryKey } from './pins'
+import {
+  pinsPaginatedQueryOptions,
+  pinsPaginatedQueryKey,
+  pinsByProjectQueryOptions,
+  pinsByProjectQueryKey,
+} from './pins'
 
-const { mockGetPinsPaginated } = vi.hoisted(() => ({
+const { mockGetPinsPaginated, mockGetPinsByProject } = vi.hoisted(() => ({
   mockGetPinsPaginated: vi.fn(),
+  mockGetPinsByProject: vi.fn(),
 }))
 
 vi.mock('@/lib/api/pins', () => ({
   getPinsPaginated: (...args: any[]) => mockGetPinsPaginated(...args),
+  getPinsByProject: (...args: any[]) => mockGetPinsByProject(...args),
 }))
 
 describe('pinsPaginatedQueryOptions', () => {
@@ -86,5 +93,50 @@ describe('pinsPaginatedQueryOptions', () => {
 
   it('sets the project default 30s staleTime', () => {
     expect(pinsPaginatedQueryOptions('proj1').staleTime).toBe(30 * 1000)
+  })
+})
+
+describe('pinsByProjectQueryOptions', () => {
+  it('uses a stable ["pins", projectId] key reflecting the project id', () => {
+    expect(pinsByProjectQueryOptions('proj1').queryKey).toEqual(['pins', 'proj1'])
+    expect(pinsByProjectQueryKey('proj1')).toEqual(['pins', 'proj1'])
+  })
+
+  it('keys distinct projects separately so loader and hook share one entry per id', () => {
+    expect(pinsByProjectQueryOptions('proj1').queryKey).not.toEqual(
+      pinsByProjectQueryOptions('proj2').queryKey,
+    )
+  })
+
+  it('nests under the ["pins"] key so pin mutations/realtime invalidation also refresh it', () => {
+    // ['pins'] and ['pins', projectId] are prefixes/matches, so existing
+    // invalidateQueries on those keys match the calendar query too.
+    expect(pinsByProjectQueryOptions('proj1').queryKey.slice(0, 1)).toEqual(['pins'])
+  })
+
+  it('resolves the pins via getPinsByProject forwarding the project id', async () => {
+    const pins = [{ id: 'pin1' }]
+    mockGetPinsByProject.mockResolvedValueOnce(pins)
+
+    const result = await pinsByProjectQueryOptions('proj1').queryFn!({} as any)
+
+    expect(mockGetPinsByProject).toHaveBeenCalledWith('proj1')
+    expect(result).toEqual(pins)
+  })
+
+  it('sets the project default 30s staleTime', () => {
+    expect(pinsByProjectQueryOptions('proj1').staleTime).toBe(30 * 1000)
+  })
+
+  it('polls every 3s while a pin is processing and stops otherwise', () => {
+    const refetchInterval = pinsByProjectQueryOptions('proj1').refetchInterval as (
+      query: any,
+    ) => number | false
+
+    expect(
+      refetchInterval({ state: { data: [{ status: 'generating_metadata' }] } }),
+    ).toBe(3000)
+    expect(refetchInterval({ state: { data: [{ status: 'published' }] } })).toBe(false)
+    expect(refetchInterval({ state: { data: undefined } })).toBe(false)
   })
 })

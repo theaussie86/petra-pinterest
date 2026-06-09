@@ -1,5 +1,6 @@
 import {
   useQuery,
+  useSuspenseQuery,
   useMutation,
   useQueryClient,
   useInfiniteQuery,
@@ -8,7 +9,6 @@ import {
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
-  getPinsByProject,
   getPinsByArticle,
   getAllPins,
   getPin,
@@ -19,7 +19,11 @@ import {
   deletePins,
   updatePinsStatus,
 } from '@/lib/api/pins'
-import { pinsPaginatedQueryOptions, type PinsPaginatedOptions } from '@/lib/query/pins'
+import {
+  pinsPaginatedQueryOptions,
+  pinsByProjectQueryOptions,
+  type PinsPaginatedOptions,
+} from '@/lib/query/pins'
 import type { PinStatus } from '@/types/pins'
 
 const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
@@ -30,12 +34,21 @@ function hasProcessingPin(pins: { status: string }[] | undefined) {
 
 export function usePins(projectId: string) {
   return useQuery({
-    queryKey: ['pins', projectId],
-    queryFn: () => getPinsByProject(projectId),
+    ...pinsByProjectQueryOptions(projectId),
     enabled: !!projectId,
-    staleTime: 30000,
-    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
+}
+
+/**
+ * Suspense variant for the calendar route that prefetches the project's pins in
+ * its loader (SSR). Shares `pinsByProjectQueryOptions` (cache key
+ * `['pins', projectId]`) with `usePins` and the loader, so loader-prefetched data
+ * hydrates without a client refetch (no loading flash) and `data` is always
+ * defined. Mutation/realtime invalidation on `['pins']`/`['pins', projectId]`
+ * triggers a background refetch shown without a fallback flash.
+ */
+export function usePinsSuspense(projectId: string) {
+  return useSuspenseQuery(pinsByProjectQueryOptions(projectId))
 }
 
 export function useArticlePins(articleId: string) {
