@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
 // Use hoisted to define mocks that are accessed during module initialization
-const { mockSupabase, mockGeneratePinMetadata, mockExtractKeyframe, capturedTaskConfig } = vi.hoisted(() => {
+const { mockSupabase, mockGeneratePinMetadata, mockExtractKeyframe, mockFetchImageBytes, capturedTaskConfig } = vi.hoisted(() => {
   // Set env vars FIRST before any imports that use them
   process.env.SUPABASE_URL = 'https://test.supabase.co'
   process.env.SUPABASE_SECRET_KEY = 'test-service-key'
@@ -15,6 +15,7 @@ const { mockSupabase, mockGeneratePinMetadata, mockExtractKeyframe, capturedTask
     },
     mockGeneratePinMetadata: vi.fn(),
     mockExtractKeyframe: vi.fn(),
+    mockFetchImageBytes: vi.fn(),
     capturedTaskConfig: { current: taskConfig },
   }
 })
@@ -23,19 +24,23 @@ vi.mock('@supabase/supabase-js', () => ({
   createClient: () => mockSupabase,
 }))
 
-vi.mock('@/lib/gemini/client', () => ({
+vi.mock('@/lib/ai/generate', () => ({
   generatePinMetadata: (...args: any[]) => mockGeneratePinMetadata(...args),
+}))
+
+vi.mock('@/lib/ai/image', () => ({
+  fetchImageBytes: (...args: any[]) => mockFetchImageBytes(...args),
 }))
 
 vi.mock('@/lib/server/ffmpeg-client', () => ({
   extractKeyframe: (...args: any[]) => mockExtractKeyframe(...args),
 }))
 
-vi.mock('@/lib/gemini/language', () => ({
+vi.mock('@/lib/ai/language', () => ({
   sanitizeLanguage: (lang: string | null) => lang,
 }))
 
-vi.mock('@/lib/gemini/prompts', () => ({
+vi.mock('@/lib/ai/prompts', () => ({
   buildPinterestSeoSystemPrompt: () => 'test-system-prompt',
 }))
 
@@ -84,6 +89,10 @@ describe('generateMetadataTask', () => {
       bytes: new Uint8Array([1, 2, 3]),
       contentType: 'image/jpeg',
     })
+    mockFetchImageBytes.mockResolvedValue({
+      bytes: new Uint8Array([10, 20, 30]),
+      mimeType: 'image/png',
+    })
   })
 
   describe('task configuration', () => {
@@ -126,15 +135,17 @@ describe('generateMetadataTask', () => {
       // Verify status was set to generating_metadata
       expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
 
-      // Verify Gemini was called with correct parameters (image pin: no inlineImageData)
-      expect(mockGeneratePinMetadata).toHaveBeenCalledWith(
-        'Article Title',
-        'Article Content',
+      // Verify the AI wrapper was called with options-object (image pin: fetched bytes)
+      expect(mockGeneratePinMetadata).toHaveBeenCalledWith({
+        article: { title: 'Article Title', content: 'Article Content' },
+        image: { bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' },
+        mediaType: 'image',
+        systemPrompt: 'test-system-prompt',
+        apiKey: 'test-api-key',
+      })
+      // Image bytes fetched from the public pin URL
+      expect(mockFetchImageBytes).toHaveBeenCalledWith(
         'https://test.supabase.co/storage/v1/object/public/pin-images/tenant/image.png',
-        'test-system-prompt',
-        'test-api-key',
-        'image',
-        undefined,
       )
 
       // Verify pin was updated with metadata and status
@@ -164,14 +175,8 @@ describe('generateMetadataTask', () => {
 
       await runTask(payload)
 
-      expect(mockGeneratePinMetadata).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
+      expect(mockFetchImageBytes).toHaveBeenCalledWith(
         'https://test.supabase.co/storage/v1/object/public/pin-images/tenant/image.png',
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        undefined,
       )
     })
 
@@ -194,13 +199,11 @@ describe('generateMetadataTask', () => {
       await generateMetadataTask.run({ pin_id: 'pin-2', tenant_id: 'tenant-1' })
 
       expect(mockGeneratePinMetadata).toHaveBeenCalledWith(
-        null,
-        null,
-        expect.stringContaining('pin-images'),
-        expect.anything(),
-        'test-api-key',
-        'image',
-        undefined,
+        expect.objectContaining({
+          article: { title: undefined, content: undefined },
+          mediaType: 'image',
+          apiKey: 'test-api-key',
+        }),
       )
     })
 
@@ -229,15 +232,14 @@ describe('generateMetadataTask', () => {
         { second: 2 },
       )
 
-      // Should pass keyframe data to Gemini, not the raw video
+      // Should pass keyframe bytes through the same image part, not the raw video,
+      // and not fetch the video URL as an image.
+      expect(mockFetchImageBytes).not.toHaveBeenCalled()
       expect(mockGeneratePinMetadata).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        expect.anything(),
-        'video',
-        { data: expect.any(String), mimeType: 'image/jpeg' },
+        expect.objectContaining({
+          mediaType: 'video',
+          image: { bytes: new Uint8Array([1, 2, 3]), mimeType: 'image/jpeg' },
+        }),
       )
     })
 

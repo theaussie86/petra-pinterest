@@ -1,3 +1,10 @@
+/**
+ * Language sanitization for AI prompt injection (re-homed from lib/gemini,
+ * unchanged in behavior). Used by the Pinterest SEO system-prompt builder so
+ * metadata is generated in the project's configured language with the correct
+ * alt-text prefix phrasing (ADR 0002 / PRD #40).
+ */
+
 const KNOWN_LANGUAGES: Record<string, string> = {
   german: 'German',
   deutsch: 'German',

@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { GenerateMetadataButton } from '@/components/pins/generate-metadata-button'
 import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
@@ -47,6 +48,8 @@ const editPinSchema = z.object({
   alternate_url: z.string().url('Ungültige URL').or(z.literal('')).optional(),
   pinterest_board_id: z.string(),
   status: z.string(),
+  ai_modified: z.boolean(),
+  synthetic_performer: z.boolean(),
 })
 
 type EditPinFormData = z.infer<typeof editPinSchema>
@@ -82,6 +85,8 @@ function PinSidebarForm({
       alternate_url: pin.alternate_url || '',
       pinterest_board_id: pin.pinterest_board_id || '__none__',
       status: pin.status,
+      ai_modified: pin.ai_modified,
+      synthetic_performer: pin.synthetic_performer,
     },
   })
 
@@ -94,6 +99,8 @@ function PinSidebarForm({
       alternate_url: pin.alternate_url || '',
       pinterest_board_id: pin.pinterest_board_id || '__none__',
       status: pin.status,
+      ai_modified: pin.ai_modified,
+      synthetic_performer: pin.synthetic_performer,
     })
   }, [pin, form])
 
@@ -107,6 +114,17 @@ function PinSidebarForm({
 
   const currentStatus = watch('status')
   const currentBoardId = watch('pinterest_board_id')
+  const aiModified = watch('ai_modified')
+  const syntheticPerformer = watch('synthetic_performer')
+
+  // synthetic_performer implies ai_modified: enabling it forces ai_modified on
+  // and locks the switch; disabling it releases the lock.
+  const handleSyntheticChange = (checked: boolean) => {
+    setValue('synthetic_performer', checked)
+    if (checked) {
+      setValue('ai_modified', true)
+    }
+  }
 
   const onSubmit = async (data: EditPinFormData) => {
     try {
@@ -122,6 +140,10 @@ function PinSidebarForm({
         pinterest_board_id: selectedBoard?.pinterest_board_id || null,
         pinterest_board_name: selectedBoard?.name || null,
         status: data.status as PinStatus,
+        // synthetic_performer always implies ai_modified (defensive: the UI
+        // lock already guarantees this, but persist the invariant regardless).
+        ai_modified: data.synthetic_performer || data.ai_modified,
+        synthetic_performer: data.synthetic_performer,
       })
       // Do NOT close sidebar after save - user stays to continue editing
     } catch (error) {
@@ -248,6 +270,39 @@ function PinSidebarForm({
               })}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="space-y-3 rounded-md border border-slate-200 p-3">
+          <Label className="text-sm font-medium">
+            {t('editPin.aiDisclosureSection')}
+          </Label>
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="sidebar-ai-modified" className="font-normal">
+              {t('editPin.aiModifiedLabel')}
+            </Label>
+            <Switch
+              id="sidebar-ai-modified"
+              checked={syntheticPerformer || aiModified}
+              onCheckedChange={(checked) => setValue('ai_modified', checked)}
+              disabled={syntheticPerformer || isSubmitting}
+            />
+          </div>
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="sidebar-synthetic-performer" className="font-normal">
+                {t('editPin.syntheticPerformerLabel')}
+              </Label>
+              <p className="text-xs text-slate-500">
+                {t('editPin.syntheticPerformerHint')}
+              </p>
+            </div>
+            <Switch
+              id="sidebar-synthetic-performer"
+              checked={syntheticPerformer}
+              onCheckedChange={handleSyntheticChange}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         <Button type="submit" disabled={isSubmitting} className="w-full">

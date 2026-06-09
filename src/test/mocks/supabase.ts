@@ -32,6 +32,8 @@ export function createMockQueryBuilder(response: QueryResponse = {}) {
     in: vi.fn().mockReturnThis(),
     not: vi.fn().mockReturnThis(),
     is: vi.fn().mockReturnThis(),
+    lte: vi.fn().mockReturnThis(),
+    gte: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     single: vi.fn().mockReturnThis(),
