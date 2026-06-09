@@ -12,7 +12,8 @@
  */
 
 import {
-  generateObject,
+  generateText,
+  Output,
   type LanguageModel,
   type RepairTextFunction,
 } from 'npm:ai'
@@ -124,13 +125,39 @@ export function sanitizeJsonControlChars(text: string): string {
 }
 
 /**
- * `experimental_repairText` callback for `generateObject`. Fires only when the
+ * Repair callback reused by `repairableObject` on the `generateText` path. Fires only when the
  * model output fails to parse/validate; increments the fire-counter and returns
  * the control-char-sanitized text for a second parse attempt.
  */
 export const repairText: RepairTextFunction = async ({ text }) => {
   repairFireCount++
   return sanitizeJsonControlChars(text)
+}
+
+/**
+ * Like `Output.object({ schema })`, but a failed parse triggers one
+ * control-char-repair retry before giving up. v6 moved structured generation to
+ * `generateText({ output })` and `Output.object` has no repair hook, so the
+ * repair net lives here (mirror of lib/ai/output.ts).
+ */
+function repairableObject<SCHEMA extends z.ZodType>(schema: SCHEMA) {
+  const inner = Output.object<z.infer<SCHEMA>>({ schema })
+  const parse = inner.parseCompleteOutput.bind(inner)
+
+  inner.parseCompleteOutput = async (options, context) => {
+    try {
+      return await parse(options, context)
+    } catch (error) {
+      const repaired = await repairText({
+        text: options.text,
+        error: error as Parameters<typeof repairText>[0]['error'],
+      })
+      if (repaired == null || repaired === options.text) throw error
+      return parse({ ...options, text: repaired }, context)
+    }
+  }
+
+  return inner
 }
 
 // --- Image bytes helper (mirror of lib/ai/image.ts) ---
@@ -329,7 +356,7 @@ export interface GenerateArticleOptions {
 /**
  * Extract structured article content from raw HTML.
  *
- * Wraps `generateObject` with the article Zod schema and the article-scraper
+ * Wraps `generateText` + `Output.object` with the article Zod schema and the article-scraper
  * system prompt at `temperature: 0.1`. No manual `JSON.parse` on the happy
  * path; the carried-over control-char repair only fires on parse failure.
  */
@@ -341,16 +368,15 @@ export async function generateArticleFromHtml({
 }: GenerateArticleOptions): Promise<ScrapedArticle> {
   const truncatedHtml = html.slice(0, MAX_HTML_CHARS)
 
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: model ?? getModel(apiKey),
-    schema: scrapedArticleSchema,
+    output: repairableObject(scrapedArticleSchema),
     system: ARTICLE_SCRAPER_SYSTEM_PROMPT,
     prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
     temperature: 0.1,
-    experimental_repairText: repairText,
   })
 
-  return object
+  return output
 }
 
 export interface PinMetadataArticle {
@@ -394,7 +420,7 @@ function buildPinMetadataPromptText({
  * Generate Pinterest-optimized metadata (title, description, alt text) for a pin.
  *
  * Builds a multimodal prompt — a text section plus a `Uint8Array` image part —
- * and wraps `generateObject` with the metadata Zod schema. Image and video pins
+ * and wraps `generateText` + `Output.object` with the metadata Zod schema. Image and video pins
  * share the same image part (video pins pass the ffmpeg keyframe bytes). The
  * Google `thinkingBudget: 0` and `temperature: 0.7` behavior is preserved via
  * provider options; the control-char repair only fires on parse failure.
@@ -409,9 +435,9 @@ export async function generatePinMetadata({
 }: GeneratePinMetadataOptions): Promise<GeneratedMetadata> {
   const promptText = buildPinMetadataPromptText({ article, mediaType })
 
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: model ?? getModel(apiKey),
-    schema: generatedMetadataSchema,
+    output: repairableObject(generatedMetadataSchema),
     system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
     messages: [
       {
@@ -425,8 +451,7 @@ export async function generatePinMetadata({
     temperature: 0.7,
     maxOutputTokens: 8192,
     providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
-    experimental_repairText: repairText,
   })
 
-  return object
+  return output
 }

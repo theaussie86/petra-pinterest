@@ -1,4 +1,4 @@
-import { MockLanguageModelV2 } from 'ai/test'
+import { MockLanguageModelV3 } from 'ai/test'
 import {
   fetchImageBytes,
   generateArticleFromHtml,
@@ -15,10 +15,10 @@ import {
 // `npm:` specifiers; vitest aliases map those onto the installed Node packages.
 
 function mockModelReturning(text: string) {
-  return new MockLanguageModelV2({
+  return new MockLanguageModelV3({
     doGenerate: async () => ({
-      finishReason: 'stop',
-      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      finishReason: { unified: 'stop', raw: undefined },
+      usage: { inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 20, text: 20, reasoning: undefined } },
       content: [{ type: 'text', text }],
       warnings: [],
     }),
@@ -126,12 +126,12 @@ describe('generateArticleFromHtml() [edge mirror]', () => {
 
   it('passes the URL through to the model prompt', async () => {
     let seenPrompt = ''
-    const model = new MockLanguageModelV2({
+    const model = new MockLanguageModelV3({
       doGenerate: async (options) => {
         seenPrompt = JSON.stringify(options.prompt)
         return {
-          finishReason: 'stop',
-          usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+          finishReason: { unified: 'stop', raw: undefined },
+          usage: { inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 1, text: 1, reasoning: undefined } },
           content: [{ type: 'text', text: JSON.stringify(article) }],
           warnings: [],
         }
@@ -183,12 +183,12 @@ describe('generatePinMetadata() [edge mirror]', () => {
 
   it('produces the image-only prompt when no article is linked', async () => {
     let seenPrompt = ''
-    const model = new MockLanguageModelV2({
+    const model = new MockLanguageModelV3({
       doGenerate: async (options) => {
         seenPrompt = JSON.stringify(options.prompt)
         return {
-          finishReason: 'stop',
-          usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+          finishReason: { unified: 'stop', raw: undefined },
+          usage: { inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 1, text: 1, reasoning: undefined } },
           content: [{ type: 'text', text: JSON.stringify(metadata) }],
           warnings: [],
         }
@@ -212,12 +212,12 @@ describe('generatePinMetadata() [edge mirror]', () => {
   it('flows video keyframe bytes through the same image part and marks the video pin type', async () => {
     let seenPrompt: any = null
     const keyframe = { bytes: new Uint8Array([9, 8, 7]), mimeType: 'image/jpeg' }
-    const model = new MockLanguageModelV2({
+    const model = new MockLanguageModelV3({
       doGenerate: async (options) => {
         seenPrompt = options.prompt
         return {
-          finishReason: 'stop',
-          usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+          finishReason: { unified: 'stop', raw: undefined },
+          usage: { inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 1, text: 1, reasoning: undefined } },
           content: [{ type: 'text', text: JSON.stringify(metadata) }],
           warnings: [],
         }
