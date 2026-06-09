@@ -11,45 +11,38 @@ export interface AuthUser {
 /**
  * Server function: get the current authenticated user with profile data.
  * Reads session from cookies so it works during SSR and client navigation.
+ *
+ * Verifies the JWT via `getClaims()` — local verification when the project's
+ * asymmetric signing keys are enabled, falling back to a network call to the
+ * Auth server otherwise. Profile creation is NOT done here; it runs once at
+ * login (see `exchangeCodeFn`). This keeps the navigation hot path to a single
+ * verify + one `profiles` read.
  */
 export const fetchUser = createServerFn({ method: 'GET' }).handler(
   async () => {
     const supabase = getSupabaseServerClient()
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
+    const { data, error } = await supabase.auth.getClaims()
 
-    if (error || !user) {
+    if (error || !data?.claims) {
       return null
     }
 
-    // Ensure profile exists (creates on-demand if missing)
-    let tenant_id = ''
-    try {
-      const { data: rpcData, error: rpcError } = await supabase.rpc(
-        'ensure_profile_exists',
-      )
-      if (!rpcError && rpcData && rpcData.length > 0) {
-        tenant_id = rpcData[0].tenant_id
-      }
-    } catch {
-      // Profile creation failed — continue with empty tenant_id
-    }
+    const { claims } = data
+    const id = claims.sub
+    const email = typeof claims.email === 'string' ? claims.email : ''
 
-    // Fetch display name
+    // Single profiles read for tenant_id + display_name.
     const { data: profile } = await supabase
       .from('profiles')
-      .select('display_name')
-      .eq('id', user.id)
+      .select('tenant_id, display_name')
+      .eq('id', id)
       .single()
 
     return {
-      id: user.id,
-      email: user.email || '',
-      tenant_id,
-      display_name:
-        profile?.display_name || user.email?.split('@')[0] || 'User',
+      id,
+      email,
+      tenant_id: profile?.tenant_id || '',
+      display_name: profile?.display_name || email.split('@')[0] || 'User',
     } satisfies AuthUser
   },
 )
@@ -57,6 +50,12 @@ export const fetchUser = createServerFn({ method: 'GET' }).handler(
 /**
  * Server function: exchange an OAuth PKCE code for a session.
  * Sets the session cookies so subsequent requests are authenticated.
+ *
+ * Profile bootstrap lives here so `ensure_profile_exists` runs exactly once
+ * per login — not on every navigation. A new user signing in for the first
+ * time gets a profile + tenant; returning users are a no-op. Failure to
+ * provision is non-fatal: the session is still valid and `fetchUser` falls
+ * back to an empty tenant_id until the profile resolves.
  */
 export const exchangeCodeFn = createServerFn({ method: 'GET' })
   .inputValidator((data: { code: string }) => data)
@@ -66,6 +65,13 @@ export const exchangeCodeFn = createServerFn({ method: 'GET' })
     if (error) {
       return { error: error.message }
     }
+
+    try {
+      await supabase.rpc('ensure_profile_exists')
+    } catch {
+      // Non-fatal — session is established; profile can be retried later.
+    }
+
     return { error: null }
   })
 
