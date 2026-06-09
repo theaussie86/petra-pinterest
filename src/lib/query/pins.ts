@@ -5,7 +5,7 @@ import type { Pin } from '@/types/pins'
 
 const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
 
-function hasProcessingPin(pins: { status: string }[] | undefined) {
+export function hasProcessingPin(pins: { status: string }[] | undefined) {
   return pins?.some((p) => PROCESSING_STATUSES.includes(p.status)) ?? false
 }
 

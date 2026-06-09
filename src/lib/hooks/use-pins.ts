@@ -22,15 +22,10 @@ import {
 import {
   pinsPaginatedQueryOptions,
   pinsByProjectQueryOptions,
+  hasProcessingPin,
   type PinsPaginatedOptions,
 } from '@/lib/query/pins'
 import type { PinStatus } from '@/types/pins'
-
-const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
-
-function hasProcessingPin(pins: { status: string }[] | undefined) {
-  return pins?.some((p) => PROCESSING_STATUSES.includes(p.status)) ?? false
-}
 
 export function usePins(projectId: string) {
   return useQuery({
