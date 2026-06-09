@@ -2,12 +2,15 @@ import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from '@tansta
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
-  getBlogProject,
   createBlogProject,
   updateBlogProject,
   deleteBlogProject
 } from '@/lib/api/blog-projects'
-import { blogProjectsQueryOptions, BLOG_PROJECTS_QUERY_KEY } from '@/lib/query/blog-projects'
+import {
+  blogProjectsQueryOptions,
+  blogProjectQueryOptions,
+  BLOG_PROJECTS_QUERY_KEY,
+} from '@/lib/query/blog-projects'
 import type { BlogProject, BlogProjectInsert } from '@/types/blog-projects'
 
 export function useBlogProjects() {
@@ -26,10 +29,19 @@ export function useBlogProjectsSuspense() {
 
 export function useBlogProject(id: string) {
   return useQuery({
-    queryKey: ['blog-projects', id],
-    queryFn: () => getBlogProject(id),
-    enabled: !!id
+    ...blogProjectQueryOptions(id),
+    enabled: !!id,
   })
+}
+
+/**
+ * Suspense variant for the project-detail route that prefetches the record in its
+ * loader (SSR). Shares `blogProjectQueryOptions` (cache key `['blog-projects', id]`)
+ * with `useBlogProject` and the loader, so loader-prefetched data hydrates without
+ * a client refetch and `data` is always defined.
+ */
+export function useBlogProjectSuspense(id: string) {
+  return useSuspenseQuery(blogProjectQueryOptions(id))
 }
 
 export function useCreateBlogProject() {

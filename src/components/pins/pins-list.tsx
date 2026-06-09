@@ -9,6 +9,7 @@ import {
   ImageIcon,
   Sparkles,
   Send,
+  Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -32,7 +33,7 @@ import { PinDataTable } from '@/components/pins/pin-data-table'
 import { ColumnVisibilityToggle } from '@/components/pins/column-visibility-toggle'
 import { getColumnsForIds, getStoredVisibility, saveVisibility } from '@/components/pins/pin-data-table-columns'
 import type { PinColumnId } from '@/components/pins/pin-data-table-columns'
-import { usePins, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
+import { usePinsPaginatedSuspense, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
@@ -75,7 +76,21 @@ export function PinsList({ projectId }: PinsListProps) {
     [['pins', projectId]],
   )
 
-  const { data: pins, isLoading, error } = usePins(projectId)
+  // Suspense + the loader's `prefetchInfiniteQuery` guarantee the first page is
+  // present here with no loading flash; the Suspense boundary covers the
+  // (already-resolved) loading state and CatchBoundary covers errors. Background
+  // refetches (mutation/realtime invalidation) keep showing stale pages without
+  // re-triggering the fallback. Further pages stream via `fetchNextPage`.
+  const {
+    data: pinsData,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = usePinsPaginatedSuspense(projectId)
+  const pins = useMemo(
+    () => pinsData.pages.flatMap((page) => page.pins),
+    [pinsData],
+  )
   const { data: articles } = useArticles(projectId)
 
   const bulkDeleteMutation = useBulkDeletePins()
@@ -201,6 +216,7 @@ export function PinsList({ projectId }: PinsListProps) {
   const hasSelection = selectedIds.size > 0
 
   // Render props for PinDataTable
+  // (loading + error states are handled by the route's Suspense/CatchBoundary)
   const renderTitleCell = (pin: Pin) => (
     <Link
       to="/projects/$projectId/pins/$pinId"
@@ -239,31 +255,10 @@ export function PinsList({ projectId }: PinsListProps) {
     </div>
   )
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-      </div>
-    )
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <p className="text-red-600">{t('pinsList.errorLoadFailed')}</p>
-        <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-          {t('common.retry')}
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
       <PinStatusFilterBar
-        pins={pins || []}
+        pins={pins}
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />
@@ -430,6 +425,22 @@ export function PinsList({ projectId }: PinsListProps) {
                 onToggleSelect={toggleSelect}
               />
             ))}
+          </div>
+        )}
+
+        {/* Load more — streams the next page via the existing cursor pagination */}
+        {hasNextPage && (
+          <div className="flex justify-center pt-2">
+            <Button
+              variant="outline"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              {t('pinsList.loadMore')}
+            </Button>
           </div>
         )}
 

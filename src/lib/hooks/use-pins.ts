@@ -1,6 +1,11 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+  useSuspenseInfiniteQuery,
+} from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { subDays } from 'date-fns'
 import i18n from '@/lib/i18n'
 import {
   getPinsByProject,
@@ -13,8 +18,8 @@ import {
   deletePin,
   deletePins,
   updatePinsStatus,
-  getPinsPaginated,
 } from '@/lib/api/pins'
+import { pinsPaginatedQueryOptions, type PinsPaginatedOptions } from '@/lib/query/pins'
 import type { PinStatus } from '@/types/pins'
 
 const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
@@ -60,41 +65,22 @@ export function usePin(id: string) {
   })
 }
 
-interface UsePinsPaginatedOptions {
-  statusFilter?: string[]
-  initialDays?: number
-  pageSize?: number
-}
-
-type PaginationPageParam = {
-  createdAfter?: Date
-  cursor?: string
-}
-
-export function usePinsPaginated(
-  projectId: string,
-  options: UsePinsPaginatedOptions = {}
-) {
-  const { statusFilter, initialDays = 3, pageSize = 20 } = options
-
+export function usePinsPaginated(projectId: string, options: PinsPaginatedOptions = {}) {
   return useInfiniteQuery({
-    queryKey: ['pins', projectId, 'paginated', statusFilter],
-    queryFn: ({ pageParam }: { pageParam: PaginationPageParam }) =>
-      getPinsPaginated(projectId, {
-        ...pageParam,
-        statusFilter,
-        limit: pageSize,
-      }),
-    initialPageParam: {
-      createdAfter: subDays(new Date(), initialDays),
-    } satisfies PaginationPageParam,
-    getNextPageParam: (lastPage): PaginationPageParam | undefined =>
-      lastPage.nextCursor
-        ? { cursor: lastPage.nextCursor }
-        : undefined,
+    ...pinsPaginatedQueryOptions(projectId, options),
     enabled: !!projectId,
-    staleTime: 30000,
   })
+}
+
+/**
+ * Suspense variant for the pins-list route that prefetches the first page in its
+ * loader (SSR) via `prefetchInfiniteQuery`. Shares `pinsPaginatedQueryOptions`
+ * (cache key `['pins', projectId, 'paginated', statusFilter]`) with
+ * `usePinsPaginated` and the loader, so the first page hydrates without a client
+ * refetch (no loading flash) and `data.pages` is always defined.
+ */
+export function usePinsPaginatedSuspense(projectId: string, options: PinsPaginatedOptions = {}) {
+  return useSuspenseInfiniteQuery(pinsPaginatedQueryOptions(projectId, options))
 }
 
 export function useCreatePin() {

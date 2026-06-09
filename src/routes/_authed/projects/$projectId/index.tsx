@@ -1,10 +1,13 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, useNavigate, CatchBoundary } from '@tanstack/react-router'
+import { Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ExternalLink, Pencil } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { useBlogProject } from '@/lib/hooks/use-blog-projects'
+import { LoadingSpinner } from '@/components/layout/loading-spinner'
+import { ErrorState } from '@/components/layout/error-state'
+import { useBlogProjectSuspense } from '@/lib/hooks/use-blog-projects'
+import { blogProjectQueryOptions } from '@/lib/query/blog-projects'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
 import { GeminiApiKeyCard } from '@/components/projects/gemini-api-key-card'
 import { PinterestConnection } from '@/components/projects/pinterest-connection'
@@ -19,8 +22,36 @@ export const Route = createFileRoute('/_authed/projects/$projectId/')({
     pinterest_connected: (search.pinterest_connected as string) || undefined,
     pinterest_error: (search.pinterest_error as string) || undefined,
   }),
-  component: ProjectDetail,
+  // Prefetch the project record server-side so the detail arrives in the SSR HTML
+  // and hydrates without a client refetch. Shares `blogProjectQueryOptions` with
+  // the consuming `useBlogProjectSuspense` hook → one cache entry per project id.
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(blogProjectQueryOptions(params.projectId)),
+  component: ProjectDetailRoute,
 })
+
+function ProjectDetailRoute() {
+  return (
+    <CatchBoundary
+      getResetKey={() => 'project-detail'}
+      errorComponent={({ error }) => (
+        <PageLayout maxWidth="medium">
+          <ErrorState error={error} />
+        </PageLayout>
+      )}
+    >
+      <Suspense
+        fallback={
+          <PageLayout maxWidth="medium">
+            <LoadingSpinner />
+          </PageLayout>
+        }
+      >
+        <ProjectDetail />
+      </Suspense>
+    </CatchBoundary>
+  )
+}
 
 // --- Field config for each section ---
 
@@ -174,7 +205,11 @@ function ProjectDetail() {
   const { t } = useTranslation()
   const { projectId } = Route.useParams()
   const search = Route.useSearch()
-  const { data: project, isLoading, error } = useBlogProject(projectId)
+  // Suspense + the loader prefetch guarantee `project` is defined here; the
+  // Suspense boundary covers the (already-resolved) loading state and
+  // CatchBoundary covers errors. Background refetches (mutation/realtime
+  // invalidation) keep showing the stale record without re-triggering the fallback.
+  const { data: project } = useBlogProjectSuspense(projectId)
   const navigate = useNavigate()
 
   const [editSection, setEditSection] = useState<SectionKey | null>(null)
@@ -192,63 +227,59 @@ function ProjectDetail() {
       <PageHeader
         breadcrumbs={[
           { label: t('projectDetail.breadcrumbDashboard'), href: '/dashboard' },
-          { label: project?.name || t('projectDetail.breadcrumbProject') },
+          { label: project.name || t('projectDetail.breadcrumbProject') },
         ]}
-        title={project?.name || t('projectDetail.breadcrumbProject')}
+        title={project.name || t('projectDetail.breadcrumbProject')}
         actions={
-          project ? (
-            <Button
-              variant="outline"
-              className="text-red-600 hover:text-red-700"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              {t('common.delete')}
-            </Button>
-          ) : undefined
+          <Button
+            variant="outline"
+            className="text-red-600 hover:text-red-700"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            {t('common.delete')}
+          </Button>
         }
       />
-      <PageLayout maxWidth="medium" isLoading={isLoading} error={error ?? null}>
-        {project && (
-          <div className="space-y-6">
-            {/* Basic Info */}
-            <SectionCard
-              title={t('projectBranding.sectionBasicInfo')}
-              onEdit={() => setEditSection('basicInfo')}
-            >
-              <BasicInfoContent project={project} />
-            </SectionCard>
+      <PageLayout maxWidth="medium">
+        <div className="space-y-6">
+          {/* Basic Info */}
+          <SectionCard
+            title={t('projectBranding.sectionBasicInfo')}
+            onEdit={() => setEditSection('basicInfo')}
+          >
+            <BasicInfoContent project={project} />
+          </SectionCard>
 
-            {/* Scraping */}
-            <SectionCard
-              title={t('projectBranding.sectionScraping')}
-              onEdit={() => setEditSection('scraping')}
-            >
-              <ScrapingContent project={project} />
-            </SectionCard>
+          {/* Scraping */}
+          <SectionCard
+            title={t('projectBranding.sectionScraping')}
+            onEdit={() => setEditSection('scraping')}
+          >
+            <ScrapingContent project={project} />
+          </SectionCard>
 
-            {/* AI Settings */}
-            <SectionCard
-              title={t('projectBranding.sectionAiSettings')}
-              onEdit={() => setEditSection('aiSettings')}
-            >
-              <AiSettingsContent project={project} />
-            </SectionCard>
+          {/* AI Settings */}
+          <SectionCard
+            title={t('projectBranding.sectionAiSettings')}
+            onEdit={() => setEditSection('aiSettings')}
+          >
+            <AiSettingsContent project={project} />
+          </SectionCard>
 
-            {/* Gemini API Key */}
-            <GeminiApiKeyCard blogProjectId={projectId} />
+          {/* Gemini API Key */}
+          <GeminiApiKeyCard blogProjectId={projectId} />
 
-            {/* Pinterest Connection */}
-            <PinterestConnection
-              blogProjectId={projectId}
-              pinterestConnected={search.pinterest_connected === 'true'}
-              pinterestError={search.pinterest_error}
-            />
-          </div>
-        )}
+          {/* Pinterest Connection */}
+          <PinterestConnection
+            blogProjectId={projectId}
+            pinterestConnected={search.pinterest_connected === 'true'}
+            pinterestError={search.pinterest_error}
+          />
+        </div>
       </PageLayout>
 
       {/* Section edit dialog */}
-      {project && activeSection && (
+      {activeSection && (
         <ProjectSectionDialog
           open={!!editSection}
           onOpenChange={(open) => {
@@ -261,14 +292,12 @@ function ProjectDetail() {
       )}
 
       {/* Delete dialog */}
-      {project && (
-        <DeleteDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          project={project}
-          onDeleted={handleDeleted}
-        />
-      )}
+      <DeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        project={project}
+        onDeleted={handleDeleted}
+      />
     </>
   )
 }
