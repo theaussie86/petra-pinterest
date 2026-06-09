@@ -1,5 +1,5 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
-import { QueryClientProvider } from '@tanstack/react-query'
+import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query'
 import { routeTree } from './routeTree.gen'
 import { createQueryClient } from './lib/query/client'
 
@@ -21,13 +21,20 @@ export function getRouter() {
     scrollRestoration: true,
     defaultStructuralSharing: true,
     defaultPreloadStaleTime: 0,
-    // Provide the per-request QueryClient to the whole tree. Replaces the
-    // former module-singleton provider in __root.tsx.
-    Wrap: ({ children }) => (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    ),
+  })
+
+  // TanStack Start + Query SSR integration: dehydrates the per-request
+  // QueryClient on the server and hydrates it on the client, so data a loader
+  // prefetched via `ensureQueryData` arrives in the SSR HTML and rehydrates
+  // without a client refetch. `wrapQueryClient` supplies the
+  // QueryClientProvider to the whole tree, replacing the former manual `Wrap`
+  // provider (and the removed module-singleton QueryClient + provider in
+  // __root.tsx). The auth `onError` redirect and `['user']` caching on the
+  // per-request client are preserved.
+  setupRouterSsrQueryIntegration({
+    router,
+    queryClient,
+    wrapQueryClient: true,
   })
 
   return router
