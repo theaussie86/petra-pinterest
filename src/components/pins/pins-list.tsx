@@ -34,7 +34,6 @@ import { ColumnVisibilityToggle } from '@/components/pins/column-visibility-togg
 import { getColumnsForIds, getStoredVisibility, saveVisibility } from '@/components/pins/pin-data-table-columns'
 import type { PinColumnId } from '@/components/pins/pin-data-table-columns'
 import { usePinsPaginatedSuspense, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
-import type { PaginatedPinsResult } from '@/lib/api/pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
@@ -89,7 +88,7 @@ export function PinsList({ projectId }: PinsListProps) {
     fetchNextPage,
   } = usePinsPaginatedSuspense(projectId)
   const pins = useMemo(
-    () => pinsData.pages.flatMap((page: PaginatedPinsResult) => page.pins),
+    () => pinsData.pages.flatMap((page) => page.pins),
     [pinsData],
   )
   const { data: articles } = useArticles(projectId)
