@@ -1,30 +1,26 @@
 import type { ReactNode } from 'react'
 import {
   Outlet,
-  createRootRoute,
+  createRootRouteWithContext,
   HeadContent,
   Link,
   Scripts,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { QueryClient } from '@tanstack/react-query'
 import { Toaster } from 'sonner'
 import { I18nextProvider, useTranslation } from 'react-i18next'
 import i18n from '@/lib/i18n'
-import { fetchUser } from '@/lib/server/auth'
+import { userQueryOptions } from '@/lib/query/user'
 import { detectLanguageFn } from '@/lib/server/detect-language'
 import '@/styles.css'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30000,
-    },
-  },
-})
+export interface RouterContext {
+  queryClient: QueryClient
+}
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -35,8 +31,11 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: 'icon', href: '/favicon.ico' }],
   }),
-  beforeLoad: async () => {
-    const user = await fetchUser()
+  beforeLoad: async ({ context }) => {
+    // Resolve the authed user through the shared query cache. Within the
+    // `userQueryOptions` staleTime window, client navigations reuse the cached
+    // value and make zero server calls (the per-nav auth round-trip is gone).
+    const user = await context.queryClient.ensureQueryData(userQueryOptions())
 
     // Server-side only: detect language from cookie or Accept-Language header
     // to avoid hydration mismatch with client-side LanguageDetector.
@@ -95,9 +94,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <HeadContent />
         </head>
         <body>
-          <QueryClientProvider client={queryClient}>
-            {children}
-          </QueryClientProvider>
+          {children}
           <Scripts />
         </body>
       </html>
