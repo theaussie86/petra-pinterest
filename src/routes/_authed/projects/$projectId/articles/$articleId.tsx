@@ -144,74 +144,72 @@ function ArticleDetail() {
         }
       />
       <PageLayout maxWidth="narrow">
-        <>
-            {/* Article metadata */}
-            <div className="mb-8">
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                {article.published_at && (
-                  <span>{t('articleDetail.published', { date: formatDate(article.published_at) })}</span>
-                )}
-                <span>{t('articleDetail.scraped', { date: formatDate(article.scraped_at) })}</span>
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                  {t('articleDetail.pins', { count: articlePins?.length ?? 0 })}
-                </span>
-              </div>
-            </div>
+        {/* Article metadata */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+            {article.published_at && (
+              <span>{t('articleDetail.published', { date: formatDate(article.published_at) })}</span>
+            )}
+            <span>{t('articleDetail.scraped', { date: formatDate(article.scraped_at) })}</span>
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+              {t('articleDetail.pins', { count: articlePins?.length ?? 0 })}
+            </span>
+          </div>
+        </div>
 
-            {/* Linked Pins */}
-            <div className="mb-8">
-              <h2 className="mb-3 text-lg font-semibold">{t('articleDetail.linkedPins')}</h2>
-              {articlePins && articlePins.length > 0 ? (
-                <div className="space-y-2">
-                  {articlePins.slice(0, visiblePins).map((pin) => (
-                    <ArticlePinCard key={pin.id} pin={pin} projectId={projectId} />
-                  ))}
-                  {articlePins.length > visiblePins && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setVisiblePins((v) => v + 5)}
-                    >
-                      {t('articleDetail.loadMore')}
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t('articleDetail.noPins')}</p>
+        {/* Linked Pins */}
+        <div className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold">{t('articleDetail.linkedPins')}</h2>
+          {articlePins && articlePins.length > 0 ? (
+            <div className="space-y-2">
+              {articlePins.slice(0, visiblePins).map((pin) => (
+                <ArticlePinCard key={pin.id} pin={pin} projectId={projectId} />
+              ))}
+              {articlePins.length > visiblePins && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setVisiblePins((v) => v + 5)}
+                >
+                  {t('articleDetail.loadMore')}
+                </Button>
               )}
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('articleDetail.noPins')}</p>
+          )}
+        </div>
 
-            {/* Article content */}
-            <Card>
-              <CardContent className="py-6">
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <Textarea
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      className="min-h-[400px] font-mono text-sm"
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={handleCancelEditing}>
-                        {t('articleDetail.cancelEdit')}
-                      </Button>
-                      <Button onClick={() => setConfirmDialogOpen(true)}>
-                        {t('articleDetail.saveContent')}
-                      </Button>
-                    </div>
-                  </div>
+        {/* Article content */}
+        <Card>
+          <CardContent className="py-6">
+            {isEditing ? (
+              <div className="space-y-4">
+                <Textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="min-h-[400px] font-mono text-sm"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={handleCancelEditing}>
+                    {t('articleDetail.cancelEdit')}
+                  </Button>
+                  <Button onClick={() => setConfirmDialogOpen(true)}>
+                    {t('articleDetail.saveContent')}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="prose prose-slate max-w-none">
+                {article.content ? (
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
                 ) : (
-                  <div className="prose prose-slate max-w-none">
-                    {article.content ? (
-                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
-                    ) : (
-                      <p className="text-slate-500 italic">{t('articleDetail.noContent')}</p>
-                    )}
-                  </div>
+                  <p className="text-slate-500 italic">{t('articleDetail.noContent')}</p>
                 )}
-              </CardContent>
-            </Card>
-        </>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </PageLayout>
 
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
