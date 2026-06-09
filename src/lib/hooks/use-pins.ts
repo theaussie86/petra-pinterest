@@ -1,5 +1,6 @@
 import {
   useQuery,
+  useSuspenseQuery,
   useMutation,
   useQueryClient,
   useInfiniteQuery,
@@ -11,7 +12,6 @@ import {
   getPinsByProject,
   getPinsByArticle,
   getAllPins,
-  getPin,
   createPin,
   createPins,
   updatePin,
@@ -19,7 +19,7 @@ import {
   deletePins,
   updatePinsStatus,
 } from '@/lib/api/pins'
-import { pinsPaginatedQueryOptions, type PinsPaginatedOptions } from '@/lib/query/pins'
+import { pinsPaginatedQueryOptions, pinQueryOptions, type PinsPaginatedOptions } from '@/lib/query/pins'
 import type { PinStatus } from '@/types/pins'
 
 const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
@@ -59,10 +59,19 @@ export function useAllPins() {
 
 export function usePin(id: string) {
   return useQuery({
-    queryKey: ['pins', 'detail', id],
-    queryFn: () => getPin(id),
+    ...pinQueryOptions(id),
     enabled: !!id,
   })
+}
+
+/**
+ * Suspense variant for the pin-detail route that prefetches the record in its
+ * loader (SSR). Shares `pinQueryOptions` (cache key `['pins', 'detail', id]`)
+ * with `usePin` and the loader, so loader-prefetched data hydrates without a
+ * client refetch and `data` is always defined.
+ */
+export function usePinSuspense(id: string) {
+  return useSuspenseQuery(pinQueryOptions(id))
 }
 
 export function usePinsPaginated(projectId: string, options: PinsPaginatedOptions = {}) {

@@ -1,10 +1,13 @@
-import { createFileRoute, Link, useNavigate, useRouter } from '@tanstack/react-router'
-import { useState } from 'react'
+import { createFileRoute, Link, useNavigate, useRouter, CatchBoundary } from '@tanstack/react-router'
+import { Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { usePin, useUpdatePin } from '@/lib/hooks/use-pins'
+import { LoadingSpinner } from '@/components/layout/loading-spinner'
+import { ErrorState } from '@/components/layout/error-state'
+import { usePinSuspense, useUpdatePin } from '@/lib/hooks/use-pins'
+import { pinQueryOptions } from '@/lib/query/pins'
 import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPin } from '@/lib/hooks/use-pinterest-publishing'
 import { useArticle } from '@/lib/hooks/use-articles'
@@ -25,13 +28,44 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/pins/$pinId')({
-  component: PinDetail,
+  // Prefetch the pin record server-side so the detail arrives in the SSR HTML and
+  // hydrates without a client refetch. Shares `pinQueryOptions` with the consuming
+  // `usePinSuspense` hook → one cache entry per pin id.
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(pinQueryOptions(params.pinId)),
+  component: PinDetailRoute,
 })
+
+function PinDetailRoute() {
+  return (
+    <CatchBoundary
+      getResetKey={() => 'pin-detail'}
+      errorComponent={({ error }) => (
+        <PageLayout maxWidth="medium">
+          <ErrorState error={error} />
+        </PageLayout>
+      )}
+    >
+      <Suspense
+        fallback={
+          <PageLayout maxWidth="medium">
+            <LoadingSpinner />
+          </PageLayout>
+        }
+      >
+        <PinDetail />
+      </Suspense>
+    </CatchBoundary>
+  )
+}
 
 function PinDetail() {
   const { t, i18n } = useTranslation()
   const { projectId, pinId } = Route.useParams()
-  const { data: pin, isLoading, error } = usePin(pinId)
+  // Suspense + the loader prefetch guarantee `pin` is defined here; the Suspense
+  // boundary covers loading and CatchBoundary covers errors. Background refetches
+  // (mutation/realtime invalidation) keep showing the stale record without a flash.
+  const { data: pin } = usePinSuspense(pinId)
   const { data: project } = useBlogProject(projectId)
   const navigate = useNavigate()
   const router = useRouter()
@@ -43,7 +77,7 @@ function PinDetail() {
   const [imageDialogOpen, setImageDialogOpen] = useState(false)
 
   // Fetch Pinterest connection status for the pin's project
-  const { data: connectionData } = usePinterestConnection(pin?.blog_project_id || '')
+  const { data: connectionData } = usePinterestConnection(pin.blog_project_id)
 
   return (
     <>
@@ -51,27 +85,24 @@ function PinDetail() {
         breadcrumbs={[
           { label: t('pinDetail.breadcrumbDashboard'), href: "/dashboard" },
           { label: project?.name || t('pinDetail.breadcrumbProject'), href: `/projects/${projectId}` },
-          { label: pin?.title || t('pinDetail.breadcrumbPin') },
+          { label: pin.title || t('pinDetail.breadcrumbPin') },
         ]}
-        title={pin?.title || t('pinDetail.title')}
+        title={pin.title || t('pinDetail.title')}
         actions={
-          pin ? (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
-                <Pencil className="mr-2 h-4 w-4" /> {t('common.edit')}
-              </Button>
-              <Button variant="outline" className="text-red-600" onClick={() => setDeleteDialogOpen(true)}>
-                <Trash2 className="mr-2 h-4 w-4" /> {t('common.delete')}
-              </Button>
-            </div>
-          ) : undefined
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(true)}>
+              <Pencil className="mr-2 h-4 w-4" /> {t('common.edit')}
+            </Button>
+            <Button variant="outline" className="text-red-600" onClick={() => setDeleteDialogOpen(true)}>
+              <Trash2 className="mr-2 h-4 w-4" /> {t('common.delete')}
+            </Button>
+          </div>
         }
       />
-      <PageLayout maxWidth="medium" isLoading={isLoading} error={error ?? null}>
-        {pin && (
-          <>
-            {/* Error alert section */}
-            {pin.status === 'error' && (
+      <PageLayout maxWidth="medium">
+        <>
+          {/* Error alert section */}
+          {pin.status === 'error' && (
               <div className="mb-6">
                 <ErrorAlert pin={pin} />
               </div>
@@ -222,12 +253,10 @@ function PinDetail() {
               </div>
             </div>
           </>
-        )}
       </PageLayout>
 
       {/* Dialogs */}
-      {pin && (
-        <>
+      <>
           <EditPinDialog
             open={editDialogOpen}
             onOpenChange={setEditDialogOpen}
@@ -256,8 +285,7 @@ function PinDetail() {
               <PinMediaPreview pin={pin} displayWidth={800} controls className="w-full h-auto object-contain" />
             </DialogContent>
           </Dialog>
-        </>
-      )}
+      </>
     </>
   )
 }

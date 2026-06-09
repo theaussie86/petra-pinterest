@@ -1,6 +1,30 @@
-import { infiniteQueryOptions } from '@tanstack/react-query'
+import { queryOptions, infiniteQueryOptions } from '@tanstack/react-query'
 import { subDays } from 'date-fns'
-import { getPinsPaginated, type PaginatedPinsResult } from '@/lib/api/pins'
+import { getPin, getPinsPaginated, type PaginatedPinsResult } from '@/lib/api/pins'
+import type { Pin } from '@/types/pins'
+
+/**
+ * The cache key for a single pin record. Nested under `['pins']` so the existing
+ * pin mutation invalidation (`['pins']`) refreshes the detail too (prefix match),
+ * while keeping a distinct entry per pin id.
+ */
+export function pinQueryKey(id: string) {
+  return ['pins', 'detail', id] as const
+}
+
+/**
+ * Shared query options for a single pin record — the single source of truth
+ * referenced by both the pin-detail route loader
+ * (`ensureQueryData(pinQueryOptions(id))`) and the consuming suspense hook, so
+ * the record arrives in the SSR HTML and hydrates without a client refetch.
+ */
+export function pinQueryOptions(id: string) {
+  return queryOptions<Pin>({
+    queryKey: pinQueryKey(id),
+    queryFn: () => getPin(id),
+    staleTime: 30 * 1000,
+  })
+}
 
 export interface PinsPaginatedOptions {
   statusFilter?: string[]
