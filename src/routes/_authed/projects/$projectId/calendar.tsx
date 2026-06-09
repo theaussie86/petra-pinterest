@@ -119,7 +119,7 @@ function CalendarPage() {
   // Handle status filter tab change
   const handleStatusTabChange = (newStatusTab: StatusTab) => {
     navigate({
-      search: (prev) => ({
+      search: (prev: CalendarSearch) => ({
         ...prev,
         statusTab: newStatusTab === 'all' ? undefined : newStatusTab,
       }),

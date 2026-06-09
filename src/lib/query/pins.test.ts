@@ -3,17 +3,52 @@ import {
   pinsPaginatedQueryKey,
   pinsByProjectQueryOptions,
   pinsByProjectQueryKey,
+  pinQueryOptions,
+  pinQueryKey,
 } from './pins'
 
-const { mockGetPinsPaginated, mockGetPinsByProject } = vi.hoisted(() => ({
+const { mockGetPinsPaginated, mockGetPinsByProject, mockGetPin } = vi.hoisted(() => ({
   mockGetPinsPaginated: vi.fn(),
   mockGetPinsByProject: vi.fn(),
+  mockGetPin: vi.fn(),
 }))
 
 vi.mock('@/lib/api/pins', () => ({
   getPinsPaginated: (...args: any[]) => mockGetPinsPaginated(...args),
   getPinsByProject: (...args: any[]) => mockGetPinsByProject(...args),
+  getPin: (...args: any[]) => mockGetPin(...args),
 }))
+
+describe('pinQueryOptions', () => {
+  it('uses a stable ["pins", "detail", id] key reflecting the pin id', () => {
+    expect(pinQueryOptions('pin1').queryKey).toEqual(['pins', 'detail', 'pin1'])
+    expect(pinQueryKey('pin1')).toEqual(['pins', 'detail', 'pin1'])
+  })
+
+  it('keys distinct pins separately so loader and hook share one entry per id', () => {
+    expect(pinQueryOptions('pin1').queryKey).not.toEqual(pinQueryOptions('pin2').queryKey)
+  })
+
+  it('nests under the ["pins"] key so pin mutations/invalidation also refresh the detail', () => {
+    // ['pins'] is a prefix of ['pins', 'detail', id], so
+    // invalidateQueries({ queryKey: ['pins'] }) matches the detail too.
+    expect(pinQueryOptions('pin1').queryKey.slice(0, 1)).toEqual(['pins'])
+  })
+
+  it('sets the project default 30s staleTime', () => {
+    expect(pinQueryOptions('pin1').staleTime).toBe(30 * 1000)
+  })
+
+  it('resolves the pin via the getPin api function with the id', async () => {
+    const pin = { id: 'pin1' }
+    mockGetPin.mockResolvedValueOnce(pin)
+
+    const result = await pinQueryOptions('pin1').queryFn!({} as any)
+
+    expect(mockGetPin).toHaveBeenCalledWith('pin1')
+    expect(result).toEqual(pin)
+  })
+})
 
 describe('pinsPaginatedQueryOptions', () => {
   it('uses a stable ["pins", projectId, "paginated", statusFilter] key', () => {

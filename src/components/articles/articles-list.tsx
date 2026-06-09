@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { ArticleDataTable } from './article-data-table'
 import {
-  useArticlesPaginated,
+  useArticlesPaginatedSuspense,
   useArchivedArticlesPaginated,
   useArchiveArticle,
   useRestoreArticle,
@@ -54,16 +54,18 @@ export function ArticlesList({ projectId }: ArticlesListProps) {
     [['articles', projectId, 'paginated'], ['articles', projectId, 'archived', 'paginated']],
   )
 
-  // Data fetching - paginated
+  // Data fetching - paginated. The active list is suspense-backed: its first page
+  // is prefetched in the route loader (SSR) and arrives in the HTML with no loading
+  // flash; the Suspense/error boundaries on the route own its loading/error states.
   const {
     data: activeData,
-    isLoading: activeLoading,
-    error: activeError,
     hasNextPage: activeHasNext,
     fetchNextPage: fetchActiveNext,
     isFetchingNextPage: activeFetchingNext,
-  } = useArticlesPaginated(projectId)
+  } = useArticlesPaginatedSuspense(projectId)
 
+  // The archived tab is below the fold — a regular background query that loads on
+  // tab switch, with its own inline loading/error states in its TabsContent.
   const {
     data: archivedData,
     isLoading: archivedLoading,
@@ -86,11 +88,6 @@ export function ArticlesList({ projectId }: ArticlesListProps) {
   )
 
   const currentArticles = activeTab === 'active' ? activeArticles : archivedArticles
-  const isLoading = activeTab === 'active' ? activeLoading : archivedLoading
-  const error = activeTab === 'active' ? activeError : archivedError
-  const hasNextPage = activeTab === 'active' ? activeHasNext : archivedHasNext
-  const fetchNextPage = activeTab === 'active' ? fetchActiveNext : fetchArchivedNext
-  const isFetchingNextPage = activeTab === 'active' ? activeFetchingNext : archivedFetchingNext
 
   // Pin count lookup
   const pinCountByArticle = useMemo(() => {
@@ -283,27 +280,6 @@ export function ArticlesList({ projectId }: ArticlesListProps) {
     </div>
   )
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
-      </div>
-    )
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-8 space-y-4">
-        <p className="text-red-600">{t('articlesTable.errorLoadFailed')}</p>
-        <Button onClick={() => window.location.reload()} variant="outline" size="sm">
-          {t('common.retry')}
-        </Button>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={handleTabChange}>
@@ -409,7 +385,18 @@ export function ArticlesList({ projectId }: ArticlesListProps) {
         </TabsContent>
 
         <TabsContent value="archived">
-          {archivedArticles.length === 0 ? (
+          {archivedLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-slate-900" />
+            </div>
+          ) : archivedError ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <p className="text-red-600">{t('articlesTable.errorLoadFailed')}</p>
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                {t('common.retry')}
+              </Button>
+            </div>
+          ) : archivedArticles.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <p className="text-slate-500 text-sm">{t('articlesTable.emptyArchived')}</p>
             </div>
