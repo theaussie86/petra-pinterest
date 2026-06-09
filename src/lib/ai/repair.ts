@@ -3,7 +3,7 @@
  *
  * Carries over the former `sanitizeJsonResponse` control-char logic from the
  * `@google/genai` path into the AI SDK's sanctioned `experimental_repairText`
- * slot. The native `generateObject` parse runs first; this only fires when that
+ * slot. The native `Output.object` parse runs first; this only fires when that
  * parse (or Zod validation) fails. A fire-counter lets us measure, weeks later,
  * whether the AI SDK already fixes the Gemini flakiness so the hack can be
  * deleted (see ADR 0002 / PRD #40).
@@ -98,7 +98,7 @@ export function sanitizeJsonControlChars(text: string): string {
 }
 
 /**
- * `experimental_repairText` callback for `generateObject`. Fires only when the
+ * Repair callback reused by `repairableObject` on the `generateText` path. Fires only when the
  * model output fails to parse/validate; increments the fire-counter and returns
  * the control-char-sanitized text for a second parse attempt.
  */

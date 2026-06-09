@@ -1,17 +1,17 @@
 /**
- * Public AI operations as options-object wrappers over `generateObject`
+ * Public AI operations as options-object wrappers over `generateText` + `Output.object`
  * (ADR 0002 / PRD #40).
  *
  * Slice 1 ships article extraction only; pin-metadata wrappers land in a later
  * slice. Each wrapper accepts an optional injected `model` so tests can exercise
- * the real `generateObject` + Zod + repair path via `MockLanguageModelV2` with
+ * the real `generateText` + Output + Zod + repair path via `MockLanguageModelV3` with
  * no network. Production calls resolve the model from the BYOK key via
  * `getModel(apiKey)`.
  */
 
-import { generateObject, type LanguageModel, type ModelMessage } from 'ai'
+import { generateText, type LanguageModel, type ModelMessage } from 'ai'
 import { getModel } from './model'
-import { repairText } from './repair'
+import { repairableObject } from './output'
 import { ARTICLE_SCRAPER_SYSTEM_PROMPT, PINTEREST_SEO_SYSTEM_PROMPT } from './prompts'
 import {
   scrapedArticleSchema,
@@ -35,7 +35,7 @@ export interface GenerateArticleOptions {
 /**
  * Extract structured article content from raw HTML.
  *
- * Wraps `generateObject` with the article Zod schema and the article-scraper
+ * Wraps `generateText` + `Output.object` with the article Zod schema and the article-scraper
  * system prompt at `temperature: 0.1`. No manual `JSON.parse` on the happy
  * path; the carried-over control-char repair only fires on parse failure.
  */
@@ -47,16 +47,15 @@ export async function generateArticleFromHtml({
 }: GenerateArticleOptions): Promise<ScrapedArticle> {
   const truncatedHtml = html.slice(0, MAX_HTML_CHARS)
 
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: model ?? getModel(apiKey),
-    schema: scrapedArticleSchema,
+    output: repairableObject(scrapedArticleSchema),
     system: ARTICLE_SCRAPER_SYSTEM_PROMPT,
     prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
     temperature: 0.1,
-    experimental_repairText: repairText,
   })
 
-  return object
+  return output
 }
 
 export interface PinMetadataArticle {
@@ -115,7 +114,7 @@ function buildPinMetadataUserMessage({
 }
 
 /**
- * Shared `generateObject` call for both pin-metadata paths.
+ * Shared `generateText` + `Output.object` call for both pin-metadata paths.
  *
  * Wraps the metadata Zod schema with the same temperature, token, and Google
  * provider-option settings the old `@google/genai` path used (`thinkingBudget: 0`,
@@ -126,18 +125,17 @@ async function generatePinMetadataObject(
   messages: ModelMessage[],
   { model, apiKey, systemPrompt }: Pick<GeneratePinMetadataOptions, 'model' | 'apiKey' | 'systemPrompt'>,
 ): Promise<GeneratedMetadata> {
-  const { object } = await generateObject({
+  const { output } = await generateText({
     model: model ?? getModel(apiKey),
-    schema: generatedMetadataSchema,
+    output: repairableObject(generatedMetadataSchema),
     system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
     messages,
     temperature: 0.7,
     maxOutputTokens: 8192,
     providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
-    experimental_repairText: repairText,
   })
 
-  return object
+  return output
 }
 
 /**

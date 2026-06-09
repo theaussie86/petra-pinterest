@@ -1,7 +1,7 @@
 /**
  * Zod schemas for AI structured output (re-homed from lib/gemini, unchanged).
  *
- * Used as `generateObject` schemas so the happy path is parsed + validated
+ * Used as `Output.object` schemas so the happy path is parsed + validated
  * natively, with no manual `JSON.parse` of model output (ADR 0002 / PRD #40).
  */
 
