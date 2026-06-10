@@ -21,6 +21,7 @@ import {
 import {
   pinsPaginatedQueryOptions,
   pinsByProjectQueryOptions,
+  pinStatusCountsQueryOptions,
   pinQueryOptions,
   hasProcessingPin,
   type PinsPaginatedOptions,
@@ -98,6 +99,17 @@ export function usePinsPaginated(projectId: string, options: PinsPaginatedOption
  */
 export function usePinsPaginatedSuspense(projectId: string, options: PinsPaginatedOptions = {}) {
   return useSuspenseInfiniteQuery(pinsPaginatedQueryOptions(projectId, options))
+}
+
+/**
+ * Suspense variant for the per-status filter-tab badge counts. Shares
+ * `pinStatusCountsQueryOptions` (cache key `['pins', projectId, 'status-counts']`)
+ * with the pins-list route loader's prefetch, so the counts hydrate without a
+ * client refetch. Nested under `['pins']` so pin mutation / realtime invalidation
+ * refreshes the badges when a pin's status changes (issue #67).
+ */
+export function usePinStatusCountsSuspense(projectId: string) {
+  return useSuspenseQuery(pinStatusCountsQueryOptions(projectId))
 }
 
 export function useCreatePin() {

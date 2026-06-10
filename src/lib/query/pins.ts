@@ -3,6 +3,7 @@ import { subDays } from 'date-fns'
 import {
   getPin,
   getPinsPaginated,
+  getPinStatusCounts,
   getPinsByProject,
   type PaginatedPinsResult,
 } from '@/lib/api/pins'
@@ -60,6 +61,33 @@ export function pinQueryOptions(id: string) {
   return queryOptions<Pin>({
     queryKey: pinQueryKey(id),
     queryFn: () => getPin(id),
+    staleTime: 30 * 1000,
+  })
+}
+
+/**
+ * The cache key for a project's per-status pin counts (the filter-tab badges).
+ * Nested under `['pins', projectId]` so the existing pin mutation invalidation
+ * (`['pins']`) and the pins-list realtime invalidation (`['pins', projectId]`)
+ * match it by prefix — the badges refresh whenever a pin's status changes.
+ */
+export function pinStatusCountsQueryKey(projectId: string) {
+  return ['pins', projectId, 'status-counts'] as const
+}
+
+/**
+ * Shared query options for a project's per-status pin counts — the single source
+ * of truth referenced by both the pins-list route loader
+ * (`prefetchQuery(pinStatusCountsQueryOptions(projectId))`) and the consuming
+ * `usePinStatusCountsSuspense` hook, so the counts arrive in the SSR HTML and
+ * hydrate without a client refetch. Independent of the paginated list, so the
+ * tab badges show true per-status totals regardless of pagination state
+ * (issue #67).
+ */
+export function pinStatusCountsQueryOptions(projectId: string) {
+  return queryOptions<Record<string, number>>({
+    queryKey: pinStatusCountsQueryKey(projectId),
+    queryFn: () => getPinStatusCounts(projectId),
     staleTime: 30 * 1000,
   })
 }

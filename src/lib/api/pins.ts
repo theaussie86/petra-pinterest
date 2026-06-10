@@ -71,6 +71,31 @@ export async function getPinsPaginated(
   return { pins, nextCursor }
 }
 
+/**
+ * Per-status pin totals for a project, keyed by `PinStatus`. Powers the status
+ * filter-tab badges (issue #67): a lightweight `status`-only read that counts the
+ * project's full pin set regardless of how many pages the paginated list has
+ * loaded, so the badges show true totals (e.g. "Alle 100") rather than just the
+ * loaded rows. Runs through the isomorphic client so it respects tenant RLS under
+ * the SSR-auth read pattern (ADR 0003).
+ */
+export async function getPinStatusCounts(
+  projectId: string
+): Promise<Record<string, number>> {
+  const { data, error } = await getSupabaseClient()
+    .from('pins')
+    .select('status')
+    .eq('blog_project_id', projectId)
+
+  if (error) throw error
+
+  const counts: Record<string, number> = {}
+  for (const row of data as { status: string }[]) {
+    counts[row.status] = (counts[row.status] ?? 0) + 1
+  }
+  return counts
+}
+
 export async function getPinsByProject(projectId: string): Promise<Pin[]> {
   const { data, error } = await getSupabaseClient()
     .from('pins')

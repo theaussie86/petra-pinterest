@@ -7,16 +7,20 @@ import { LoadingSpinner } from '@/components/layout/loading-spinner'
 import { ErrorState } from '@/components/layout/error-state'
 import { PinsList } from '@/components/pins/pins-list'
 import { Button } from '@/components/ui/button'
-import { pinsPaginatedQueryOptions } from '@/lib/query/pins'
+import { pinsPaginatedQueryOptions, pinStatusCountsQueryOptions } from '@/lib/query/pins'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/pins/')({
   // Prefetch (and await) the first page of pins server-side so the list arrives
   // in the SSR HTML with no loading flash. `prefetchInfiniteQuery` fetches only
   // the first page; further pages stream client-side via the existing cursor
-  // pagination. Shares `pinsPaginatedQueryOptions` with the consuming
-  // `usePinsPaginatedSuspense` hook → one cache entry.
+  // pagination. Alongside it, prefetch the per-status filter-tab counts so the
+  // badges show true project totals on first paint (issue #67). Both share their
+  // query options with the consuming suspense hooks → one cache entry each.
   loader: ({ context, params }) =>
-    context.queryClient.prefetchInfiniteQuery(pinsPaginatedQueryOptions(params.projectId)),
+    Promise.all([
+      context.queryClient.prefetchInfiniteQuery(pinsPaginatedQueryOptions(params.projectId)),
+      context.queryClient.prefetchQuery(pinStatusCountsQueryOptions(params.projectId)),
+    ]),
   component: PinsPage,
 })
 
