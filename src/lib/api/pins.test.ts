@@ -4,7 +4,6 @@ import {
   getPinsPaginated,
   getPinsByProject,
   getPinsByArticle,
-  getAllPins,
   getPin,
   createPin,
   createPins,
@@ -167,20 +166,6 @@ describe('getPinsByArticle()', () => {
     expect(result).toEqual(pins)
     expect(qb.eq).toHaveBeenCalledWith('blog_article_id', 'article-1')
     expect(qb.order).toHaveBeenCalledWith('scheduled_at', { ascending: false, nullsFirst: false })
-    expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: false })
-  })
-})
-
-describe('getAllPins()', () => {
-  it('queries all pins with correct ordering', async () => {
-    const pins = [buildPin(), buildPin()]
-    const qb = createMockQueryBuilder({ data: pins })
-    mockFrom.mockReturnValue(qb as any)
-
-    const result = await getAllPins()
-
-    expect(result).toEqual(pins)
-    expect(qb.order).toHaveBeenCalledWith('scheduled_at', { ascending: true, nullsFirst: false })
     expect(qb.order).toHaveBeenCalledWith('created_at', { ascending: false })
   })
 })

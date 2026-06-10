@@ -10,7 +10,6 @@ import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
   getPinsByArticle,
-  getAllPins,
   createPin,
   createPins,
   updatePin,
@@ -51,15 +50,6 @@ export function useArticlePins(articleId: string) {
     queryKey: ['pins', 'article', articleId],
     queryFn: () => getPinsByArticle(articleId),
     enabled: !!articleId,
-    staleTime: 30000,
-    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
-  })
-}
-
-export function useAllPins() {
-  return useQuery({
-    queryKey: ['pins', 'all'],
-    queryFn: getAllPins,
     staleTime: 30000,
     refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })

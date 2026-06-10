@@ -12,15 +12,23 @@ import { ProjectDialog } from '@/components/projects/project-dialog'
 import { DeleteDialog } from '@/components/projects/delete-dialog'
 import { Button } from '@/components/ui/button'
 import { useBlogProjectsSuspense } from '@/lib/hooks/use-blog-projects'
-import { useProjectStats } from '@/lib/hooks/use-project-stats'
+import { useDashboardStatsSuspense } from '@/lib/hooks/use-dashboard-stats'
 import { blogProjectsQueryOptions } from '@/lib/query/blog-projects'
+import { dashboardStatsQueryOptions } from '@/lib/query/dashboard-stats'
 import type { BlogProject } from '@/types/blog-projects'
 
 export const Route = createFileRoute('/_authed/projects/')({
-  // Prefetch the projects list server-side so it arrives in the SSR HTML and
-  // hydrates without a client refetch. Shares `blogProjectsQueryOptions` with
-  // the consuming `useBlogProjectsSuspense` hook → one cache entry.
-  loader: ({ context }) => context.queryClient.ensureQueryData(blogProjectsQueryOptions()),
+  // Prefetch the projects list + stats aggregate server-side so the cards and
+  // their counts arrive in the SSR HTML and hydrate without a client refetch.
+  // Stats come from the single, row-cap-free `get_dashboard_stats` RPC — the
+  // same source the dashboard uses (issue #69). Both feeds share their
+  // query-options factory with the consuming suspense hooks → one cache entry
+  // each.
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.ensureQueryData(blogProjectsQueryOptions()),
+      context.queryClient.ensureQueryData(dashboardStatsQueryOptions()),
+    ]),
   component: ProjectsPage,
 })
 
@@ -79,7 +87,7 @@ function ProjectsList({ onCreateProject, onDeleteProject }: ProjectsListProps) {
   // CatchBoundary covers errors. Background refetches (realtime invalidation)
   // keep showing stale data without re-triggering the fallback.
   const { data: projects } = useBlogProjectsSuspense()
-  const { projectStatsMap, loading: statsLoading } = useProjectStats()
+  const { projectStatsMap } = useDashboardStatsSuspense()
 
   if (projects.length === 0) {
     return <EmptyDashboardState onCreateProject={onCreateProject} />
@@ -102,7 +110,6 @@ function ProjectsList({ onCreateProject, onDeleteProject }: ProjectsListProps) {
             project={project}
             onDelete={onDeleteProject}
             stats={projectStatsMap.get(project.id)}
-            statsLoading={statsLoading}
           />
         ))}
       </div>
