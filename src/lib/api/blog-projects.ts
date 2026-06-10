@@ -1,9 +1,10 @@
 import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
 import type { BlogProject, BlogProjectInsert, BlogProjectUpdate } from '@/types/blog-projects'
 
 export async function getBlogProjects(): Promise<BlogProject[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_projects')
     .select('*')
     .order('created_at', { ascending: false })
@@ -13,7 +14,7 @@ export async function getBlogProjects(): Promise<BlogProject[]> {
 }
 
 export async function getBlogProject(id: string): Promise<BlogProject> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_projects')
     .select('*')
     .eq('id', id)
@@ -70,13 +71,13 @@ export async function deleteBlogProject(id: string): Promise<void> {
 export async function checkProjectRelatedData(id: string): Promise<{ articles: number; pins: number }> {
   try {
     // Query blog_articles count
-    const { count: articlesCount, error: articlesError } = await supabase
+    const { count: articlesCount, error: articlesError } = await getSupabaseClient()
       .from('blog_articles')
       .select('*', { count: 'exact', head: true })
       .eq('blog_project_id', id)
 
     // Query pins count
-    const { count: pinsCount, error: pinsError } = await supabase
+    const { count: pinsCount, error: pinsError } = await getSupabaseClient()
       .from('pins')
       .select('*', { count: 'exact', head: true })
       .eq('blog_project_id', id)

@@ -11,9 +11,13 @@ import {
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 import { buildBlogProject, buildBlogProjectInsert } from '@/test/factories'
 
+// Shared `from` mock so reads (via getSupabaseClient → supabase-iso) and
+// mutations (via the browser `supabase` client) hit the same query builder.
+const { mockFrom } = vi.hoisted(() => ({ mockFrom: vi.fn() }))
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: vi.fn(),
+    from: mockFrom,
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user: { id: 'test-user-id' } },
@@ -24,11 +28,15 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
+// Reads use the isomorphic selector (ADR 0003). Mock it to return a client
+// whose `from` is the shared mock above.
+vi.mock('@/lib/supabase-iso', () => ({
+  getSupabaseClient: () => ({ from: mockFrom }),
+}))
+
 vi.mock('@/lib/auth', () => ({
   ensureProfile: vi.fn().mockResolvedValue({ tenant_id: 'test-tenant-id' }),
 }))
-
-const mockFrom = vi.mocked(supabase.from)
 
 describe('getBlogProjects()', () => {
   it('fetches all projects ordered by created_at desc', async () => {
