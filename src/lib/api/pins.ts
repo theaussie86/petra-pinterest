@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
 import type { Pin, PinInsert, PinUpdate, PinStatus } from '@/types/pins'
 
@@ -20,43 +21,83 @@ export async function getPinsPaginated(
 ): Promise<PaginatedPinsResult> {
   const { createdAfter, cursor, limit = 20, statusFilter } = options
 
-  let query = supabase
-    .from('pins')
-    .select('*')
-    .eq('blog_project_id', projectId)
+  const client = getSupabaseClient()
 
-  // Initial load: filter by created_after date
-  if (createdAfter) {
-    query = query.gte('created_at', createdAfter.toISOString())
+  // Build a `created_at`-descending page bounded by an optional lower (`gte`,
+  // the recent-days window) and/or upper (`lt`, the cursor) `created_at` bound.
+  // Fetches one extra row so the caller can tell whether more pages follow.
+  const fetchPage = async (
+    bounds: { gte?: string; lt?: string },
+    take: number,
+  ): Promise<Pin[]> => {
+    let query = client.from('pins').select('*').eq('blog_project_id', projectId)
+
+    if (bounds.gte) query = query.gte('created_at', bounds.gte)
+    if (bounds.lt) query = query.lt('created_at', bounds.lt)
+    if (statusFilter && statusFilter.length > 0) query = query.in('status', statusFilter)
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(take)
+
+    if (error) throw error
+    return data
   }
 
-  // Pagination: fetch pins older than the cursor
-  if (cursor) {
-    query = query.lt('created_at', cursor)
+  // The primary page: the recent-days window on first load (`createdAfter`), or
+  // a cursor page (`cursor`) once the user pages back.
+  let rows = await fetchPage(
+    { gte: createdAfter?.toISOString(), lt: cursor },
+    limit + 1,
+  )
+
+  // When the recent-days window underfills the page, backfill with pins older
+  // than the window so every pin in the project stays reachable. Without this a
+  // legacy project whose pins all predate the window would surface an empty or
+  // near-empty first page with no way to reach the rest (issue #66).
+  if (createdAfter && rows.length <= limit) {
+    const older = await fetchPage(
+      { lt: createdAfter.toISOString() },
+      limit + 1 - rows.length,
+    )
+    rows = [...rows, ...older]
   }
 
-  // Status filter
-  if (statusFilter && statusFilter.length > 0) {
-    query = query.in('status', statusFilter)
-  }
-
-  // Apply ordering and limit AFTER all filters for consistent results
-  const { data, error } = await query
-    .order('created_at', { ascending: false })
-    .order('id', { ascending: false })
-    .limit(limit + 1) // Fetch one extra to determine if there's more
-
-  if (error) throw error
-
-  const hasMore = data.length > limit
-  const pins = hasMore ? data.slice(0, limit) : data
+  const hasMore = rows.length > limit
+  const pins = hasMore ? rows.slice(0, limit) : rows
   const nextCursor = hasMore ? pins[pins.length - 1].created_at : null
 
   return { pins, nextCursor }
 }
 
+/**
+ * Per-status pin totals for a project, keyed by `PinStatus`. Powers the status
+ * filter-tab badges (issue #67): a lightweight `status`-only read that counts the
+ * project's full pin set regardless of how many pages the paginated list has
+ * loaded, so the badges show true totals (e.g. "Alle 100") rather than just the
+ * loaded rows. Runs through the isomorphic client so it respects tenant RLS under
+ * the SSR-auth read pattern (ADR 0003).
+ */
+export async function getPinStatusCounts(
+  projectId: string
+): Promise<Record<string, number>> {
+  const { data, error } = await getSupabaseClient()
+    .from('pins')
+    .select('status')
+    .eq('blog_project_id', projectId)
+
+  if (error) throw error
+
+  const counts: Record<string, number> = {}
+  for (const row of data as { status: string }[]) {
+    counts[row.status] = (counts[row.status] ?? 0) + 1
+  }
+  return counts
+}
+
 export async function getPinsByProject(projectId: string): Promise<Pin[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('blog_project_id', projectId)
@@ -67,7 +108,7 @@ export async function getPinsByProject(projectId: string): Promise<Pin[]> {
 }
 
 export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('blog_article_id', articleId)
@@ -78,19 +119,8 @@ export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
   return data
 }
 
-export async function getAllPins(): Promise<Pin[]> {
-  const { data, error } = await supabase
-    .from('pins')
-    .select('*')
-    .order('scheduled_at', { ascending: true, nullsFirst: false })
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  return data
-}
-
 export async function getPin(id: string): Promise<Pin> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('id', id)

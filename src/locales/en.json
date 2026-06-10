@@ -257,6 +257,7 @@
   },
   "pinsList": {
     "errorLoadFailed": "Failed to load pins",
+    "loadMore": "Load more",
     "all": "All",
     "tab_draft": "Draft",
     "tab_generation": "Generation",

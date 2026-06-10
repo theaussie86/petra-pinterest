@@ -1,29 +1,47 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
-  getBlogProjects,
-  getBlogProject,
   createBlogProject,
   updateBlogProject,
   deleteBlogProject
 } from '@/lib/api/blog-projects'
+import {
+  blogProjectsQueryOptions,
+  blogProjectQueryOptions,
+  BLOG_PROJECTS_QUERY_KEY,
+} from '@/lib/query/blog-projects'
 import type { BlogProject, BlogProjectInsert } from '@/types/blog-projects'
 
 export function useBlogProjects() {
-  return useQuery({
-    queryKey: ['blog-projects'],
-    queryFn: getBlogProjects,
-    staleTime: 30000
-  })
+  return useQuery(blogProjectsQueryOptions())
+}
+
+/**
+ * Suspense variant for routes that prefetch the list in their loader (SSR).
+ * Shares `blogProjectsQueryOptions` (and thus the `BLOG_PROJECTS_QUERY_KEY` cache
+ * entry) with `useBlogProjects` and the route loader, so loader-prefetched data
+ * hydrates without a client refetch and `data` is always defined.
+ */
+export function useBlogProjectsSuspense() {
+  return useSuspenseQuery(blogProjectsQueryOptions())
 }
 
 export function useBlogProject(id: string) {
   return useQuery({
-    queryKey: ['blog-projects', id],
-    queryFn: () => getBlogProject(id),
-    enabled: !!id
+    ...blogProjectQueryOptions(id),
+    enabled: !!id,
   })
+}
+
+/**
+ * Suspense variant for the project-detail route that prefetches the record in its
+ * loader (SSR). Shares `blogProjectQueryOptions` (cache key `['blog-projects', id]`)
+ * with `useBlogProject` and the loader, so loader-prefetched data hydrates without
+ * a client refetch and `data` is always defined.
+ */
+export function useBlogProjectSuspense(id: string) {
+  return useSuspenseQuery(blogProjectQueryOptions(id))
 }
 
 export function useCreateBlogProject() {
@@ -33,14 +51,14 @@ export function useCreateBlogProject() {
     mutationFn: createBlogProject,
     onMutate: async (newProject: BlogProjectInsert) => {
       // Cancel outgoing queries
-      await queryClient.cancelQueries({ queryKey: ['blog-projects'] })
+      await queryClient.cancelQueries({ queryKey: BLOG_PROJECTS_QUERY_KEY })
 
       // Snapshot previous data
-      const previousProjects = queryClient.getQueryData<BlogProject[]>(['blog-projects'])
+      const previousProjects = queryClient.getQueryData<BlogProject[]>(BLOG_PROJECTS_QUERY_KEY)
 
       // Optimistically add temp item to cache
       if (previousProjects) {
-        queryClient.setQueryData<BlogProject[]>(['blog-projects'], [
+        queryClient.setQueryData<BlogProject[]>(BLOG_PROJECTS_QUERY_KEY, [
           {
             id: 'temp-' + Date.now(),
             tenant_id: 'temp',
@@ -78,7 +96,7 @@ export function useCreateBlogProject() {
     onError: (_error, _variables, context) => {
       // Rollback to snapshot
       if (context?.previousProjects) {
-        queryClient.setQueryData(['blog-projects'], context.previousProjects)
+        queryClient.setQueryData(BLOG_PROJECTS_QUERY_KEY, context.previousProjects)
       }
       toast.error(i18n.t('toast.project.createFailed'))
     },
@@ -86,7 +104,7 @@ export function useCreateBlogProject() {
       toast.success(i18n.t('toast.project.created'))
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['blog-projects'] })
+      queryClient.invalidateQueries({ queryKey: BLOG_PROJECTS_QUERY_KEY })
     }
   })
 }
@@ -98,7 +116,7 @@ export function useUpdateBlogProject() {
     mutationFn: updateBlogProject,
     onSuccess: () => {
       toast.success(i18n.t('toast.project.updated'))
-      queryClient.invalidateQueries({ queryKey: ['blog-projects'] })
+      queryClient.invalidateQueries({ queryKey: BLOG_PROJECTS_QUERY_KEY })
     },
     onError: () => {
       toast.error(i18n.t('toast.project.updateFailed'))
@@ -113,7 +131,7 @@ export function useDeleteBlogProject() {
     mutationFn: deleteBlogProject,
     onSuccess: () => {
       toast.success(i18n.t('toast.project.deleted'))
-      queryClient.invalidateQueries({ queryKey: ['blog-projects'] })
+      queryClient.invalidateQueries({ queryKey: BLOG_PROJECTS_QUERY_KEY })
     },
     onError: () => {
       toast.error(i18n.t('toast.project.deleteFailed'))

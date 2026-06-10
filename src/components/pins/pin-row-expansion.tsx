@@ -15,6 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { GenerateMetadataButton } from '@/components/pins/generate-metadata-button'
+import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
+import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
+import { PinErrorAlert } from '@/components/pins/pin-error-alert'
 import { ACTIVE_STATUSES, type Pin, type PinStatus } from '@/types/pins'
 
 interface Board {
@@ -48,6 +52,8 @@ export const PinRowExpansion = memo(function PinRowExpansion({ pin, boards, boar
   const [time, setTime] = useState<string>(
     existingDate ? format(existingDate, 'HH:mm') : ''
   )
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false)
 
   const updatePin = useUpdatePin()
 
@@ -96,7 +102,9 @@ export const PinRowExpansion = memo(function PinRowExpansion({ pin, boards, boar
   }
 
   return (
-    <div className="bg-muted/50 px-4 py-4 border-t">
+    <div className="bg-muted/50 px-4 py-4 border-t space-y-4">
+      {pin.status === 'error' && <PinErrorAlert pin={pin} />}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metadata Display (read-only) */}
         <div className="md:col-span-2 space-y-3">
@@ -124,6 +132,13 @@ export const PinRowExpansion = memo(function PinRowExpansion({ pin, boards, boar
               {pin.alt_text || <span className="text-muted-foreground italic">{t('common.empty')}</span>}
             </p>
           </div>
+
+          {/* AI Metadata generation */}
+          <GenerateMetadataButton
+            pin={pin}
+            onHistoryOpen={() => setHistoryDialogOpen(true)}
+            onRegenerateOpen={() => setFeedbackDialogOpen(true)}
+          />
         </div>
 
         {/* Actions */}
@@ -280,6 +295,18 @@ export const PinRowExpansion = memo(function PinRowExpansion({ pin, boards, boar
           </div>
         </div>
       </div>
+
+      {/* AI Metadata dialogs */}
+      <MetadataHistoryDialog
+        pinId={pin.id}
+        open={historyDialogOpen}
+        onOpenChange={setHistoryDialogOpen}
+      />
+      <RegenerateFeedbackDialog
+        pinId={pin.id}
+        open={feedbackDialogOpen}
+        onOpenChange={setFeedbackDialogOpen}
+      />
     </div>
   )
 })

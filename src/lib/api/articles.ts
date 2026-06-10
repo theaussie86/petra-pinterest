@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase-iso'
 import { scrapeBlogFn, scrapeSingleFn } from '@/lib/server/scraping'
 import type { Article, ScrapeRequest, ScrapeResponse } from '@/types/articles'
 
@@ -13,7 +14,7 @@ export interface GetArticlesPaginatedOptions {
 }
 
 export async function getAllArticles(): Promise<Article[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_articles')
     .select('*')
     .is('archived_at', null)
@@ -24,7 +25,7 @@ export async function getAllArticles(): Promise<Article[]> {
 }
 
 export async function getArticlesByProject(projectId: string): Promise<Article[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_articles')
     .select('*')
     .eq('blog_project_id', projectId)
@@ -36,7 +37,7 @@ export async function getArticlesByProject(projectId: string): Promise<Article[]
 }
 
 export async function getArticle(id: string): Promise<Article> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_articles')
     .select('*')
     .eq('id', id)
@@ -71,7 +72,7 @@ export async function restoreArticle(id: string): Promise<Article> {
 }
 
 export async function getArchivedArticles(projectId: string): Promise<Article[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_articles')
     .select('*')
     .eq('blog_project_id', projectId)
@@ -150,7 +151,7 @@ export async function getArticlesPaginated(
   const { offset = 0, limit = 20 } = options
 
   // Fetch limit + 1 to check if there are more items
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_articles')
     .select('*')
     .eq('blog_project_id', projectId)
@@ -175,7 +176,7 @@ export async function getArchivedArticlesPaginated(
   const { offset = 0, limit = 20 } = options
 
   // Fetch limit + 1 to check if there are more items
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('blog_articles')
     .select('*')
     .eq('blog_project_id', projectId)

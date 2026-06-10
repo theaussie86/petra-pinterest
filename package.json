@@ -1,7 +1,7 @@
 {
   "name": "petra-pinterest",
   "private": true,
-  "version": "1.9.2",
+  "version": "1.10.0",
   "type": "module",
   "scripts": {
     "dev": "node --max-http-header-size=32768 node_modules/vite/bin/vite.js dev --port 3000",
@@ -36,6 +36,7 @@
     "@tanstack/react-query": "^5.64.0",
     "@tanstack/react-router": "^1.157.16",
     "@tanstack/react-router-devtools": "^1.157.16",
+    "@tanstack/react-router-ssr-query": "^1.157.16",
     "@tanstack/react-start": "^1.157.16",
     "@trigger.dev/sdk": "^4.4.2",
     "ai": "^6.0.199",

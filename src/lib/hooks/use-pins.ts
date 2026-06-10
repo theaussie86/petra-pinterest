@@ -1,36 +1,49 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import {
+  useQuery,
+  useSuspenseQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+  useSuspenseInfiniteQuery,
+} from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { subDays } from 'date-fns'
 import i18n from '@/lib/i18n'
 import {
-  getPinsByProject,
   getPinsByArticle,
-  getAllPins,
-  getPin,
   createPin,
   createPins,
   updatePin,
   deletePin,
   deletePins,
   updatePinsStatus,
-  getPinsPaginated,
 } from '@/lib/api/pins'
+import {
+  pinsPaginatedQueryOptions,
+  pinsByProjectQueryOptions,
+  pinStatusCountsQueryOptions,
+  pinQueryOptions,
+  hasProcessingPin,
+  type PinsPaginatedOptions,
+} from '@/lib/query/pins'
 import type { PinStatus } from '@/types/pins'
-
-const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
-
-function hasProcessingPin(pins: { status: string }[] | undefined) {
-  return pins?.some((p) => PROCESSING_STATUSES.includes(p.status)) ?? false
-}
 
 export function usePins(projectId: string) {
   return useQuery({
-    queryKey: ['pins', projectId],
-    queryFn: () => getPinsByProject(projectId),
+    ...pinsByProjectQueryOptions(projectId),
     enabled: !!projectId,
-    staleTime: 30000,
-    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
+}
+
+/**
+ * Suspense variant for the calendar route that prefetches the project's pins in
+ * its loader (SSR). Shares `pinsByProjectQueryOptions` (cache key
+ * `['pins', projectId]`) with `usePins` and the loader, so loader-prefetched data
+ * hydrates without a client refetch (no loading flash) and `data` is always
+ * defined. Mutation/realtime invalidation on `['pins']`/`['pins', projectId]`
+ * triggers a background refetch shown without a fallback flash.
+ */
+export function usePinsSuspense(projectId: string) {
+  return useSuspenseQuery(pinsByProjectQueryOptions(projectId))
 }
 
 export function useArticlePins(articleId: string) {
@@ -43,58 +56,50 @@ export function useArticlePins(articleId: string) {
   })
 }
 
-export function useAllPins() {
-  return useQuery({
-    queryKey: ['pins', 'all'],
-    queryFn: getAllPins,
-    staleTime: 30000,
-    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
-  })
-}
-
 export function usePin(id: string) {
   return useQuery({
-    queryKey: ['pins', 'detail', id],
-    queryFn: () => getPin(id),
+    ...pinQueryOptions(id),
     enabled: !!id,
   })
 }
 
-interface UsePinsPaginatedOptions {
-  statusFilter?: string[]
-  initialDays?: number
-  pageSize?: number
+/**
+ * Suspense variant for the pin-detail route that prefetches the record in its
+ * loader (SSR). Shares `pinQueryOptions` (cache key `['pins', 'detail', id]`)
+ * with `usePin` and the loader, so loader-prefetched data hydrates without a
+ * client refetch and `data` is always defined.
+ */
+export function usePinSuspense(id: string) {
+  return useSuspenseQuery(pinQueryOptions(id))
 }
 
-type PaginationPageParam = {
-  createdAfter?: Date
-  cursor?: string
-}
-
-export function usePinsPaginated(
-  projectId: string,
-  options: UsePinsPaginatedOptions = {}
-) {
-  const { statusFilter, initialDays = 3, pageSize = 20 } = options
-
+export function usePinsPaginated(projectId: string, options: PinsPaginatedOptions = {}) {
   return useInfiniteQuery({
-    queryKey: ['pins', projectId, 'paginated', statusFilter],
-    queryFn: ({ pageParam }: { pageParam: PaginationPageParam }) =>
-      getPinsPaginated(projectId, {
-        ...pageParam,
-        statusFilter,
-        limit: pageSize,
-      }),
-    initialPageParam: {
-      createdAfter: subDays(new Date(), initialDays),
-    } satisfies PaginationPageParam,
-    getNextPageParam: (lastPage): PaginationPageParam | undefined =>
-      lastPage.nextCursor
-        ? { cursor: lastPage.nextCursor }
-        : undefined,
+    ...pinsPaginatedQueryOptions(projectId, options),
     enabled: !!projectId,
-    staleTime: 30000,
   })
+}
+
+/**
+ * Suspense variant for the pins-list route that prefetches the first page in its
+ * loader (SSR) via `prefetchInfiniteQuery`. Shares `pinsPaginatedQueryOptions`
+ * (cache key `['pins', projectId, 'paginated', statusFilter]`) with
+ * `usePinsPaginated` and the loader, so the first page hydrates without a client
+ * refetch (no loading flash) and `data.pages` is always defined.
+ */
+export function usePinsPaginatedSuspense(projectId: string, options: PinsPaginatedOptions = {}) {
+  return useSuspenseInfiniteQuery(pinsPaginatedQueryOptions(projectId, options))
+}
+
+/**
+ * Suspense variant for the per-status filter-tab badge counts. Shares
+ * `pinStatusCountsQueryOptions` (cache key `['pins', projectId, 'status-counts']`)
+ * with the pins-list route loader's prefetch, so the counts hydrate without a
+ * client refetch. Nested under `['pins']` so pin mutation / realtime invalidation
+ * refreshes the badges when a pin's status changes (issue #67).
+ */
+export function usePinStatusCountsSuspense(projectId: string) {
+  return useSuspenseQuery(pinStatusCountsQueryOptions(projectId))
 }
 
 export function useCreatePin() {

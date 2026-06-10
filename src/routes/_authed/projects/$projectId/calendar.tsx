@@ -1,11 +1,14 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { createFileRoute, useNavigate, CatchBoundary } from '@tanstack/react-router'
+import { Suspense, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { usePins } from '@/lib/hooks/use-pins'
+import { LoadingSpinner } from '@/components/layout/loading-spinner'
+import { ErrorState } from '@/components/layout/error-state'
+import { usePinsSuspense } from '@/lib/hooks/use-pins'
+import { pinsByProjectQueryOptions } from '@/lib/query/pins'
 import { CalendarGrid } from '@/components/calendar/calendar-grid'
 import { PinSidebar } from '@/components/calendar/pin-sidebar'
 import { PinListSidebar } from '@/components/calendar/pin-list-sidebar'
@@ -33,8 +36,37 @@ export const Route = createFileRoute('/_authed/projects/$projectId/calendar')({
         : undefined,
     }
   },
-  component: CalendarPage,
+  // Prefetch the project's pins server-side so the scheduled pins arrive in the
+  // SSR HTML and the calendar hydrates without a client refetch (no loading
+  // flash). Shares `pinsByProjectQueryOptions` (cache key `['pins', projectId]`)
+  // with the consuming `usePinsSuspense` hook → one cache entry per project.
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(pinsByProjectQueryOptions(params.projectId)),
+  component: CalendarRoute,
 })
+
+function CalendarRoute() {
+  return (
+    <CatchBoundary
+      getResetKey={() => 'calendar'}
+      errorComponent={({ error }) => (
+        <PageLayout maxWidth="wide">
+          <ErrorState error={error} />
+        </PageLayout>
+      )}
+    >
+      <Suspense
+        fallback={
+          <PageLayout maxWidth="wide">
+            <LoadingSpinner />
+          </PageLayout>
+        }
+      >
+        <CalendarPage />
+      </Suspense>
+    </CatchBoundary>
+  )
+}
 
 function CalendarPage() {
   const { t } = useTranslation()
@@ -48,7 +80,11 @@ function CalendarPage() {
     [['pins', projectId]],
   )
 
-  const { data: pins, isLoading } = usePins(projectId)
+  // Suspense + the loader prefetch guarantee `pins` is defined here; the Suspense
+  // boundary covers the (already-resolved) loading state and CatchBoundary covers
+  // errors. Background refetches (mutation/realtime invalidation) keep showing the
+  // stale pins without re-triggering the fallback.
+  const { data: pins } = usePinsSuspense(projectId)
 
   const { statusTab = 'all' } = searchParams
 
@@ -61,10 +97,7 @@ function CalendarPage() {
   const sidebarOpen = pinListOpen || selectedPinId !== null || selectedDay !== null
 
   // Filter by status tab
-  const filteredPins = useMemo(() => {
-    if (!pins) return []
-    return filterPinsByTab(pins, statusTab)
-  }, [pins, statusTab])
+  const filteredPins = useMemo(() => filterPinsByTab(pins, statusTab), [pins, statusTab])
 
   // Split into scheduled and unscheduled
   const scheduledPins = useMemo(
@@ -86,7 +119,7 @@ function CalendarPage() {
   // Handle status filter tab change
   const handleStatusTabChange = (newStatusTab: StatusTab) => {
     navigate({
-      search: (prev) => ({
+      search: (prev: CalendarSearch) => ({
         ...prev,
         statusTab: newStatusTab === 'all' ? undefined : newStatusTab,
       }),
@@ -119,62 +152,34 @@ function CalendarPage() {
           {/* Status filter bar */}
           <div className="mb-4">
             <PinStatusFilterBar
-              pins={pins || []}
+              pins={pins}
               activeTab={statusTab}
               onTabChange={handleStatusTabChange}
             />
           </div>
 
-          {/* Loading state */}
-          {isLoading && (
-            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
-              {/* Header skeleton */}
-              <div className="grid grid-cols-7 border-b border-slate-200">
-                {[t('calendar.dayMon'), t('calendar.dayTue'), t('calendar.dayWed'), t('calendar.dayThu'), t('calendar.dayFri'), t('calendar.daySat'), t('calendar.daySun')].map((day) => (
-                  <div
-                    key={day}
-                    className="bg-slate-50 px-3 py-2 text-center text-sm font-medium text-slate-700 border-r last:border-r-0"
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-              {/* Grid skeleton */}
-              <div className="grid grid-cols-7">
-                {Array.from({ length: 42 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="border-r border-b min-h-[100px] p-2 bg-slate-100 animate-pulse"
-                  />
-                ))}
-              </div>
+          {/* Content area — Suspense guarantees pins are loaded here */}
+          {scheduledPins.length === 0 ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
+              <p className="text-slate-600">
+                {t('calendar.emptyScheduled')}
+              </p>
+              <p className="text-sm text-slate-500 mt-2">
+                {t('calendar.emptyHint')}
+              </p>
             </div>
-          )}
-
-          {/* Content area */}
-          {!isLoading && (
-            scheduledPins.length === 0 ? (
-              <div className="rounded-lg border border-slate-200 bg-white p-8 text-center">
-                <p className="text-slate-600">
-                  {t('calendar.emptyScheduled')}
-                </p>
-                <p className="text-sm text-slate-500 mt-2">
-                  {t('calendar.emptyHint')}
-                </p>
-              </div>
-            ) : (
-              <CalendarGrid
-                key={projectId}
-                projectId={projectId}
-                pins={scheduledPins}
-                allPins={filteredPins}
-                selectedDay={selectedDay}
-                onPinClick={handlePinClick}
-                onDayClick={handleDayClick}
-                onTogglePinList={() => setPinListOpen((prev) => !prev)}
-                pinListOpen={pinListOpen}
-              />
-            )
+          ) : (
+            <CalendarGrid
+              key={projectId}
+              projectId={projectId}
+              pins={scheduledPins}
+              allPins={filteredPins}
+              selectedDay={selectedDay}
+              onPinClick={handlePinClick}
+              onDayClick={handleDayClick}
+              onTogglePinList={() => setPinListOpen((prev) => !prev)}
+              pinListOpen={pinListOpen}
+            />
           )}
         </div>
       </PageLayout>

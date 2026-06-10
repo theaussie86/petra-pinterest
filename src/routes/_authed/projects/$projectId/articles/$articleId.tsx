@@ -1,10 +1,13 @@
-import { useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Suspense, useState } from 'react'
+import { createFileRoute, useNavigate, CatchBoundary } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ExternalLink, Pencil } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
-import { useArticle, useArchiveArticle, useUpdateArticleContent } from '@/lib/hooks/use-articles'
+import { LoadingSpinner } from '@/components/layout/loading-spinner'
+import { ErrorState } from '@/components/layout/error-state'
+import { useArticleSuspense, useArchiveArticle, useUpdateArticleContent } from '@/lib/hooks/use-articles'
+import { articleQueryOptions } from '@/lib/query/articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { useArticlePins } from '@/lib/hooks/use-pins'
 import { ArticlePinCard } from '@/components/pins/article-pin-card'
@@ -22,13 +25,44 @@ import {
 import { sanitizeHtml } from '@/lib/utils'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/articles/$articleId')({
-  component: ArticleDetail,
+  // Prefetch the article record server-side so the detail arrives in the SSR HTML
+  // and hydrates without a client refetch. Shares `articleQueryOptions` with the
+  // consuming `useArticleSuspense` hook → one cache entry per article id.
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(articleQueryOptions(params.articleId)),
+  component: ArticleDetailRoute,
 })
+
+function ArticleDetailRoute() {
+  return (
+    <CatchBoundary
+      getResetKey={() => 'article-detail'}
+      errorComponent={({ error }) => (
+        <PageLayout maxWidth="narrow">
+          <ErrorState error={error} />
+        </PageLayout>
+      )}
+    >
+      <Suspense
+        fallback={
+          <PageLayout maxWidth="narrow">
+            <LoadingSpinner />
+          </PageLayout>
+        }
+      >
+        <ArticleDetail />
+      </Suspense>
+    </CatchBoundary>
+  )
+}
 
 function ArticleDetail() {
   const { t, i18n } = useTranslation()
   const { projectId, articleId } = Route.useParams()
-  const { data: article, isLoading, error } = useArticle(articleId)
+  // Suspense + the loader prefetch guarantee `article` is defined here; the
+  // Suspense boundary covers loading and CatchBoundary covers errors. Background
+  // refetches (mutation/realtime invalidation) keep showing the stale record.
+  const { data: article } = useArticleSuspense(articleId)
   const { data: project } = useBlogProject(projectId)
   const { data: articlePins } = useArticlePins(articleId)
   const archiveMutation = useArchiveArticle()
@@ -49,15 +83,15 @@ function ArticleDetail() {
   }
 
   const handleArchive = async () => {
-    archiveMutation.mutate(article!.id, {
+    archiveMutation.mutate(article.id, {
       onSuccess: () => {
-        navigate({ to: '/projects/$projectId', params: { projectId: article!.blog_project_id } })
+        navigate({ to: '/projects/$projectId', params: { projectId: article.blog_project_id } })
       }
     })
   }
 
   const handleStartEditing = () => {
-    setEditedContent(article?.content || '')
+    setEditedContent(article.content || '')
     setIsEditing(true)
   }
 
@@ -68,7 +102,7 @@ function ArticleDetail() {
 
   const handleSaveContent = () => {
     updateContentMutation.mutate(
-      { id: article!.id, content: editedContent },
+      { id: article.id, content: editedContent },
       {
         onSuccess: () => {
           setIsEditing(false)
@@ -88,100 +122,94 @@ function ArticleDetail() {
         breadcrumbs={[
           { label: t('articleDetail.breadcrumbDashboard'), href: "/dashboard" },
           { label: project?.name || t('articleDetail.breadcrumbProject'), href: `/projects/${projectId}` },
-          { label: article?.title || t('articleDetail.breadcrumbArticle') },
+          { label: article.title || t('articleDetail.breadcrumbArticle') },
         ]}
-        title={article?.title || t('articleDetail.breadcrumbArticle')}
+        title={article.title || t('articleDetail.breadcrumbArticle')}
         actions={
-          article ? (
-            <div className="flex gap-2">
-              {!isEditing && (
-                <Button variant="outline" onClick={handleStartEditing}>
-                  <Pencil className="mr-2 h-4 w-4" /> {t('articleDetail.editContent')}
-                </Button>
-              )}
-              <Button variant="outline" asChild>
-                <a href={article.url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" /> {t('articleDetail.viewOriginal')}
-                </a>
+          <div className="flex gap-2">
+            {!isEditing && (
+              <Button variant="outline" onClick={handleStartEditing}>
+                <Pencil className="mr-2 h-4 w-4" /> {t('articleDetail.editContent')}
               </Button>
-              <Button variant="outline" onClick={handleArchive} disabled={archiveMutation.isPending}>
-                {article.archived_at ? t('articleDetail.restore') : t('articleDetail.archive')}
-              </Button>
-            </div>
-          ) : undefined
+            )}
+            <Button variant="outline" asChild>
+              <a href={article.url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="mr-2 h-4 w-4" /> {t('articleDetail.viewOriginal')}
+              </a>
+            </Button>
+            <Button variant="outline" onClick={handleArchive} disabled={archiveMutation.isPending}>
+              {article.archived_at ? t('articleDetail.restore') : t('articleDetail.archive')}
+            </Button>
+          </div>
         }
       />
-      <PageLayout maxWidth="narrow" isLoading={isLoading} error={error ?? null}>
-        {article && (
-          <>
-            {/* Article metadata */}
-            <div className="mb-8">
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                {article.published_at && (
-                  <span>{t('articleDetail.published', { date: formatDate(article.published_at) })}</span>
-                )}
-                <span>{t('articleDetail.scraped', { date: formatDate(article.scraped_at) })}</span>
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
-                  {t('articleDetail.pins', { count: articlePins?.length ?? 0 })}
-                </span>
-              </div>
-            </div>
+      <PageLayout maxWidth="narrow">
+        {/* Article metadata */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+            {article.published_at && (
+              <span>{t('articleDetail.published', { date: formatDate(article.published_at) })}</span>
+            )}
+            <span>{t('articleDetail.scraped', { date: formatDate(article.scraped_at) })}</span>
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+              {t('articleDetail.pins', { count: articlePins?.length ?? 0 })}
+            </span>
+          </div>
+        </div>
 
-            {/* Linked Pins */}
-            <div className="mb-8">
-              <h2 className="mb-3 text-lg font-semibold">{t('articleDetail.linkedPins')}</h2>
-              {articlePins && articlePins.length > 0 ? (
-                <div className="space-y-2">
-                  {articlePins.slice(0, visiblePins).map((pin) => (
-                    <ArticlePinCard key={pin.id} pin={pin} projectId={projectId} />
-                  ))}
-                  {articlePins.length > visiblePins && (
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => setVisiblePins((v) => v + 5)}
-                    >
-                      {t('articleDetail.loadMore')}
-                    </Button>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">{t('articleDetail.noPins')}</p>
+        {/* Linked Pins */}
+        <div className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold">{t('articleDetail.linkedPins')}</h2>
+          {articlePins && articlePins.length > 0 ? (
+            <div className="space-y-2">
+              {articlePins.slice(0, visiblePins).map((pin) => (
+                <ArticlePinCard key={pin.id} pin={pin} projectId={projectId} />
+              ))}
+              {articlePins.length > visiblePins && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setVisiblePins((v) => v + 5)}
+                >
+                  {t('articleDetail.loadMore')}
+                </Button>
               )}
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t('articleDetail.noPins')}</p>
+          )}
+        </div>
 
-            {/* Article content */}
-            <Card>
-              <CardContent className="py-6">
-                {isEditing ? (
-                  <div className="space-y-4">
-                    <Textarea
-                      value={editedContent}
-                      onChange={(e) => setEditedContent(e.target.value)}
-                      className="min-h-[400px] font-mono text-sm"
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={handleCancelEditing}>
-                        {t('articleDetail.cancelEdit')}
-                      </Button>
-                      <Button onClick={() => setConfirmDialogOpen(true)}>
-                        {t('articleDetail.saveContent')}
-                      </Button>
-                    </div>
-                  </div>
+        {/* Article content */}
+        <Card>
+          <CardContent className="py-6">
+            {isEditing ? (
+              <div className="space-y-4">
+                <Textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="min-h-[400px] font-mono text-sm"
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button variant="outline" onClick={handleCancelEditing}>
+                    {t('articleDetail.cancelEdit')}
+                  </Button>
+                  <Button onClick={() => setConfirmDialogOpen(true)}>
+                    {t('articleDetail.saveContent')}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="prose prose-slate max-w-none">
+                {article.content ? (
+                  <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
                 ) : (
-                  <div className="prose prose-slate max-w-none">
-                    {article.content ? (
-                      <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.content) }} />
-                    ) : (
-                      <p className="text-slate-500 italic">{t('articleDetail.noContent')}</p>
-                    )}
-                  </div>
+                  <p className="text-slate-500 italic">{t('articleDetail.noContent')}</p>
                 )}
-              </CardContent>
-            </Card>
-          </>
-        )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </PageLayout>
 
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>

@@ -11,9 +11,22 @@ import {
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 import { buildBlogProject, buildBlogProjectInsert } from '@/test/factories'
 
+// Shared `from` mock so reads (via getSupabaseClient → supabase-iso) and
+// mutations (via the browser `supabase` client) hit the same query builder.
+// `mockGetSupabaseClient` is a spy so tests can assert RLS-gated reads resolve
+// the caller's session through the isomorphic selector (SSR-auth, ADR 0003)
+// rather than the session-less browser singleton.
+const { mockFrom, mockGetSupabaseClient } = vi.hoisted(() => {
+  const mockFrom = vi.fn()
+  return {
+    mockFrom,
+    mockGetSupabaseClient: vi.fn(() => ({ from: mockFrom })),
+  }
+})
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: vi.fn(),
+    from: mockFrom,
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user: { id: 'test-user-id' } },
@@ -24,11 +37,15 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
+// Reads use the isomorphic selector (ADR 0003). Mock it to return a client
+// whose `from` is the shared mock above.
+vi.mock('@/lib/supabase-iso', () => ({
+  getSupabaseClient: mockGetSupabaseClient,
+}))
+
 vi.mock('@/lib/auth', () => ({
   ensureProfile: vi.fn().mockResolvedValue({ tenant_id: 'test-tenant-id' }),
 }))
-
-const mockFrom = vi.mocked(supabase.from)
 
 describe('getBlogProjects()', () => {
   it('fetches all projects ordered by created_at desc', async () => {
@@ -55,6 +72,23 @@ describe('getBlogProject()', () => {
     expect(result).toEqual(project)
     expect(qb.eq).toHaveBeenCalledWith('id', 'proj-1')
     expect(qb.single).toHaveBeenCalled()
+  })
+
+  // SSR-auth regression guard (issue #61, ADR 0003): the project-detail read is
+  // prefetched in the route loader during SSR, so it must resolve the caller's
+  // session through the isomorphic selector — not the session-less browser
+  // `supabase` singleton, which would make RLS return zero rows and `.single()`
+  // error/empty on first paint. Reverting this read to `supabase` directly
+  // (so `getSupabaseClient` is never called) fails this test.
+  it('reads via the isomorphic SSR client so RLS resolves the caller session', async () => {
+    const project = buildBlogProject({ id: 'proj-1' })
+    const qb = createMockQueryBuilder({ data: project })
+    mockFrom.mockReturnValue(qb as any)
+
+    await getBlogProject('proj-1')
+
+    expect(mockGetSupabaseClient).toHaveBeenCalled()
+    expect(mockFrom).toHaveBeenCalledWith('blog_projects')
   })
 })
 

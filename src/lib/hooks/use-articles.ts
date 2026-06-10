@@ -1,10 +1,16 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import {
+  useQuery,
+  useSuspenseQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+  useSuspenseInfiniteQuery,
+} from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import {
   getAllArticles,
   getArticlesByProject,
-  getArticle,
   getArchivedArticles,
   archiveArticle,
   restoreArticle,
@@ -15,9 +21,13 @@ import {
   deleteArticles,
   archiveArticles,
   restoreArticles,
-  getArticlesPaginated,
-  getArchivedArticlesPaginated,
 } from '@/lib/api/articles'
+import {
+  articleQueryOptions,
+  articlesPaginatedQueryOptions,
+  archivedArticlesPaginatedQueryOptions,
+  type ArticlesPaginatedOptions,
+} from '@/lib/query/articles'
 
 export function useAllArticles() {
   return useQuery({
@@ -38,10 +48,19 @@ export function useArticles(projectId: string) {
 
 export function useArticle(id: string) {
   return useQuery({
-    queryKey: ['articles', 'detail', id],
-    queryFn: () => getArticle(id),
-    enabled: !!id
+    ...articleQueryOptions(id),
+    enabled: !!id,
   })
+}
+
+/**
+ * Suspense variant for the article-detail route that prefetches the record in its
+ * loader (SSR). Shares `articleQueryOptions` (cache key `['articles', 'detail', id]`)
+ * with `useArticle` and the loader, so loader-prefetched data hydrates without a
+ * client refetch and `data` is always defined.
+ */
+export function useArticleSuspense(id: string) {
+  return useSuspenseQuery(articleQueryOptions(id))
 }
 
 export function useArchivedArticles(projectId: string) {
@@ -194,45 +213,34 @@ export function useBulkRestoreArticles() {
 }
 
 // Paginated articles (active) - offset-based
-export function useArticlesPaginated(
-  projectId: string,
-  options: { pageSize?: number } = {}
-) {
-  const { pageSize = 20 } = options
-
+export function useArticlesPaginated(projectId: string, options: ArticlesPaginatedOptions = {}) {
   return useInfiniteQuery({
-    queryKey: ['articles', projectId, 'paginated'],
-    queryFn: ({ pageParam }) =>
-      getArticlesPaginated(projectId, {
-        offset: pageParam,
-        limit: pageSize,
-      }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.hasMore ? allPages.length * pageSize : undefined,
+    ...articlesPaginatedQueryOptions(projectId, options),
     enabled: !!projectId,
-    staleTime: 30000,
   })
+}
+
+/**
+ * Suspense variant for the articles-list route that prefetches the first page of
+ * active articles in its loader (SSR) via `prefetchInfiniteQuery`. Shares
+ * `articlesPaginatedQueryOptions` (cache key `['articles', projectId, 'paginated']`)
+ * with `useArticlesPaginated` and the loader, so the first page hydrates without a
+ * client refetch (no loading flash) and `data.pages` is always defined.
+ */
+export function useArticlesPaginatedSuspense(
+  projectId: string,
+  options: ArticlesPaginatedOptions = {},
+) {
+  return useSuspenseInfiniteQuery(articlesPaginatedQueryOptions(projectId, options))
 }
 
 // Paginated archived articles - offset-based
 export function useArchivedArticlesPaginated(
   projectId: string,
-  options: { pageSize?: number } = {}
+  options: ArticlesPaginatedOptions = {},
 ) {
-  const { pageSize = 20 } = options
-
   return useInfiniteQuery({
-    queryKey: ['articles', projectId, 'archived', 'paginated'],
-    queryFn: ({ pageParam }) =>
-      getArchivedArticlesPaginated(projectId, {
-        offset: pageParam,
-        limit: pageSize,
-      }),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) =>
-      lastPage.hasMore ? allPages.length * pageSize : undefined,
+    ...archivedArticlesPaginatedQueryOptions(projectId, options),
     enabled: !!projectId,
-    staleTime: 30000,
   })
 }
