@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { ensureProfile } from '@/lib/auth'
 import {
   getPinsPaginated,
+  getPinStatusCounts,
   getPinsByProject,
   getPinsByArticle,
   getPin,
@@ -129,6 +130,59 @@ describe('getPinsPaginated() — reaching pins past the recent-days window', () 
     expect(mockFrom).toHaveBeenCalledTimes(1)
     expect(qb.lt).toHaveBeenCalledWith('created_at', '2026-05-01T00:00:00Z')
     expect(result.pins.map((p) => p.id)).toEqual(['c1'])
+  })
+})
+
+describe('getPinStatusCounts()', () => {
+  it('returns per-status totals for the project, counting the full pin set', async () => {
+    // A status-only read of every pin in the project — independent of the
+    // paginated list, so the tab badges reflect true totals (issue #67).
+    const qb = createMockQueryBuilder({
+      data: [
+        { status: 'draft' },
+        { status: 'draft' },
+        { status: 'published' },
+        { status: 'metadata_created' },
+        { status: 'generating_metadata' },
+      ],
+    })
+    mockFrom.mockReturnValue(qb as any)
+
+    const result = await getPinStatusCounts('project-1')
+
+    expect(mockFrom).toHaveBeenCalledWith('pins')
+    expect(qb.select).toHaveBeenCalledWith('status')
+    expect(qb.eq).toHaveBeenCalledWith('blog_project_id', 'project-1')
+    expect(result).toEqual({
+      draft: 2,
+      published: 1,
+      metadata_created: 1,
+      generating_metadata: 1,
+    })
+  })
+
+  it('routes through the isomorphic client so the count respects tenant RLS (SSR-auth read)', async () => {
+    const qb = createMockQueryBuilder({ data: [] })
+    mockFrom.mockReturnValue(qb as any)
+    mockGetSupabaseClient.mockClear()
+
+    await getPinStatusCounts('project-1')
+
+    expect(mockGetSupabaseClient).toHaveBeenCalled()
+  })
+
+  it('returns an empty map for a project with no pins', async () => {
+    const qb = createMockQueryBuilder({ data: [] })
+    mockFrom.mockReturnValue(qb as any)
+
+    expect(await getPinStatusCounts('project-1')).toEqual({})
+  })
+
+  it('throws on error', async () => {
+    const qb = createMockQueryBuilder({ error: { message: 'fail' } })
+    mockFrom.mockReturnValue(qb as any)
+
+    await expect(getPinStatusCounts('p-1')).rejects.toEqual({ message: 'fail' })
   })
 })
 

@@ -25,15 +25,31 @@ export const TAB_LABEL_KEYS: Record<StatusTab, string> = {
 }
 
 export function computeTabCounts(pins: Pin[]): Record<StatusTab, number> {
+  const statusCounts: Record<string, number> = {}
+  for (const pin of pins) {
+    statusCounts[pin.status] = (statusCounts[pin.status] ?? 0) + 1
+  }
+  return tabCountsFromStatusCounts(statusCounts)
+}
+
+/**
+ * Roll a project's per-status totals (from `getPinStatusCounts`) up into the tab
+ * buckets. Unlike `computeTabCounts`, the input is the full project's status
+ * totals — independent of which pins the paginated list has loaded — so the
+ * badges show true per-status totals (issue #67). `all` sums every status.
+ */
+export function tabCountsFromStatusCounts(
+  statusCounts: Record<string, number>,
+): Record<StatusTab, number> {
   const counts: Record<StatusTab, number> = {
     all: 0, draft: 0, generation: 0, metadata_created: 0,
     published: 0, error: 0,
   }
-  counts.all = pins.length
-  for (const pin of pins) {
+  for (const [status, n] of Object.entries(statusCounts)) {
+    counts.all += n
     for (const [tab, statuses] of Object.entries(STATUS_TAB_GROUPS)) {
-      if (statuses.includes(pin.status)) {
-        counts[tab as StatusTab]++
+      if (statuses.includes(status as PinStatus)) {
+        counts[tab as StatusTab] += n
       }
     }
   }
@@ -50,12 +66,20 @@ interface PinStatusFilterBarProps {
   pins: Pin[]
   activeTab: StatusTab
   onTabChange: (tab: StatusTab) => void
+  /**
+   * Pre-computed per-tab totals. When provided (pins list), the badges reflect
+   * the project's true per-status totals independent of pagination (issue #67).
+   * When omitted (calendar, which loads every pin), the counts are derived from
+   * `pins`.
+   */
+  tabCounts?: Record<StatusTab, number>
 }
 
-export function PinStatusFilterBar({ pins, activeTab, onTabChange }: PinStatusFilterBarProps) {
+export function PinStatusFilterBar({ pins, activeTab, onTabChange, tabCounts: tabCountsProp }: PinStatusFilterBarProps) {
   const { t } = useTranslation()
 
-  const tabCounts = useMemo(() => computeTabCounts(pins), [pins])
+  const computedTabCounts = useMemo(() => computeTabCounts(pins), [pins])
+  const tabCounts = tabCountsProp ?? computedTabCounts
 
   return (
     <>

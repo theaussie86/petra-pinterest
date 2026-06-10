@@ -33,12 +33,12 @@ import { PinDataTable } from '@/components/pins/pin-data-table'
 import { ColumnVisibilityToggle } from '@/components/pins/column-visibility-toggle'
 import { getColumnsForIds, getStoredVisibility, saveVisibility } from '@/components/pins/pin-data-table-columns'
 import type { PinColumnId } from '@/components/pins/pin-data-table-columns'
-import { usePinsPaginatedSuspense, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
+import { usePinsPaginatedSuspense, usePinStatusCountsSuspense, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
-import { PinStatusFilterBar, filterPinsByTab, TAB_LABEL_KEYS } from '@/components/pins/pin-status-filter-bar'
+import { PinStatusFilterBar, filterPinsByTab, tabCountsFromStatusCounts, TAB_LABEL_KEYS } from '@/components/pins/pin-status-filter-bar'
 import type { StatusTab } from '@/components/pins/pin-status-filter-bar'
 import { ACTIVE_STATUSES } from '@/types/pins'
 import type { PinStatus, PinSortField, PinViewMode, Pin } from '@/types/pins'
@@ -91,6 +91,13 @@ export function PinsList({ projectId }: PinsListProps) {
     () => pinsData.pages.flatMap((page) => page.pins),
     [pinsData],
   )
+
+  // Real per-status totals for the filter-tab badges — a lightweight count query
+  // independent of the paginated list, so each badge shows the project total
+  // (e.g. "Alle 100") rather than just the loaded rows (issue #67).
+  const { data: statusCounts } = usePinStatusCountsSuspense(projectId)
+  const tabCounts = useMemo(() => tabCountsFromStatusCounts(statusCounts), [statusCounts])
+
   const { data: articles } = useArticles(projectId)
 
   const bulkDeleteMutation = useBulkDeletePins()
@@ -259,6 +266,7 @@ export function PinsList({ projectId }: PinsListProps) {
     <div className="space-y-4">
       <PinStatusFilterBar
         pins={pins}
+        tabCounts={tabCounts}
         activeTab={activeTab}
         onTabChange={handleTabChange}
       />

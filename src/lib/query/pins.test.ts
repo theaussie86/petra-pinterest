@@ -3,20 +3,25 @@ import {
   pinsPaginatedQueryKey,
   pinsByProjectQueryOptions,
   pinsByProjectQueryKey,
+  pinStatusCountsQueryOptions,
+  pinStatusCountsQueryKey,
   pinQueryOptions,
   pinQueryKey,
 } from './pins'
 
-const { mockGetPinsPaginated, mockGetPinsByProject, mockGetPin } = vi.hoisted(() => ({
-  mockGetPinsPaginated: vi.fn(),
-  mockGetPinsByProject: vi.fn(),
-  mockGetPin: vi.fn(),
-}))
+const { mockGetPinsPaginated, mockGetPinsByProject, mockGetPin, mockGetPinStatusCounts } =
+  vi.hoisted(() => ({
+    mockGetPinsPaginated: vi.fn(),
+    mockGetPinsByProject: vi.fn(),
+    mockGetPin: vi.fn(),
+    mockGetPinStatusCounts: vi.fn(),
+  }))
 
 vi.mock('@/lib/api/pins', () => ({
   getPinsPaginated: (...args: any[]) => mockGetPinsPaginated(...args),
   getPinsByProject: (...args: any[]) => mockGetPinsByProject(...args),
   getPin: (...args: any[]) => mockGetPin(...args),
+  getPinStatusCounts: (...args: any[]) => mockGetPinStatusCounts(...args),
 }))
 
 describe('pinQueryOptions', () => {
@@ -128,6 +133,44 @@ describe('pinsPaginatedQueryOptions', () => {
 
   it('sets the project default 30s staleTime', () => {
     expect(pinsPaginatedQueryOptions('proj1').staleTime).toBe(30 * 1000)
+  })
+})
+
+describe('pinStatusCountsQueryOptions', () => {
+  it('uses a stable ["pins", projectId, "status-counts"] key', () => {
+    expect(pinStatusCountsQueryOptions('proj1').queryKey).toEqual([
+      'pins',
+      'proj1',
+      'status-counts',
+    ])
+    expect(pinStatusCountsQueryKey('proj1')).toEqual(['pins', 'proj1', 'status-counts'])
+  })
+
+  it('keys distinct projects separately so loader and hook share one entry per id', () => {
+    expect(pinStatusCountsQueryOptions('proj1').queryKey).not.toEqual(
+      pinStatusCountsQueryOptions('proj2').queryKey,
+    )
+  })
+
+  it('nests under the ["pins", projectId] key so pin mutations/realtime invalidation refresh the badges', () => {
+    // ['pins'] and ['pins', projectId] are prefixes of the status-counts key, so
+    // existing invalidateQueries on those keys refresh the tab badges too — the
+    // counts update after a pin's status changes (issue #67).
+    expect(pinStatusCountsQueryOptions('proj1').queryKey.slice(0, 2)).toEqual(['pins', 'proj1'])
+  })
+
+  it('resolves the counts via getPinStatusCounts forwarding the project id', async () => {
+    const counts = { draft: 2, published: 1 }
+    mockGetPinStatusCounts.mockResolvedValueOnce(counts)
+
+    const result = await pinStatusCountsQueryOptions('proj1').queryFn!({} as any)
+
+    expect(mockGetPinStatusCounts).toHaveBeenCalledWith('proj1')
+    expect(result).toEqual(counts)
+  })
+
+  it('sets the project default 30s staleTime', () => {
+    expect(pinStatusCountsQueryOptions('proj1').staleTime).toBe(30 * 1000)
   })
 })
 
