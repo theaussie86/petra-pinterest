@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { ensureProfile } from '@/lib/auth'
 import {
+  getPinsPaginated,
   getPinsByProject,
   getPinsByArticle,
   getAllPins,
@@ -18,21 +19,53 @@ import {
 import { createMockQueryBuilder, createMockStorageBucket } from '@/test/mocks/supabase'
 import { buildPin, buildPinInsert } from '@/test/factories'
 
+// Shared `from` mock so reads (via getSupabaseClient → supabase-iso) and
+// mutations (via the browser `supabase` client) hit the same query builder.
+const { mockFrom, mockGetSupabaseClient } = vi.hoisted(() => {
+  const from = vi.fn()
+  return {
+    mockFrom: from,
+    mockGetSupabaseClient: vi.fn(() => ({ from })),
+  }
+})
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: vi.fn(),
+    from: mockFrom,
     storage: { from: vi.fn() },
     rpc: vi.fn(),
     auth: { getUser: vi.fn() },
   },
 }))
 
+// Reads use the isomorphic selector (ADR 0003). Mock it to return a client
+// whose `from` is the shared mock above, so loader-prefetched reads resolve
+// the SSR session instead of the browser singleton.
+vi.mock('@/lib/supabase-iso', () => ({
+  getSupabaseClient: mockGetSupabaseClient,
+}))
+
 vi.mock('@/lib/auth', () => ({
   ensureProfile: vi.fn().mockResolvedValue({ tenant_id: 'test-tenant-id' }),
 }))
 
-const mockFrom = vi.mocked(supabase.from)
 const mockStorageFrom = vi.mocked(supabase.storage.from)
+
+describe('SSR-authenticated reads (ADR 0003)', () => {
+  it('routes the loader-prefetched pin reads through the isomorphic client', async () => {
+    const qb = createMockQueryBuilder({ data: [buildPin()] })
+    mockFrom.mockReturnValue(qb as any)
+    mockGetSupabaseClient.mockClear()
+
+    // The three reads behind this slice's SSR loaders: pins list, calendar,
+    // and pin detail. Each must select the cookie-bound server client under SSR.
+    await getPinsPaginated('project-1')
+    await getPinsByProject('project-1')
+    await getPin('pin-1')
+
+    expect(mockGetSupabaseClient).toHaveBeenCalledTimes(3)
+  })
+})
 
 describe('getPinsByProject()', () => {
   it('queries pins filtered by project, ordered by created_at desc', async () => {
