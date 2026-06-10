@@ -1,15 +1,13 @@
 import { createFileRoute, Link, useNavigate, useRouter, CatchBoundary } from '@tanstack/react-router'
 import { Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pencil, Trash2, FileText, AlertTriangle, RotateCcw, ExternalLink } from 'lucide-react'
+import { Pencil, Trash2, FileText, ExternalLink } from 'lucide-react'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { LoadingSpinner } from '@/components/layout/loading-spinner'
 import { ErrorState } from '@/components/layout/error-state'
-import { usePinSuspense, useUpdatePin } from '@/lib/hooks/use-pins'
+import { usePinSuspense } from '@/lib/hooks/use-pins'
 import { pinQueryOptions } from '@/lib/query/pins'
-import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
-import { usePublishPin } from '@/lib/hooks/use-pinterest-publishing'
 import { useArticle } from '@/lib/hooks/use-articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
@@ -18,6 +16,7 @@ import { EditPinDialog } from '@/components/pins/edit-pin-dialog'
 import { DeletePinDialog } from '@/components/pins/delete-pin-dialog'
 import { PinStatusBadge } from '@/components/pins/pin-status-badge'
 import { GenerateMetadataButton } from '@/components/pins/generate-metadata-button'
+import { PinErrorAlert } from '@/components/pins/pin-error-alert'
 import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog'
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { PublishPinButton } from '@/components/pins/publish-pin-button'
@@ -25,7 +24,6 @@ import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/pins/$pinId')({
   // Prefetch the pin record server-side so the detail arrives in the SSR HTML and
@@ -103,7 +101,7 @@ function PinDetail() {
         {/* Error alert section */}
         {pin.status === 'error' && (
           <div className="mb-6">
-            <ErrorAlert pin={pin} />
+            <PinErrorAlert pin={pin} />
           </div>
         )}
 
@@ -308,54 +306,6 @@ function PinArticleLink({ articleId, projectId }: { articleId: string; projectId
         <span className="text-sm text-slate-400">{t('common.loading')}</span>
       )}
     </div>
-  )
-}
-
-function ErrorAlert({ pin }: { pin: { id: string; error_message: string | null; previous_status: string | null } }) {
-  const { t } = useTranslation()
-  const generateMetadata = useGenerateMetadata()
-  const publishPin = usePublishPin()
-  const updatePin = useUpdatePin()
-
-  const isMetadataError = ['generate_metadata', 'generating_metadata'].includes(pin.previous_status || '')
-  const isPublishError = pin.previous_status === 'metadata_created'
-
-  const handleRetry = () => {
-    if (isMetadataError) {
-      generateMetadata.mutate({ pin_id: pin.id })
-    } else if (isPublishError) {
-      publishPin.mutate({ pin_id: pin.id })
-    } else {
-      updatePin.mutate({ id: pin.id, status: 'draft', error_message: null })
-    }
-  }
-
-  const isPending = generateMetadata.isPending || publishPin.isPending || updatePin.isPending
-
-  const buttonText = isMetadataError
-    ? (isPending ? t('publishPin.retrying') : t('publishPin.retryGenerate'))
-    : isPublishError
-      ? (isPending ? t('publishPin.retrying') : t('publishPin.retryPublish'))
-      : (isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus'))
-
-  return (
-    <Alert variant="destructive" className="border-red-200 bg-red-50">
-      <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>{t('pinDetail.errorTitle')}</AlertTitle>
-      <AlertDescription className="mt-1">
-        <p className="mb-3">{pin.error_message || t('pinDetail.unknownError')}</p>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleRetry}
-          disabled={isPending}
-          className="border-red-300 hover:bg-red-100"
-        >
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          {buttonText}
-        </Button>
-      </AlertDescription>
-    </Alert>
   )
 }
 
