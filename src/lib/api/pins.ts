@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
 import type { Pin, PinInsert, PinUpdate, PinStatus } from '@/types/pins'
 
@@ -20,7 +21,7 @@ export async function getPinsPaginated(
 ): Promise<PaginatedPinsResult> {
   const { createdAfter, cursor, limit = 20, statusFilter } = options
 
-  let query = supabase
+  let query = getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('blog_project_id', projectId)
@@ -56,7 +57,7 @@ export async function getPinsPaginated(
 }
 
 export async function getPinsByProject(projectId: string): Promise<Pin[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('blog_project_id', projectId)
@@ -67,7 +68,7 @@ export async function getPinsByProject(projectId: string): Promise<Pin[]> {
 }
 
 export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('blog_article_id', articleId)
@@ -79,7 +80,7 @@ export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
 }
 
 export async function getAllPins(): Promise<Pin[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .order('scheduled_at', { ascending: true, nullsFirst: false })
@@ -90,7 +91,7 @@ export async function getAllPins(): Promise<Pin[]> {
 }
 
 export async function getPin(id: string): Promise<Pin> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('pins')
     .select('*')
     .eq('id', id)

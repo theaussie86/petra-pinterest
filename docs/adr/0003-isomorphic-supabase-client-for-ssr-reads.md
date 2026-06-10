@@ -17,3 +17,4 @@ Route loaders prefetch query data on the server via `ensureQueryData`, but the r
 - **This is the pattern every later SSR read slice copies** (#46). Swap the read's `supabase` import for `getSupabaseClient`; leave mutations alone.
 - **Tests mock `@/lib/supabase-iso`** (`getSupabaseClient`) instead of `@/lib/supabase` for the read functions; mutation tests still mock `@/lib/supabase`.
 - Applied in this slice to all reads in `src/lib/api/blog-projects.ts` (`getBlogProjects`, `getBlogProject`, `checkProjectRelatedData`); the projects list is the verified tracer.
+- Applied to all reads in `src/lib/api/pins.ts` (`getPinsPaginated`, `getPinsByProject`, `getPinsByArticle`, `getAllPins`, `getPin`) (#65), so the pins list, calendar, and pin detail server-render the tenant's pins on first paint.
