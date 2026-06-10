@@ -67,6 +67,72 @@ describe('SSR-authenticated reads (ADR 0003)', () => {
   })
 })
 
+describe('getPinsPaginated() — reaching pins past the recent-days window', () => {
+  it('backfills older pins when the recent-days window underfills the first page', async () => {
+    const recent = [buildPin({ id: 'recent', created_at: '2026-06-09T00:00:00Z' })]
+    const older = [
+      buildPin({ id: 'old1', created_at: '2026-05-01T00:00:00Z' }),
+      buildPin({ id: 'old2', created_at: '2026-04-01T00:00:00Z' }),
+    ]
+    const windowQb = createMockQueryBuilder({ data: recent })
+    const olderQb = createMockQueryBuilder({ data: older })
+    mockFrom.mockReturnValueOnce(windowQb as any).mockReturnValueOnce(olderQb as any)
+
+    const createdAfter = new Date('2026-06-07T00:00:00Z')
+    const result = await getPinsPaginated('project-1', { createdAfter, limit: 20 })
+
+    // The sparse window (1 recent pin) is backfilled with older pins so the
+    // whole project stays reachable rather than stranding pre-window pins.
+    expect(result.pins.map((p) => p.id)).toEqual(['recent', 'old1', 'old2'])
+    // The backfill query targets pins strictly older than the window boundary,
+    // so nothing is duplicated or skipped across the join.
+    expect(olderQb.lt).toHaveBeenCalledWith('created_at', createdAfter.toISOString())
+  })
+
+  it('returns every pin when the whole project predates the window (empty window page)', async () => {
+    // A legacy project migrated from Airtable: all ~100 pins are older than 3 days,
+    // so the windowed first page is empty. They must still be reachable.
+    const older = [buildPin({ id: 'old1' }), buildPin({ id: 'old2' })]
+    const windowQb = createMockQueryBuilder({ data: [] })
+    const olderQb = createMockQueryBuilder({ data: older })
+    mockFrom.mockReturnValueOnce(windowQb as any).mockReturnValueOnce(olderQb as any)
+
+    const result = await getPinsPaginated('project-1', {
+      createdAfter: new Date('2026-06-07T00:00:00Z'),
+    })
+
+    expect(result.pins.map((p) => p.id)).toEqual(['old1', 'old2'])
+  })
+
+  it('does not backfill when the recent-days window already fills the page', async () => {
+    const full = Array.from({ length: 21 }, (_, i) =>
+      buildPin({ id: `p${i}`, created_at: `2026-06-${10 - (i % 9)}T00:00:00Z` }),
+    )
+    const windowQb = createMockQueryBuilder({ data: full })
+    mockFrom.mockReturnValueOnce(windowQb as any)
+
+    const result = await getPinsPaginated('project-1', { createdAfter: new Date(), limit: 20 })
+
+    // 21 rows for a 20-limit page → there's more within the window already, so
+    // no second (backfill) query and the cursor flows from the last shown pin.
+    expect(mockFrom).toHaveBeenCalledTimes(1)
+    expect(result.pins).toHaveLength(20)
+    expect(result.nextCursor).toBe(full[19].created_at)
+  })
+
+  it('pages purely by cursor (no backfill) once past the window', async () => {
+    const page = [buildPin({ id: 'c1' })]
+    const qb = createMockQueryBuilder({ data: page })
+    mockFrom.mockReturnValueOnce(qb as any)
+
+    const result = await getPinsPaginated('project-1', { cursor: '2026-05-01T00:00:00Z', limit: 20 })
+
+    expect(mockFrom).toHaveBeenCalledTimes(1)
+    expect(qb.lt).toHaveBeenCalledWith('created_at', '2026-05-01T00:00:00Z')
+    expect(result.pins.map((p) => p.id)).toEqual(['c1'])
+  })
+})
+
 describe('getPinsByProject()', () => {
   it('queries pins filtered by project, ordered by created_at desc', async () => {
     const pins = [buildPin()]
