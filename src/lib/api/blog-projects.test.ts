@@ -16,10 +16,13 @@ import { buildBlogProject, buildBlogProjectInsert } from '@/test/factories'
 // `mockGetSupabaseClient` is a spy so tests can assert RLS-gated reads resolve
 // the caller's session through the isomorphic selector (SSR-auth, ADR 0003)
 // rather than the session-less browser singleton.
-const { mockFrom, mockGetSupabaseClient } = vi.hoisted(() => ({
-  mockFrom: vi.fn(),
-  mockGetSupabaseClient: vi.fn(),
-}))
+const { mockFrom, mockGetSupabaseClient } = vi.hoisted(() => {
+  const mockFrom = vi.fn()
+  return {
+    mockFrom,
+    mockGetSupabaseClient: vi.fn(() => ({ from: mockFrom })),
+  }
+})
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {
@@ -39,11 +42,6 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/lib/supabase-iso', () => ({
   getSupabaseClient: mockGetSupabaseClient,
 }))
-
-beforeEach(() => {
-  mockGetSupabaseClient.mockClear()
-  mockGetSupabaseClient.mockReturnValue({ from: mockFrom })
-})
 
 vi.mock('@/lib/auth', () => ({
   ensureProfile: vi.fn().mockResolvedValue({ tenant_id: 'test-tenant-id' }),
