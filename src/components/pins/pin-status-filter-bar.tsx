@@ -25,19 +25,11 @@ export const TAB_LABEL_KEYS: Record<StatusTab, string> = {
 }
 
 export function computeTabCounts(pins: Pin[]): Record<StatusTab, number> {
-  const counts: Record<StatusTab, number> = {
-    all: 0, draft: 0, generation: 0, metadata_created: 0,
-    published: 0, error: 0,
-  }
-  counts.all = pins.length
+  const statusCounts: Record<string, number> = {}
   for (const pin of pins) {
-    for (const [tab, statuses] of Object.entries(STATUS_TAB_GROUPS)) {
-      if (statuses.includes(pin.status)) {
-        counts[tab as StatusTab]++
-      }
-    }
+    statusCounts[pin.status] = (statusCounts[pin.status] ?? 0) + 1
   }
-  return counts
+  return tabCountsFromStatusCounts(statusCounts)
 }
 
 /**
