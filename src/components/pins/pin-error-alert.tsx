@@ -36,11 +36,14 @@ export function PinErrorAlert({ pin }: PinErrorAlertProps) {
 
   const isPending = generateMetadata.isPending || publishPin.isPending || updatePin.isPending
 
-  const buttonText = isMetadataError
-    ? (isPending ? t('publishPin.retrying') : t('publishPin.retryGenerate'))
-    : isPublishError
-      ? (isPending ? t('publishPin.retrying') : t('publishPin.retryPublish'))
-      : (isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus'))
+  let buttonText: string
+  if (isMetadataError) {
+    buttonText = isPending ? t('publishPin.retrying') : t('publishPin.retryGenerate')
+  } else if (isPublishError) {
+    buttonText = isPending ? t('publishPin.retrying') : t('publishPin.retryPublish')
+  } else {
+    buttonText = isPending ? t('pinDetail.resetting') : t('pinDetail.resetStatus')
+  }
 
   return (
     <Alert variant="destructive" className="border-red-200 bg-red-50">
