@@ -5,10 +5,12 @@ const { mockRpc } = vi.hoisted(() => ({
   mockRpc: vi.fn(),
 }))
 
-vi.mock('@/lib/supabase', () => ({
-  supabase: {
-    rpc: (...args: any[]) => mockRpc(...args),
-  },
+// The RPC is tenant-scoped via auth.uid(); under SSR it must run through the
+// isomorphic selector (ADR 0003) so the cookie-bound server client carries the
+// caller's session. Mock the selector to return a client whose `rpc` is the
+// shared mock.
+vi.mock('@/lib/supabase-iso', () => ({
+  getSupabaseClient: () => ({ rpc: (...args: any[]) => mockRpc(...args) }),
 }))
 
 beforeEach(() => {
