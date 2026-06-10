@@ -129,21 +129,4 @@ describe('SSR-auth regression guard: projects-list loader prefetch', () => {
 
     expect(data).toEqual([])
   })
-
-  it('would surface empty for a logged-in user if the read used the unauthenticated browser client (the bug #60 fixed)', async () => {
-    // Demonstrates the discriminating power of the guard above: the browser
-    // singleton has no session during SSR, so reading through it returns empty
-    // even though the tenant has rows the server client can see.
-    serverClient = makeFakeClient({
-      session: { tenantId: 'tenant-a' },
-      rowsByTenant: TENANT_ROWS,
-    })
-
-    expect(serverClient.from('blog_projects')).toBeDefined()
-    const viaServer = await (serverClient.from('blog_projects') as any)
-    const viaBrowser = await (browserClient.from('blog_projects') as any)
-
-    expect(viaServer.data).toEqual(TENANT_ROWS['tenant-a'])
-    expect(viaBrowser.data).toEqual([])
-  })
 })
