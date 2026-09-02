@@ -17,12 +17,17 @@ import type { LanguageModel } from 'ai'
 export const DEFAULT_MODEL_ID = 'gemini-3.5-flash'
 
 /**
- * Thinking level per task. Article extraction is mechanical, so it runs at
- * `minimal`; pin metadata is a writing task and keeps a small budget at `low`.
+ * Thinking level per task.
+ *
  * Thinking tokens bill at the full output rate, so an unbounded default is a
- * silent cost driver (issue #71).
+ * silent cost driver (issue #71) — but article extraction cannot go below
+ * `medium`: measured against himmelstraenen.de, `minimal` and `low` make
+ * gemini-3.5-flash run past the output cap (8177 of 8192 tokens, 65k without a
+ * cap) and emit corrupted fields such as `2026-03-1026-03-10T00:00:00Z`, so the
+ * JSON never validates. At `medium` the same calls finish in ~3k output plus
+ * ~2k reasoning tokens. Pin metadata is short and stays fine at `low`.
  */
-export const ARTICLE_THINKING_LEVEL = 'minimal' as const
+export const ARTICLE_THINKING_LEVEL = 'medium' as const
 export const METADATA_THINKING_LEVEL = 'low' as const
 
 /**

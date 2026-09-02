@@ -63,9 +63,9 @@ describe('generateArticleFromHtml()', () => {
       model,
     })
 
-    expect(captured?.maxOutputTokens).toBe(8192)
+    expect(captured?.maxOutputTokens).toBe(16384)
     expect(captured?.providerOptions).toEqual({
-      google: { thinkingConfig: { thinkingLevel: 'minimal' } },
+      google: { thinkingConfig: { thinkingLevel: 'medium' } },
     })
   })
 

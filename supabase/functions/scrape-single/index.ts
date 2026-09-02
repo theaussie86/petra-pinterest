@@ -3,6 +3,7 @@ import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { generateArticleFromHtml } from '../_shared/ai.ts'
 import { normalizeUrl } from '../_shared/url.ts'
+import { parsePublishedAt } from '../_shared/published-at.ts'
 
 interface ScrapeRequest {
   blog_project_id: string
@@ -102,11 +103,9 @@ Deno.serve(async (req) => {
     })
 
     // Upsert into blog_articles
-    // Gemini may return "null" as a string when no date is found
-    const publishedAt =
-      article.published_at && article.published_at !== 'null'
-        ? article.published_at
-        : null
+    // Gemini sometimes returns "null" or a mangled date; an unusable value
+    // must not fail the whole upsert (issue #71)
+    const publishedAt = parsePublishedAt(article.published_at)
 
     const { error: upsertError } = await supabase
       .from('blog_articles')
