@@ -22,7 +22,9 @@ import {
 import type { ImageBytes } from './image'
 
 const MAX_HTML_CHARS = 100000
-const MAX_ARTICLE_OUTPUT_TOKENS = 8192
+// Headroom for a long article plus its reasoning tokens; the cap only exists
+// to bound a runaway generation, not to trim normal output (issue #71).
+const MAX_ARTICLE_OUTPUT_TOKENS = 16384
 const MAX_ARTICLE_CONTENT_CHARS = 4000
 
 export interface GenerateArticleOptions {
@@ -55,8 +57,8 @@ export async function generateArticleFromHtml({
     prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
     temperature: 0.1,
     maxOutputTokens: MAX_ARTICLE_OUTPUT_TOKENS,
-    // Plain HTML extraction gains little from reasoning, but Gemini bills
-    // thinking tokens at the full output rate (issue #71).
+    // Gemini bills thinking tokens at the full output rate, so the level is
+    // pinned rather than left at the provider default (issue #71).
     providerOptions: {
       google: { thinkingConfig: { thinkingLevel: ARTICLE_THINKING_LEVEL } },
     },

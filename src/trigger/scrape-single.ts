@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { scrapeArticleWithGemini } from '../../server/lib/gemini-scraper'
 import { notifyProjectError } from '@/lib/server/notifications'
 import { normalizeUrl } from '@/lib/utils'
+import { parsePublishedAt } from '@/lib/scraping/published-at'
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
@@ -38,11 +39,9 @@ export const scrapeSingleTask = task({
     // Scrape article using existing utility
     const article = await scrapeArticleWithGemini(url, apiKey)
 
-    // Gemini may return "null" as string when no date found
-    const publishedAt =
-      article.published_at && article.published_at !== 'null'
-        ? article.published_at
-        : null
+    // Gemini sometimes returns "null" or a mangled date; an unusable value
+    // must not fail the whole upsert (issue #71)
+    const publishedAt = parsePublishedAt(article.published_at)
 
     // Upsert into blog_articles
     const { error: upsertError } = await supabase
