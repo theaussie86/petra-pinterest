@@ -7,11 +7,11 @@ describe('getModel()', () => {
     // AI SDK language models expose provider + modelId
     expect((model as { provider: string }).provider).toContain('google')
     expect((model as { modelId: string }).modelId).toBe(DEFAULT_MODEL_ID)
-    expect(DEFAULT_MODEL_ID).toBe('gemini-2.5-flash')
+    expect(DEFAULT_MODEL_ID).toBe('gemini-3.5-flash')
   })
 
   it('honors an explicit modelId', () => {
-    const model = getModel('test-api-key', 'gemini-2.5-pro')
-    expect((model as { modelId: string }).modelId).toBe('gemini-2.5-pro')
+    const model = getModel('test-api-key', 'gemini-3.5-flash-lite')
+    expect((model as { modelId: string }).modelId).toBe('gemini-3.5-flash-lite')
   })
 })

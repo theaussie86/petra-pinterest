@@ -42,6 +42,33 @@ describe('generateArticleFromHtml()', () => {
     expect(getRepairFireCount()).toBe(0)
   })
 
+  it('caps thinking and output tokens (issue #71 cost regression)', async () => {
+    let captured: Record<string, unknown> | undefined
+    const model = new MockLanguageModelV3({
+      doGenerate: async (options) => {
+        captured = options as unknown as Record<string, unknown>
+        return {
+          finishReason: { unified: 'stop', raw: undefined },
+          usage: { inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 20, text: 20, reasoning: undefined } },
+          content: [{ type: 'text', text: JSON.stringify(article) }],
+          warnings: [],
+        }
+      },
+    })
+
+    await generateArticleFromHtml({
+      html: '<html></html>',
+      url: 'https://blog.com/post',
+      apiKey: 'unused',
+      model,
+    })
+
+    expect(captured?.maxOutputTokens).toBe(8192)
+    expect(captured?.providerOptions).toEqual({
+      google: { thinkingConfig: { thinkingLevel: 'minimal' } },
+    })
+  })
+
   it('repairs malformed-but-recoverable model output and still validates', async () => {
     // Literal newline inside a JSON string — invalid JSON until repaired.
     const broken = '{"title":"T","content":"Line 1\nLine 2","excerpt":"E"}'

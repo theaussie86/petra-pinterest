@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { generateArticleFromHtml } from '../_shared/ai.ts'
+import { normalizeUrl } from '../_shared/url.ts'
 
 interface ScrapeRequest {
   blog_project_id: string
@@ -43,8 +44,11 @@ Deno.serve(async (req) => {
   if (corsResponse) return corsResponse
 
   try {
-    const { blog_project_id, url, tenant_id } =
+    const { blog_project_id, url: rawUrl, tenant_id } =
       (await req.json()) as ScrapeRequest
+
+    // Store the normalized URL so the next sitemap diff matches (issue #71)
+    const url = rawUrl ? normalizeUrl(rawUrl) : rawUrl
 
     if (!blog_project_id || !url || !tenant_id) {
       return new Response(

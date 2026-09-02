@@ -1,4 +1,4 @@
-import { cn, sanitizeHtml } from './utils'
+import { cn, sanitizeHtml, normalizeUrl } from './utils'
 
 describe('cn()', () => {
   it('merges class names', () => {
@@ -68,5 +68,68 @@ describe('sanitizeHtml()', () => {
     const input = '<script type="text/javascript">var x = "<script>nested</script>";</script>'
     const result = sanitizeHtml(input)
     expect(result).not.toContain('<script')
+  })
+})
+
+describe('normalizeUrl()', () => {
+  it('strips a single trailing slash', () => {
+    expect(normalizeUrl('https://blog.test/artikel/')).toBe('https://blog.test/artikel')
+  })
+
+  it('leaves a slash-less URL untouched', () => {
+    expect(normalizeUrl('https://blog.test/artikel')).toBe('https://blog.test/artikel')
+  })
+
+  it('is idempotent', () => {
+    const once = normalizeUrl('https://blog.test/artikel/')
+    expect(normalizeUrl(once)).toBe(once)
+  })
+
+  it('collapses repeated trailing slashes', () => {
+    expect(normalizeUrl('https://blog.test/artikel///')).toBe('https://blog.test/artikel')
+  })
+
+  it('keeps the root path so the origin stays a valid URL', () => {
+    expect(normalizeUrl('https://blog.test/')).toBe('https://blog.test/')
+    expect(normalizeUrl('https://blog.test')).toBe('https://blog.test/')
+  })
+
+  it('preserves the query string and strips only the path slash', () => {
+    expect(normalizeUrl('https://blog.test/artikel/?utm_source=pinterest')).toBe(
+      'https://blog.test/artikel?utm_source=pinterest',
+    )
+  })
+
+  it('drops the fragment', () => {
+    expect(normalizeUrl('https://blog.test/artikel/#intro')).toBe('https://blog.test/artikel')
+  })
+
+  it('lowercases the host but not the path', () => {
+    expect(normalizeUrl('https://Blog.TEST/Artikel/')).toBe('https://blog.test/Artikel')
+  })
+
+  it('trims surrounding whitespace', () => {
+    expect(normalizeUrl('  https://blog.test/artikel/  ')).toBe('https://blog.test/artikel')
+  })
+
+  it('does not touch the scheme', () => {
+    expect(normalizeUrl('http://blog.test/artikel/')).toBe('http://blog.test/artikel')
+  })
+
+  it('keeps umlaut paths readable rather than double-encoding them', () => {
+    expect(normalizeUrl('https://blog.test/für-anfänger/')).toBe(
+      normalizeUrl('https://blog.test/für-anfänger'),
+    )
+  })
+
+  it('falls back to a trailing-slash strip for non-absolute input', () => {
+    expect(normalizeUrl('/artikel/')).toBe('/artikel')
+    expect(normalizeUrl('/')).toBe('/')
+  })
+
+  it('maps both slash variants onto the same key in either direction', () => {
+    const withSlash = 'https://himmelstraenen.de/artikel-a/'
+    const without = 'https://himmelstraenen.de/artikel-a'
+    expect(normalizeUrl(withSlash)).toBe(normalizeUrl(without))
   })
 })

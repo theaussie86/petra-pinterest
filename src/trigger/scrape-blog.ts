@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { discoverSitemapUrls } from '../../server/lib/scraping'
 import { scrapeSingleTask } from './scrape-single'
 import { notifyProjectError } from '@/lib/server/notifications'
+import { filterNewUrls } from '@/lib/scraping/url-diff'
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
@@ -34,10 +35,10 @@ export const scrapeBlogTask = task({
       .select('url')
       .eq('blog_project_id', payload.blog_project_id)
 
-    const existingUrls = new Set(
+    const newUrls = filterNewUrls(
+      discoveredUrls,
       (existingArticles ?? []).map((a: { url: string }) => a.url)
     )
-    const newUrls = discoveredUrls.filter((url) => !existingUrls.has(url))
 
     if (newUrls.length === 0) {
       return { success: true, dispatched: 0, discovered: discoveredUrls.length }

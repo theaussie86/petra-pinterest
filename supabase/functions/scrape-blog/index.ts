@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { discoverSitemapEntries } from '../_shared/sitemap.ts'
+import { diffSitemapEntries } from '../_shared/url-diff.ts'
 
 interface ScrapeRequest {
   blog_project_id: string
@@ -65,29 +66,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    const existingMap = new Map(
-      (existingArticles || []).map((a) => [a.url, a.scraped_at]),
-    )
-
-    // 4. Determine which URLs to scrape
-    const urlsToScrape: { url: string; reason: 'new' | 'updated' }[] = []
-
-    for (const entry of entries) {
-      const existingScrapedAt = existingMap.get(entry.url)
-
-      if (existingScrapedAt === undefined) {
-        // New article — not in DB yet
-        urlsToScrape.push({ url: entry.url, reason: 'new' })
-      } else if (entry.lastmod && existingScrapedAt) {
-        // Existing article with lastmod — check if updated
-        const lastmod = new Date(entry.lastmod).getTime()
-        const scraped = new Date(existingScrapedAt).getTime()
-        if (lastmod > scraped) {
-          urlsToScrape.push({ url: entry.url, reason: 'updated' })
-        }
-      }
-      // No lastmod on existing URL → skip (no update signal)
-    }
+    // 4. Determine which URLs to scrape (slash-insensitive, issue #71)
+    const urlsToScrape = diffSitemapEntries(entries, existingArticles || [])
 
     // Cap at MAX_URLS_PER_RUN
     const capped = urlsToScrape.slice(0, MAX_URLS_PER_RUN)
@@ -96,7 +76,7 @@ Deno.serve(async (req) => {
 
     console.log(
       `[scrape-blog] Project ${blog_project_id}: ${entries.length} sitemap entries, ` +
-        `${existingMap.size} existing, ${newCount} new, ${updatedCount} updated`,
+        `${(existingArticles || []).length} existing, ${newCount} new, ${updatedCount} updated`,
     )
 
     // 5. Invoke scrape-single in batches
@@ -154,7 +134,7 @@ Deno.serve(async (req) => {
         new_count: newCount,
         updated_count: updatedCount,
         total_sitemap_entries: entries.length,
-        existing_articles: existingMap.size,
+        existing_articles: (existingArticles || []).length,
         errors,
       }),
       {

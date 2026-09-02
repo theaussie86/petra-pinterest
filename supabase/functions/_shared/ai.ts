@@ -22,7 +22,15 @@ import { z } from 'npm:zod'
 
 // --- Model resolver (mirror of lib/ai/model.ts) ---
 
-export const DEFAULT_MODEL_ID = 'gemini-2.5-flash'
+export const DEFAULT_MODEL_ID = 'gemini-3.5-flash'
+
+/**
+ * Thinking level per task — mirrors `src/lib/ai/model.ts`. Article extraction
+ * is mechanical (`minimal`); pin metadata keeps a small budget (`low`).
+ * Thinking tokens bill at the full output rate (issue #71).
+ */
+export const ARTICLE_THINKING_LEVEL = 'minimal' as const
+export const METADATA_THINKING_LEVEL = 'low' as const
 
 /**
  * Resolve a `LanguageModel` for the given BYOK API key. The single
@@ -343,6 +351,7 @@ export function sanitizeLanguage(value: string | null | undefined): string | nul
 // --- Public AI operations (mirror of lib/ai/generate.ts) ---
 
 const MAX_HTML_CHARS = 100000
+const MAX_ARTICLE_OUTPUT_TOKENS = 8192
 const MAX_ARTICLE_CONTENT_CHARS = 4000
 
 export interface GenerateArticleOptions {
@@ -374,6 +383,12 @@ export async function generateArticleFromHtml({
     system: ARTICLE_SCRAPER_SYSTEM_PROMPT,
     prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
     temperature: 0.1,
+    maxOutputTokens: MAX_ARTICLE_OUTPUT_TOKENS,
+    // Plain HTML extraction gains little from reasoning, but Gemini bills
+    // thinking tokens at the full output rate (issue #71).
+    providerOptions: {
+      google: { thinkingConfig: { thinkingLevel: ARTICLE_THINKING_LEVEL } },
+    },
   })
 
   return output
@@ -422,7 +437,7 @@ function buildPinMetadataPromptText({
  * Builds a multimodal prompt — a text section plus a `Uint8Array` image part —
  * and wraps `generateText` + `Output.object` with the metadata Zod schema. Image and video pins
  * share the same image part (video pins pass the ffmpeg keyframe bytes). The
- * Google `thinkingBudget: 0` and `temperature: 0.7` behavior is preserved via
+ * Google `thinkingLevel: 'low'` and `temperature: 0.7` behavior is set via
  * provider options; the control-char repair only fires on parse failure.
  */
 export async function generatePinMetadata({
@@ -450,7 +465,9 @@ export async function generatePinMetadata({
     ],
     temperature: 0.7,
     maxOutputTokens: 8192,
-    providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
+    providerOptions: {
+      google: { thinkingConfig: { thinkingLevel: METADATA_THINKING_LEVEL } },
+    },
   })
 
   return output
