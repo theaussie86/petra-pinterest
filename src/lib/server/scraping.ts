@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
 import { discoverSitemapUrls } from '../../../server/lib/scraping'
+import { filterNewUrls } from '@/lib/scraping/url-diff'
+import { normalizeUrl } from '@/lib/utils'
 import type { ScrapeResponse } from '@/types/articles'
 import { isTriggerDevEnabled } from '@/lib/config/feature-flags'
 import type { scrapeBlogTask } from '@/trigger/scrape-blog'
@@ -72,10 +74,10 @@ export const scrapeBlogFn = createServerFn({ method: 'POST' })
       .select('url')
       .eq('blog_project_id', data.blog_project_id)
 
-    const existingUrls = new Set(
+    const newUrls = filterNewUrls(
+      discoveredUrls,
       (existingArticles ?? []).map((a: { url: string }) => a.url),
     )
-    const newUrls = discoveredUrls.filter((url) => !existingUrls.has(url))
 
     if (newUrls.length === 0) {
       return { success: true, dispatched: 0, useTrigger: false }
@@ -122,7 +124,7 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
       // Use Trigger.dev
       const handle = await tasks.trigger<typeof scrapeSingleTask>('scrape-single', {
         blog_project_id: data.blog_project_id,
-        url: data.url,
+        url: normalizeUrl(data.url),
         tenant_id: profile.tenant_id,
       })
       return {
@@ -142,7 +144,7 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
     serviceClient.functions.invoke('scrape-single', {
       body: {
         blog_project_id: data.blog_project_id,
-        url: data.url,
+        url: normalizeUrl(data.url),
         tenant_id: profile.tenant_id,
       },
     })

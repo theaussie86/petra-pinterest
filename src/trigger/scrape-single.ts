@@ -2,6 +2,7 @@ import { task } from '@trigger.dev/sdk/v3'
 import { createClient } from '@supabase/supabase-js'
 import { scrapeArticleWithGemini } from '../../server/lib/gemini-scraper'
 import { notifyProjectError } from '@/lib/server/notifications'
+import { normalizeUrl } from '@/lib/utils'
 
 const supabaseUrl = process.env.SUPABASE_URL!
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY!
@@ -19,6 +20,8 @@ export const scrapeSingleTask = task({
   },
   run: async (payload: ScrapeSinglePayload) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Store the normalized URL so the next sitemap diff matches (issue #71)
+    const url = normalizeUrl(payload.url)
 
     // Get Gemini API key from Vault
     const { data: apiKey, error: vaultError } = await supabase.rpc(
@@ -33,7 +36,7 @@ export const scrapeSingleTask = task({
     }
 
     // Scrape article using existing utility
-    const article = await scrapeArticleWithGemini(payload.url, apiKey)
+    const article = await scrapeArticleWithGemini(url, apiKey)
 
     // Gemini may return "null" as string when no date found
     const publishedAt =
@@ -49,7 +52,7 @@ export const scrapeSingleTask = task({
           tenant_id: payload.tenant_id,
           blog_project_id: payload.blog_project_id,
           title: article.title,
-          url: payload.url,
+          url,
           content: article.content,
           published_at: publishedAt,
           scraped_at: new Date().toISOString(),
@@ -63,7 +66,7 @@ export const scrapeSingleTask = task({
 
     return {
       success: true,
-      url: payload.url,
+      url,
       title: article.title,
     }
   },

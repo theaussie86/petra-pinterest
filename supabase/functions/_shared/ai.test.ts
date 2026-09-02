@@ -48,12 +48,12 @@ describe('getModel() [edge mirror]', () => {
   it('resolves a Google language model for the default model id', () => {
     const model = getModel('fake-key')
     expect(model).toBeDefined()
-    expect(model.modelId).toBe('gemini-2.5-flash')
+    expect(model.modelId).toBe('gemini-3.5-flash')
   })
 
   it('honors an explicit model id override', () => {
-    const model = getModel('fake-key', 'gemini-2.5-pro')
-    expect(model.modelId).toBe('gemini-2.5-pro')
+    const model = getModel('fake-key', 'gemini-3.5-flash-lite')
+    expect(model.modelId).toBe('gemini-3.5-flash-lite')
   })
 })
 

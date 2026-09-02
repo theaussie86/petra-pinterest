@@ -10,7 +10,7 @@
  */
 
 import { generateText, type LanguageModel, type ModelMessage } from 'ai'
-import { getModel } from './model'
+import { ARTICLE_THINKING_LEVEL, METADATA_THINKING_LEVEL, getModel } from './model'
 import { repairableObject } from './output'
 import { ARTICLE_SCRAPER_SYSTEM_PROMPT, PINTEREST_SEO_SYSTEM_PROMPT } from './prompts'
 import {
@@ -22,6 +22,7 @@ import {
 import type { ImageBytes } from './image'
 
 const MAX_HTML_CHARS = 100000
+const MAX_ARTICLE_OUTPUT_TOKENS = 8192
 const MAX_ARTICLE_CONTENT_CHARS = 4000
 
 export interface GenerateArticleOptions {
@@ -53,6 +54,12 @@ export async function generateArticleFromHtml({
     system: ARTICLE_SCRAPER_SYSTEM_PROMPT,
     prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
     temperature: 0.1,
+    maxOutputTokens: MAX_ARTICLE_OUTPUT_TOKENS,
+    // Plain HTML extraction gains little from reasoning, but Gemini bills
+    // thinking tokens at the full output rate (issue #71).
+    providerOptions: {
+      google: { thinkingConfig: { thinkingLevel: ARTICLE_THINKING_LEVEL } },
+    },
   })
 
   return output
@@ -117,7 +124,7 @@ function buildPinMetadataUserMessage({
  * Shared `generateText` + `Output.object` call for both pin-metadata paths.
  *
  * Wraps the metadata Zod schema with the same temperature, token, and Google
- * provider-option settings the old `@google/genai` path used (`thinkingBudget: 0`,
+ * provider-option settings the old `@google/genai` path used (`thinkingLevel: 'low'`,
  * `temperature: 0.7`); the control-char repair only fires on parse failure
  * (ADR 0002 / PRD #40).
  */
@@ -132,7 +139,9 @@ async function generatePinMetadataObject(
     messages,
     temperature: 0.7,
     maxOutputTokens: 8192,
-    providerOptions: { google: { thinkingConfig: { thinkingBudget: 0 } } },
+    providerOptions: {
+      google: { thinkingConfig: { thinkingLevel: METADATA_THINKING_LEVEL } },
+    },
   })
 
   return output
