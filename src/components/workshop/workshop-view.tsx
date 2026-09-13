@@ -117,7 +117,8 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
   const moveSelection = (delta: number) => {
     if (visibleTemplates.length === 0) return
     const index = visibleTemplates.findIndex((tpl) => tpl.id === selectedTemplateId)
-    const nextIndex = Math.min(Math.max((index === -1 ? 0 : index) + delta, 0), visibleTemplates.length - 1)
+    const currentIndex = index === -1 ? 0 : index
+    const nextIndex = Math.min(Math.max(currentIndex + delta, 0), visibleTemplates.length - 1)
     setSelectedTemplateId(visibleTemplates[nextIndex].id)
   }
 
