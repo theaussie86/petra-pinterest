@@ -7,11 +7,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { cn } from '@/lib/utils'
 import { TemplateStatusBadge } from './template-status-badge'
 import type { PinTemplate } from '@/types/pin-templates'
 
 interface WorkshopTemplateListProps {
   templates: PinTemplate[]
+  selectedTemplateId: string | null
+  onSelect: (templateId: string) => void
 }
 
 /**
@@ -22,7 +25,11 @@ function overlayPreview(overlay: string | null): string {
   return overlay.split('\n')[0] ?? ''
 }
 
-export function WorkshopTemplateList({ templates }: WorkshopTemplateListProps) {
+export function WorkshopTemplateList({
+  templates,
+  selectedTemplateId,
+  onSelect,
+}: WorkshopTemplateListProps) {
   const { t } = useTranslation()
 
   if (templates.length === 0) {
@@ -42,7 +49,14 @@ export function WorkshopTemplateList({ templates }: WorkshopTemplateListProps) {
       </TableHeader>
       <TableBody>
         {templates.map((template) => (
-          <TableRow key={template.id}>
+          <TableRow
+            key={template.id}
+            onClick={() => onSelect(template.id)}
+            className={cn(
+              'cursor-pointer',
+              template.id === selectedTemplateId && 'bg-sidebar-accent',
+            )}
+          >
             <TableCell className="font-mono text-muted-foreground">{template.position}</TableCell>
             <TableCell>{template.pin_type ?? '—'}</TableCell>
             <TableCell className="max-w-xs truncate">{template.title ?? '—'}</TableCell>

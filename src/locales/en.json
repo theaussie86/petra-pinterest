@@ -634,13 +634,36 @@
     "templatesHeading": "Pin templates",
     "noTemplates": "This article has no templates yet",
     "detailsPlaceholder": "Select a template to see details",
-    "detailsPlaceholderHint": "The detail view comes in a later step",
+    "detailsPlaceholderHint": "Click a template in the middle column",
     "col": {
       "position": "No.",
       "pinType": "Pin type",
       "title": "Title",
       "overlay": "Overlay",
       "status": "Status"
+    },
+    "detail": {
+      "copyImagePrompt": "Copy image prompt",
+      "copyImageIdea": "Copy image idea",
+      "copied": "Copied to clipboard",
+      "titleAndDescription": "Title & description",
+      "descriptionMissing": "Description missing",
+      "board": "Board",
+      "overlay": "Overlay preview",
+      "keywords": "Keywords",
+      "mainKeyword": "Main keyword",
+      "longtails": "Longtails",
+      "searchIntent": "Search intent",
+      "searchPhrases": "Search phrases",
+      "imagePrompt": "Image prompt",
+      "designBrief": "Design brief",
+      "designName": "Name",
+      "designLayout": "Layout",
+      "designImagePosition": "Image position",
+      "designFonts": "Fonts",
+      "designScrollStopper": "Scroll stopper",
+      "qualityCheck": "Quality check",
+      "imageIdea": "Image idea"
     }
   }
 }

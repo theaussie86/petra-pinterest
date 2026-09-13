@@ -634,13 +634,36 @@
     "templatesHeading": "Pin-Vorlagen",
     "noTemplates": "Für diesen Artikel gibt es noch keine Vorlagen",
     "detailsPlaceholder": "Wähle eine Vorlage, um Details zu sehen",
-    "detailsPlaceholderHint": "Die Detailansicht folgt in einem späteren Schritt",
+    "detailsPlaceholderHint": "Klicke in der mittleren Spalte auf eine Vorlage",
     "col": {
       "position": "Nr.",
       "pinType": "Pin-Typ",
       "title": "Titel",
       "overlay": "Overlay",
       "status": "Status"
+    },
+    "detail": {
+      "copyImagePrompt": "Bild-Prompt kopieren",
+      "copyImageIdea": "Bildidee kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "titleAndDescription": "Titel & Beschreibung",
+      "descriptionMissing": "Beschreibung fehlt",
+      "board": "Pinnwand",
+      "overlay": "Overlay-Vorschau",
+      "keywords": "Keywords",
+      "mainKeyword": "Hauptkeyword",
+      "longtails": "Longtails",
+      "searchIntent": "Suchintention",
+      "searchPhrases": "Suchsätze",
+      "imagePrompt": "Bild-Prompt",
+      "designBrief": "Designbrief",
+      "designName": "Name",
+      "designLayout": "Layout",
+      "designImagePosition": "Bildposition",
+      "designFonts": "Schriften",
+      "designScrollStopper": "Scroll-Stopper",
+      "qualityCheck": "Qualitätscheck",
+      "imageIdea": "Bildidee"
     }
   }
 }
