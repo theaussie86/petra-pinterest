@@ -1,4 +1,4 @@
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {
   pinTemplatesByArticleQueryOptions,
   pinTemplateCountsQueryOptions,
@@ -16,16 +16,6 @@ export function usePinTemplatesByArticle(articleId: string) {
 }
 
 /**
- * Suspense variant for the workshop route which prefetches the selected
- * article's templates in its loader. Shares the query options (and cache key)
- * with `usePinTemplatesByArticle` and the loader, so loader-prefetched data
- * hydrates without a client refetch.
- */
-export function usePinTemplatesByArticleSuspense(articleId: string) {
-  return useSuspenseQuery(pinTemplatesByArticleQueryOptions(articleId))
-}
-
-/**
  * Per-article template counts for a project (left-column badges).
  */
 export function usePinTemplateCounts(projectId: string) {
@@ -33,12 +23,4 @@ export function usePinTemplateCounts(projectId: string) {
     ...pinTemplateCountsQueryOptions(projectId),
     enabled: !!projectId,
   })
-}
-
-/**
- * Suspense variant for the workshop route which prefetches the counts in its
- * loader.
- */
-export function usePinTemplateCountsSuspense(projectId: string) {
-  return useSuspenseQuery(pinTemplateCountsQueryOptions(projectId))
 }

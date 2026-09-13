@@ -16,9 +16,8 @@ export function pinTemplatesByArticleQueryKey(articleId: string) {
 
 /**
  * Shared query options for an article's templates — the single source of truth
- * referenced by both the workshop route loader (`ensureQueryData(...)`) and the
- * consuming hook, so templates arrive in the SSR HTML and hydrate without a
- * client refetch.
+ * for the consuming hook. Templates load client-side once an article is
+ * selected, so they are not prefetched in the workshop route loader.
  */
 export function pinTemplatesByArticleQueryOptions(articleId: string) {
   return queryOptions<PinTemplate[]>({
