@@ -56,6 +56,23 @@ checks(check_name, passed) AS (
   ]) fn
 
   UNION ALL
+  --    Vault helpers are service-role only (00030_restrict_vault_functions.sql):
+  --    they do not check the caller, so browser roles must not reach them.
+  SELECT rl || ' cannot execute: ' || fn,
+         NOT has_function_privilege(rl, fn, 'EXECUTE')
+  FROM unnest(ARRAY[
+    'public.get_gemini_api_key(uuid)',
+    'public.store_gemini_api_key(uuid,text)',
+    'public.delete_gemini_api_key(uuid)',
+    'public.has_gemini_api_key(uuid)',
+    'public.get_pinterest_access_token(uuid)',
+    'public.get_pinterest_refresh_token(uuid)',
+    'public.store_pinterest_tokens(uuid,text,text)',
+    'public.delete_pinterest_tokens(uuid)'
+  ]) fn
+  CROSS JOIN unnest(ARRAY['anon', 'authenticated']) rl
+
+  UNION ALL
   --    handle_new_user runs as a trigger on auth.users; triggers fire without
   --    EXECUTE on the function, so only its existence is checked.
   SELECT 'trigger on_auth_user_created exists',
