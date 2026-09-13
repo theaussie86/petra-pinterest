@@ -1,6 +1,6 @@
 import { version } from '../../../package.json';
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, PlusCircle } from "lucide-react";
+import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, PlusCircle, Hammer } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
@@ -46,6 +46,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const projectNavItems = activeProjectId
     ? [
         { title: t("nav.articles"), url: `/projects/${activeProjectId}/articles`, icon: FileText, section: 'articles' },
+        { title: t("nav.workshop"), url: `/projects/${activeProjectId}/workshop`, icon: Hammer, section: 'workshop' },
         { title: t("nav.pins"), url: `/projects/${activeProjectId}/pins`, icon: Pin, section: 'pins' },
         { title: t("nav.createPin"), url: `/projects/${activeProjectId}/create-pin`, icon: PlusCircle, section: 'create-pin' },
         { title: t("nav.calendar"), url: `/projects/${activeProjectId}/calendar`, icon: Calendar, section: 'calendar' },

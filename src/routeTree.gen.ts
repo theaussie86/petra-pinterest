@@ -19,6 +19,7 @@ import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pintere
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
 import { Route as AuthedProjectsProjectIdCreatePinRouteImport } from './routes/_authed/projects/$projectId/create-pin'
 import { Route as AuthedProjectsProjectIdCalendarRouteImport } from './routes/_authed/projects/$projectId/calendar'
+import { Route as AuthedProjectsProjectIdWorkshopIndexRouteImport } from './routes/_authed/projects/$projectId/workshop/index'
 import { Route as AuthedProjectsProjectIdPinsIndexRouteImport } from './routes/_authed/projects/$projectId/pins/index'
 import { Route as AuthedProjectsProjectIdArticlesIndexRouteImport } from './routes/_authed/projects/$projectId/articles/index'
 import { Route as AuthedProjectsProjectIdPinsPinIdRouteImport } from './routes/_authed/projects/$projectId/pins/$pinId'
@@ -76,6 +77,12 @@ const AuthedProjectsProjectIdCalendarRoute =
     path: '/projects/$projectId/calendar',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProjectsProjectIdWorkshopIndexRoute =
+  AuthedProjectsProjectIdWorkshopIndexRouteImport.update({
+    id: '/projects/$projectId/workshop/',
+    path: '/projects/$projectId/workshop/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProjectsProjectIdPinsIndexRoute =
   AuthedProjectsProjectIdPinsIndexRouteImport.update({
     id: '/projects/$projectId/pins/',
@@ -115,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
   '/projects/$projectId/articles/': typeof AuthedProjectsProjectIdArticlesIndexRoute
   '/projects/$projectId/pins/': typeof AuthedProjectsProjectIdPinsIndexRoute
+  '/projects/$projectId/workshop/': typeof AuthedProjectsProjectIdWorkshopIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesByTo {
   '/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
   '/projects/$projectId/articles': typeof AuthedProjectsProjectIdArticlesIndexRoute
   '/projects/$projectId/pins': typeof AuthedProjectsProjectIdPinsIndexRoute
+  '/projects/$projectId/workshop': typeof AuthedProjectsProjectIdWorkshopIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -147,6 +156,7 @@ export interface FileRoutesById {
   '/_authed/projects/$projectId/pins/$pinId': typeof AuthedProjectsProjectIdPinsPinIdRoute
   '/_authed/projects/$projectId/articles/': typeof AuthedProjectsProjectIdArticlesIndexRoute
   '/_authed/projects/$projectId/pins/': typeof AuthedProjectsProjectIdPinsIndexRoute
+  '/_authed/projects/$projectId/workshop/': typeof AuthedProjectsProjectIdWorkshopIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/pins/$pinId'
     | '/projects/$projectId/articles/'
     | '/projects/$projectId/pins/'
+    | '/projects/$projectId/workshop/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/projects/$projectId/pins/$pinId'
     | '/projects/$projectId/articles'
     | '/projects/$projectId/pins'
+    | '/projects/$projectId/workshop'
   id:
     | '__root__'
     | '/'
@@ -195,6 +207,7 @@ export interface FileRouteTypes {
     | '/_authed/projects/$projectId/pins/$pinId'
     | '/_authed/projects/$projectId/articles/'
     | '/_authed/projects/$projectId/pins/'
+    | '/_authed/projects/$projectId/workshop/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsProjectIdCalendarRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/projects/$projectId/workshop/': {
+      id: '/_authed/projects/$projectId/workshop/'
+      path: '/projects/$projectId/workshop'
+      fullPath: '/projects/$projectId/workshop/'
+      preLoaderRoute: typeof AuthedProjectsProjectIdWorkshopIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/projects/$projectId/pins/': {
       id: '/_authed/projects/$projectId/pins/'
       path: '/projects/$projectId/pins'
@@ -318,6 +338,7 @@ interface AuthedRouteChildren {
   AuthedProjectsProjectIdPinsPinIdRoute: typeof AuthedProjectsProjectIdPinsPinIdRoute
   AuthedProjectsProjectIdArticlesIndexRoute: typeof AuthedProjectsProjectIdArticlesIndexRoute
   AuthedProjectsProjectIdPinsIndexRoute: typeof AuthedProjectsProjectIdPinsIndexRoute
+  AuthedProjectsProjectIdWorkshopIndexRoute: typeof AuthedProjectsProjectIdWorkshopIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -332,6 +353,8 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedProjectsProjectIdArticlesIndexRoute:
     AuthedProjectsProjectIdArticlesIndexRoute,
   AuthedProjectsProjectIdPinsIndexRoute: AuthedProjectsProjectIdPinsIndexRoute,
+  AuthedProjectsProjectIdWorkshopIndexRoute:
+    AuthedProjectsProjectIdWorkshopIndexRoute,
 }
 
 const AuthedRouteWithChildren =

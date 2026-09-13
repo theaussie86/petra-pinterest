@@ -45,6 +45,7 @@
     "projects": "Projects",
     "articles": "Articles",
     "pins": "Pins",
+    "workshop": "Workshop",
     "createPin": "Create Pin",
     "calendar": "Calendar",
     "selectProject": "Select project",
@@ -612,6 +613,34 @@
     "pinterest": {
       "connected": "Pinterest connected successfully!",
       "disconnected": "Pinterest disconnected"
+    }
+  },
+  "pinTemplateStatus": {
+    "draft": "Draft",
+    "needs_revision": "Needs revision",
+    "approved": "Approved",
+    "archived": "Archived"
+  },
+  "workshop": {
+    "title": "Workshop",
+    "description": "Review articles and their pin templates",
+    "articlesHeading": "Articles",
+    "searchPlaceholder": "Search articles …",
+    "templateCount_one": "{{count}} template",
+    "templateCount_other": "{{count}} templates",
+    "noArticles": "No articles in this project yet",
+    "noArticlesMatch": "No articles found",
+    "selectArticle": "Select an article on the left to see its templates",
+    "templatesHeading": "Pin templates",
+    "noTemplates": "This article has no templates yet",
+    "detailsPlaceholder": "Select a template to see details",
+    "detailsPlaceholderHint": "The detail view comes in a later step",
+    "col": {
+      "position": "No.",
+      "pinType": "Pin type",
+      "title": "Title",
+      "overlay": "Overlay",
+      "status": "Status"
     }
   }
 }

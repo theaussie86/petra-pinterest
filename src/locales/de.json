@@ -45,6 +45,7 @@
     "projects": "Projekte",
     "articles": "Artikel",
     "pins": "Pins",
+    "workshop": "Werkstatt",
     "createPin": "Pin erstellen",
     "calendar": "Kalender",
     "selectProject": "Projekt wählen",
@@ -612,6 +613,34 @@
     "pinterest": {
       "connected": "Pinterest erfolgreich verbunden!",
       "disconnected": "Pinterest getrennt"
+    }
+  },
+  "pinTemplateStatus": {
+    "draft": "Entwurf",
+    "needs_revision": "Überarbeiten",
+    "approved": "Freigegeben",
+    "archived": "Archiviert"
+  },
+  "workshop": {
+    "title": "Werkstatt",
+    "description": "Artikel und ihre Pin-Vorlagen prüfen",
+    "articlesHeading": "Artikel",
+    "searchPlaceholder": "Artikel suchen …",
+    "templateCount_one": "{{count}} Vorlage",
+    "templateCount_other": "{{count}} Vorlagen",
+    "noArticles": "Noch keine Artikel in diesem Projekt",
+    "noArticlesMatch": "Keine Artikel gefunden",
+    "selectArticle": "Wähle links einen Artikel, um seine Vorlagen zu sehen",
+    "templatesHeading": "Pin-Vorlagen",
+    "noTemplates": "Für diesen Artikel gibt es noch keine Vorlagen",
+    "detailsPlaceholder": "Wähle eine Vorlage, um Details zu sehen",
+    "detailsPlaceholderHint": "Die Detailansicht folgt in einem späteren Schritt",
+    "col": {
+      "position": "Nr.",
+      "pinType": "Pin-Typ",
+      "title": "Titel",
+      "overlay": "Overlay",
+      "status": "Status"
     }
   }
 }
