@@ -111,3 +111,17 @@ VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
 ## MCP Servers
 
 Configured in `.mcp.json`: Airtable (for data migration reference) and shadcn (for component registry). Supabase MCP is available as a built-in plugin.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues (theaussie86/petra-pinterest), via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
