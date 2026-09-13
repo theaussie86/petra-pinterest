@@ -186,6 +186,38 @@ describe('WorkshopTemplateDetail', () => {
     expect(screen.getByText('Älterer Wunsch')).toBeTruthy()
   })
 
+  it('shows keyboard-shortcut hints on the action-bar buttons', () => {
+    const template = buildPinTemplate({ status: 'draft' })
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        onChangeStatus={vi.fn()}
+        onRequestRevision={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: /Freigeben\s*f/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Bild-Prompt kopieren\s*c/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Änderung wünschen\s*r/i })).toBeTruthy()
+  })
+
+  it('opens the revision dialog when controlled open is set', () => {
+    const template = buildPinTemplate({ status: 'draft' })
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        onRequestRevision={vi.fn()}
+        revisionOpen
+        onRevisionOpenChange={vi.fn()}
+      />,
+    )
+
+    // The dialog's feedback field is visible without clicking the trigger.
+    expect(screen.getByLabelText(/Was soll der Agent ändern/i)).toBeTruthy()
+  })
+
   it('shows an empty-history hint when there are no revisions', () => {
     const template = buildPinTemplate()
     render(

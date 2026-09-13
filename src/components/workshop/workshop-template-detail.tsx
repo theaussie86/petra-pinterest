@@ -37,6 +37,18 @@ export function overlayFooterDomain(blogUrl: string): string {
   }
 }
 
+/**
+ * A small keyboard-shortcut hint rendered inside an action-bar button, so the
+ * key that triggers it (issue #80) is discoverable at the control itself.
+ */
+function ShortcutKbd({ keyLabel }: { keyLabel: string }) {
+  return (
+    <kbd className="ml-1 rounded border border-current/30 px-1 font-mono text-[10px] leading-none opacity-70">
+      {keyLabel}
+    </kbd>
+  )
+}
+
 interface WorkshopTemplateDetailProps {
   template: PinTemplate
   /** The owning blog project's URL — its domain is the overlay footer. */
@@ -60,6 +72,14 @@ interface WorkshopTemplateDetailProps {
   onRequestRevision?: (feedback: string) => void
   /** Disables the revision submit while the request is in flight. */
   isRequestingRevision?: boolean
+  /**
+   * Controlled open state of the revision dialog. When provided, the dialog is
+   * driven by the caller (so a keyboard shortcut can open it); otherwise the
+   * dialog manages its own open state.
+   */
+  revisionOpen?: boolean
+  /** Called when the (controlled) revision dialog wants to open/close. */
+  onRevisionOpenChange?: (open: boolean) => void
 }
 
 /**
@@ -102,6 +122,7 @@ function StatusActions({
           onClick={() => onChangeStatus('approved')}
         >
           {t('workshop.actions.approve')}
+          <ShortcutKbd keyLabel="f" />
         </Button>
       )}
       {workspace !== 'archived' && (
@@ -127,10 +148,12 @@ function CopyButton({
   text,
   label,
   variant = 'outline',
+  shortcut,
 }: {
   text: string
   label: string
   variant?: 'default' | 'outline'
+  shortcut?: string
 }) {
   const [copied, setCopied] = useState(false)
   const { t } = useTranslation()
@@ -146,6 +169,7 @@ function CopyButton({
     <Button type="button" variant={variant} size="sm" onClick={handleCopy}>
       {copied ? <Check /> : <Copy />}
       {label}
+      {shortcut && <ShortcutKbd keyLabel={shortcut} />}
     </Button>
   )
 }
@@ -158,13 +182,24 @@ function CopyButton({
 function RevisionRequest({
   onRequestRevision,
   isRequestingRevision,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   onRequestRevision: (feedback: string) => void
   isRequestingRevision?: boolean
+  /** When provided, the dialog open state is controlled by the caller. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(false)
   const [feedback, setFeedback] = useState('')
+
+  const open = controlledOpen ?? internalOpen
+  const setOpen = (next: boolean) => {
+    if (onOpenChange) onOpenChange(next)
+    else setInternalOpen(next)
+  }
 
   const handleSubmit = () => {
     const trimmed = feedback.trim()
@@ -184,6 +219,7 @@ function RevisionRequest({
       <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
         <MessageSquarePlus />
         {t('workshop.actions.requestRevision')}
+        <ShortcutKbd keyLabel="r" />
       </Button>
       <DialogContent>
         <DialogHeader>
@@ -193,6 +229,7 @@ function RevisionRequest({
           <Label htmlFor="revision-feedback">{t('workshop.detail.revisionFeedbackLabel')}</Label>
           <Textarea
             id="revision-feedback"
+            autoFocus
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
             placeholder={t('workshop.detail.revisionFeedbackPlaceholder')}
@@ -301,6 +338,8 @@ export function WorkshopTemplateDetail({
   revisions,
   onRequestRevision,
   isRequestingRevision,
+  revisionOpen,
+  onRevisionOpenChange,
 }: WorkshopTemplateDetailProps) {
   const { t } = useTranslation()
 
@@ -328,12 +367,15 @@ export function WorkshopTemplateDetail({
             <RevisionRequest
               onRequestRevision={onRequestRevision}
               isRequestingRevision={isRequestingRevision}
+              open={revisionOpen}
+              onOpenChange={onRevisionOpenChange}
             />
           )}
           <CopyButton
             text={template.image_prompt}
             label={t('workshop.detail.copyImagePrompt')}
             variant="default"
+            shortcut="c"
           />
         </div>
       </div>

@@ -646,6 +646,7 @@
       "archived": "Archive"
     },
     "noTemplatesInTab": "No templates in this workspace",
+    "shortcutsHint": "Keyboard: j/k next/previous · f approve · c copy image prompt · r request change",
     "actions": {
       "approve": "Approve",
       "archive": "Archive",

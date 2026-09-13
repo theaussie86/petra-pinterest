@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   Table,
@@ -31,6 +32,13 @@ export function WorkshopTemplateList({
   onSelect,
 }: WorkshopTemplateListProps) {
   const { t } = useTranslation()
+  const selectedRowRef = useRef<HTMLTableRowElement | null>(null)
+
+  // Keyboard navigation (issue #80) can move the selection off-screen; keep the
+  // selected row in view.
+  useEffect(() => {
+    selectedRowRef.current?.scrollIntoView?.({ block: 'nearest' })
+  }, [selectedTemplateId])
 
   if (templates.length === 0) {
     return <p className="text-sm text-muted-foreground py-4">{t('workshop.noTemplates')}</p>
@@ -51,6 +59,7 @@ export function WorkshopTemplateList({
         {templates.map((template) => (
           <TableRow
             key={template.id}
+            ref={template.id === selectedTemplateId ? selectedRowRef : undefined}
             onClick={() => onSelect(template.id)}
             className={cn(
               'cursor-pointer',

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { LoadingSpinner } from '@/components/layout/loading-spinner'
 import { ErrorState } from '@/components/layout/error-state'
 import { useArticles } from '@/lib/hooks/use-articles'
@@ -17,6 +18,7 @@ import {
   workspaceForStatus,
   type WorkspaceTab,
 } from '@/lib/pin-template-workspace'
+import { useWorkshopKeyboard } from '@/lib/hooks/use-workshop-keyboard'
 import type { PinTemplateStatus } from '@/types/pin-templates'
 import { WorkshopArticleList } from './workshop-article-list'
 import { WorkshopTemplateList } from './workshop-template-list'
@@ -38,6 +40,7 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('open')
+  const [revisionDialogOpen, setRevisionDialogOpen] = useState(false)
 
   // Default the selection to the first article once the list arrives; leave a
   // manual selection untouched.
@@ -108,6 +111,40 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
     updateStatus.mutate({ id: selectedTemplateId, status })
   }
 
+  // Keyboard review (issue #80): move through the active workspace with j/k and
+  // trigger the same actions as the detail buttons with f/c/r. Shortcuts are
+  // ignored while typing or a dialog is open (see useWorkshopKeyboard).
+  const moveSelection = (delta: number) => {
+    if (visibleTemplates.length === 0) return
+    const index = visibleTemplates.findIndex((tpl) => tpl.id === selectedTemplateId)
+    const nextIndex = Math.min(Math.max((index === -1 ? 0 : index) + delta, 0), visibleTemplates.length - 1)
+    setSelectedTemplateId(visibleTemplates[nextIndex].id)
+  }
+
+  const handleCopyPrompt = () => {
+    if (!selectedTemplate) return
+    void navigator.clipboard.writeText(selectedTemplate.image_prompt)
+    toast.success(t('workshop.detail.copied'))
+  }
+
+  useWorkshopKeyboard(
+    {
+      onNext: () => moveSelection(1),
+      onPrev: () => moveSelection(-1),
+      // Approving only makes sense in the Offen workspace (mirrors the button).
+      onApprove: () => {
+        if (selectedTemplate && workspaceForStatus(selectedTemplate.status) === 'open') {
+          handleChangeStatus('approved')
+        }
+      },
+      onCopyPrompt: handleCopyPrompt,
+      onRequestRevision: () => {
+        if (selectedTemplate) setRevisionDialogOpen(true)
+      },
+    },
+    visibleTemplates.length > 0,
+  )
+
   if (isLoading) return <LoadingSpinner />
   if (error) return <ErrorState error={error} />
 
@@ -129,11 +166,14 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
         {visibleTemplates.length === 0 ? (
           <p className="text-sm text-muted-foreground py-4">{t('workshop.noTemplatesInTab')}</p>
         ) : (
-          <WorkshopTemplateList
-            templates={visibleTemplates}
-            selectedTemplateId={selectedTemplateId}
-            onSelect={setSelectedTemplateId}
-          />
+          <>
+            <WorkshopTemplateList
+              templates={visibleTemplates}
+              selectedTemplateId={selectedTemplateId}
+              onSelect={setSelectedTemplateId}
+            />
+            <p className="text-xs text-muted-foreground pt-1">{t('workshop.shortcutsHint')}</p>
+          </>
         )}
       </>
     )
@@ -170,6 +210,8 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
             revisions={revisions ?? []}
             onRequestRevision={handleRequestRevision}
             isRequestingRevision={requestRevision.isPending}
+            revisionOpen={revisionDialogOpen}
+            onRevisionOpenChange={setRevisionDialogOpen}
           />
         ) : (
           <div className="flex flex-col items-center justify-center text-center h-full py-12 text-muted-foreground">

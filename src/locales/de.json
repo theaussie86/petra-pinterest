@@ -646,6 +646,7 @@
       "archived": "Archiv"
     },
     "noTemplatesInTab": "Keine Vorlagen in diesem Bereich",
+    "shortcutsHint": "Tastatur: j/k nächste/vorherige · f freigeben · c Bild-Prompt kopieren · r Änderung wünschen",
     "actions": {
       "approve": "Freigeben",
       "archive": "Archivieren",
