@@ -94,6 +94,34 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
   if (isLoading) return <LoadingSpinner />
   if (error) return <ErrorState error={error} />
 
+  // The middle column has four states: no article selected, templates loading,
+  // the article has no templates at all, or the tabbed template list.
+  const renderTemplateColumn = () => {
+    if (!selectedArticleId) {
+      return <p className="text-sm text-muted-foreground py-4">{t('workshop.selectArticle')}</p>
+    }
+    if (templatesLoading) {
+      return <LoadingSpinner />
+    }
+    if ((templates ?? []).length === 0) {
+      return <p className="text-sm text-muted-foreground py-4">{t('workshop.noTemplates')}</p>
+    }
+    return (
+      <>
+        <WorkshopTemplateTabs activeTab={activeTab} counts={tabCounts} onTabChange={setActiveTab} />
+        {visibleTemplates.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">{t('workshop.noTemplatesInTab')}</p>
+        ) : (
+          <WorkshopTemplateList
+            templates={visibleTemplates}
+            selectedTemplateId={selectedTemplateId}
+            onSelect={setSelectedTemplateId}
+          />
+        )}
+      </>
+    )
+  }
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
       {/* Left: articles + search + open-template counts */}
@@ -111,32 +139,7 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
         <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           {t('workshop.templatesHeading')}
         </h2>
-        {!selectedArticleId ? (
-          <p className="text-sm text-muted-foreground py-4">{t('workshop.selectArticle')}</p>
-        ) : templatesLoading ? (
-          <LoadingSpinner />
-        ) : (templates ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">{t('workshop.noTemplates')}</p>
-        ) : (
-          <>
-            <WorkshopTemplateTabs
-              activeTab={activeTab}
-              counts={tabCounts}
-              onTabChange={setActiveTab}
-            />
-            {visibleTemplates.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4">
-                {t('workshop.noTemplatesInTab')}
-              </p>
-            ) : (
-              <WorkshopTemplateList
-                templates={visibleTemplates}
-                selectedTemplateId={selectedTemplateId}
-                onSelect={setSelectedTemplateId}
-              />
-            )}
-          </>
-        )}
+        {renderTemplateColumn()}
       </div>
 
       {/* Right: detail view of the selected template */}
