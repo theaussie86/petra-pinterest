@@ -13,10 +13,14 @@ future server-side ingest and for unit testing.
 
 ## Write path
 
-- Insert/update `public.pin_templates` with the **service role** key. The
-  `Service role full access pin_templates` policy bypasses RLS, so the agent is
-  responsible for setting the correct `tenant_id` itself — it is **not** derived
-  from `auth.uid()` on this path.
+- Connect as the dedicated Postgres role **`pin_werkstatt_agent`** (migration
+  `00029_pin_werkstatt_agent_role.sql`), not with the service role key. The role
+  does not bypass RLS: it only sees and writes data for the blog projects listed
+  for it in `public.agent_project_access`. It can read `blog_projects` and
+  `blog_articles`, read/insert/update `pin_templates` (no delete), read
+  `pin_template_revisions` and update only their `previous_snapshot`.
+- `tenant_id` is set automatically from the article by a trigger — the agent
+  does not set it.
 - **Upsert on the natural key `(blog_article_id, position)`.** Re-running an
   ingest for the same article must update the existing row for a position rather
   than insert a duplicate (the unique index `idx_pin_templates_article_position`
