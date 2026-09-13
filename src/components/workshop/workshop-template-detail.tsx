@@ -71,6 +71,34 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
+/** One inline label/value row in the design brief; renders nothing when empty. */
+function DesignRow({ label, value }: { label: string; value: string | undefined }) {
+  if (!value) return null
+  return (
+    <div className="flex gap-2">
+      <dt className="text-muted-foreground">{label}:</dt>
+      <dd>{value}</dd>
+    </div>
+  )
+}
+
+/** A bulleted keyword list under a small heading; renders nothing when empty. */
+function KeywordList({ label, items }: { label: string; items: string[] | null }) {
+  if (!items || items.length === 0) return null
+  return (
+    <div>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd>
+        <ul className="list-disc pl-5">
+          {items.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      </dd>
+    </div>
+  )
+}
+
 export function WorkshopTemplateDetail({ template, blogUrl }: WorkshopTemplateDetailProps) {
   const { t } = useTranslation()
 
@@ -145,18 +173,7 @@ export function WorkshopTemplateDetail({ template, blogUrl }: WorkshopTemplateDe
             <dt className="text-xs text-muted-foreground">{t('workshop.detail.mainKeyword')}</dt>
             <dd className="font-medium">{template.main_keyword}</dd>
           </div>
-          {template.longtails && template.longtails.length > 0 && (
-            <div>
-              <dt className="text-xs text-muted-foreground">{t('workshop.detail.longtails')}</dt>
-              <dd>
-                <ul className="list-disc pl-5">
-                  {template.longtails.map((lt, i) => (
-                    <li key={i}>{lt}</li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          )}
+          <KeywordList label={t('workshop.detail.longtails')} items={template.longtails} />
           {template.search_intent && (
             <div>
               <dt className="text-xs text-muted-foreground">
@@ -165,20 +182,7 @@ export function WorkshopTemplateDetail({ template, blogUrl }: WorkshopTemplateDe
               <dd>{template.search_intent}</dd>
             </div>
           )}
-          {template.search_phrases && template.search_phrases.length > 0 && (
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t('workshop.detail.searchPhrases')}
-              </dt>
-              <dd>
-                <ul className="list-disc pl-5">
-                  {template.search_phrases.map((sp, i) => (
-                    <li key={i}>{sp}</li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          )}
+          <KeywordList label={t('workshop.detail.searchPhrases')} items={template.search_phrases} />
         </dl>
       </Section>
 
@@ -196,40 +200,17 @@ export function WorkshopTemplateDetail({ template, blogUrl }: WorkshopTemplateDe
       {/* Design brief with color swatches */}
       <Section title={t('workshop.detail.designBrief')}>
         <dl className="flex flex-col gap-2 text-sm">
-          {design.name && (
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">{t('workshop.detail.designName')}:</dt>
-              <dd>{design.name}</dd>
-            </div>
-          )}
-          {design.layout && (
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">{t('workshop.detail.designLayout')}:</dt>
-              <dd>{design.layout}</dd>
-            </div>
-          )}
-          {design.image_position && (
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">
-                {t('workshop.detail.designImagePosition')}:
-              </dt>
-              <dd>{design.image_position}</dd>
-            </div>
-          )}
-          {design.fonts && design.fonts.length > 0 && (
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">{t('workshop.detail.designFonts')}:</dt>
-              <dd>{design.fonts.join(', ')}</dd>
-            </div>
-          )}
-          {design.scroll_stopper && (
-            <div className="flex gap-2">
-              <dt className="text-muted-foreground">
-                {t('workshop.detail.designScrollStopper')}:
-              </dt>
-              <dd>{design.scroll_stopper}</dd>
-            </div>
-          )}
+          <DesignRow label={t('workshop.detail.designName')} value={design.name} />
+          <DesignRow label={t('workshop.detail.designLayout')} value={design.layout} />
+          <DesignRow
+            label={t('workshop.detail.designImagePosition')}
+            value={design.image_position}
+          />
+          <DesignRow label={t('workshop.detail.designFonts')} value={design.fonts?.join(', ')} />
+          <DesignRow
+            label={t('workshop.detail.designScrollStopper')}
+            value={design.scroll_stopper}
+          />
         </dl>
         {colors.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 pt-1">
