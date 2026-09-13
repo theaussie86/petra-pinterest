@@ -31,6 +31,21 @@ export interface PinTemplateDesign {
   colors?: string[]
 }
 
+/**
+ * An immutable revision request a reviewer sent to the external agent for a
+ * template. `previous_snapshot` is the template's fields before the rework and
+ * is written later by the agent. The application layer keeps only the last 3
+ * per template (issue #79, epic #74).
+ */
+export interface PinTemplateRevision {
+  id: string
+  tenant_id: string
+  template_id: string
+  feedback: string
+  previous_snapshot: Record<string, unknown> | null
+  created_at: string
+}
+
 export interface PinTemplate {
   id: string
   tenant_id: string

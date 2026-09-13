@@ -1,7 +1,7 @@
 import type { Pin, PinInsert, PinMetadataGeneration } from '@/types/pins'
 import type { Article } from '@/types/articles'
 import type { BlogProject, BlogProjectInsert } from '@/types/blog-projects'
-import type { PinTemplate } from '@/types/pin-templates'
+import type { PinTemplate, PinTemplateRevision } from '@/types/pin-templates'
 
 let counter = 0
 function nextId() {
@@ -149,6 +149,20 @@ export function buildPinTemplate(overrides: Partial<PinTemplate> = {}): PinTempl
     season: null,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
+    ...overrides,
+  }
+}
+
+export function buildPinTemplateRevision(
+  overrides: Partial<PinTemplateRevision> = {},
+): PinTemplateRevision {
+  return {
+    id: nextId(),
+    tenant_id: 'test-tenant-id',
+    template_id: 'template-1',
+    feedback: 'Bitte den Titel kürzer fassen',
+    previous_snapshot: null,
+    created_at: '2025-01-01T00:00:00Z',
     ...overrides,
   }
 }

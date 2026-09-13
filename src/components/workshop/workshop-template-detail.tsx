@@ -1,12 +1,26 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, MessageSquarePlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import i18n from '@/lib/i18n'
 import { workspaceForStatus } from '@/lib/pin-template-workspace'
 import { TemplateStatusBadge } from './template-status-badge'
-import type { PinTemplate, PinTemplateStatus } from '@/types/pin-templates'
+import type {
+  PinTemplate,
+  PinTemplateRevision,
+  PinTemplateStatus,
+} from '@/types/pin-templates'
 
 /**
  * Bare domain (without a `www.` prefix) of the blog project, used as the fixed
@@ -34,6 +48,18 @@ interface WorkshopTemplateDetailProps {
   onChangeStatus?: (status: PinTemplateStatus) => void
   /** Disables the status actions while a change is in flight. */
   isUpdating?: boolean
+  /**
+   * Revision history (last 3, newest first). When provided (even empty), the
+   * change-history section renders. When omitted, no history is shown.
+   */
+  revisions?: PinTemplateRevision[]
+  /**
+   * Submit a revision request (feedback text). When omitted, the "Änderung
+   * wünschen" action does not render.
+   */
+  onRequestRevision?: (feedback: string) => void
+  /** Disables the revision submit while the request is in flight. */
+  isRequestingRevision?: boolean
 }
 
 /**
@@ -124,6 +150,109 @@ function CopyButton({
   )
 }
 
+/**
+ * The "Änderung wünschen" control: a button that opens a dialog with a feedback
+ * textarea. Submitting hands the trimmed feedback to `onRequestRevision` and
+ * closes the dialog; empty feedback is ignored.
+ */
+function RevisionRequest({
+  onRequestRevision,
+  isRequestingRevision,
+}: {
+  onRequestRevision: (feedback: string) => void
+  isRequestingRevision?: boolean
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [feedback, setFeedback] = useState('')
+
+  const handleSubmit = () => {
+    const trimmed = feedback.trim()
+    if (!trimmed) return
+    onRequestRevision(trimmed)
+    setFeedback('')
+    setOpen(false)
+  }
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setFeedback('')
+    setOpen(next)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <MessageSquarePlus />
+        {t('workshop.actions.requestRevision')}
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('workshop.detail.revisionTitle')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2 py-2">
+          <Label htmlFor="revision-feedback">{t('workshop.detail.revisionFeedbackLabel')}</Label>
+          <Textarea
+            id="revision-feedback"
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder={t('workshop.detail.revisionFeedbackPlaceholder')}
+            rows={4}
+            className="resize-none"
+          />
+        </div>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleOpenChange(false)}
+            disabled={isRequestingRevision}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!feedback.trim() || isRequestingRevision}
+          >
+            {isRequestingRevision
+              ? t('workshop.detail.revisionSubmitting')
+              : t('workshop.detail.revisionSubmit')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** The template's change history, newest first, with an empty-state hint. */
+function RevisionHistory({ revisions }: { revisions: PinTemplateRevision[] }) {
+  const { t } = useTranslation()
+
+  const formatDateTime = (iso: string) =>
+    new Date(iso).toLocaleDateString(i18n.language, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+
+  if (revisions.length === 0) {
+    return <p className="text-sm text-muted-foreground">{t('workshop.detail.revisionHistoryEmpty')}</p>
+  }
+
+  return (
+    <ul className="flex flex-col gap-3">
+      {revisions.map((rev) => (
+        <li key={rev.id} className="rounded-md border bg-muted/40 p-3">
+          <p className="text-xs text-muted-foreground">{formatDateTime(rev.created_at)}</p>
+          <p className="mt-1 whitespace-pre-wrap text-sm">{rev.feedback}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** A titled block with a small uppercase heading. */
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -169,6 +298,9 @@ export function WorkshopTemplateDetail({
   blogUrl,
   onChangeStatus,
   isUpdating,
+  revisions,
+  onRequestRevision,
+  isRequestingRevision,
 }: WorkshopTemplateDetailProps) {
   const { t } = useTranslation()
 
@@ -190,6 +322,12 @@ export function WorkshopTemplateDetail({
               status={template.status}
               onChangeStatus={onChangeStatus}
               isUpdating={isUpdating}
+            />
+          )}
+          {onRequestRevision && (
+            <RevisionRequest
+              onRequestRevision={onRequestRevision}
+              isRequestingRevision={isRequestingRevision}
             />
           )}
           <CopyButton
@@ -341,6 +479,16 @@ export function WorkshopTemplateDetail({
           </div>
         )}
       </Section>
+
+      {/* Change history — only rendered when the caller passes revisions. */}
+      {revisions !== undefined && (
+        <>
+          <Separator />
+          <Section title={t('workshop.detail.revisionHistory')}>
+            <RevisionHistory revisions={revisions} />
+          </Section>
+        </>
+      )}
     </div>
   )
 }

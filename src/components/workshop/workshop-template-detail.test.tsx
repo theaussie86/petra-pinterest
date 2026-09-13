@@ -2,7 +2,7 @@ import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/re
 import { afterEach, beforeEach } from 'vitest'
 import i18n from '@/lib/i18n'
 import { WorkshopTemplateDetail, overlayFooterDomain } from './workshop-template-detail'
-import { buildPinTemplate } from '@/test/factories'
+import { buildPinTemplate, buildPinTemplateRevision } from '@/test/factories'
 
 const toastSuccess = vi.fn()
 vi.mock('sonner', () => ({
@@ -122,5 +122,80 @@ describe('WorkshopTemplateDetail', () => {
     render(<WorkshopTemplateDetail template={template} blogUrl="https://www.example.com" />)
 
     expect(screen.queryByRole('button', { name: /Freigeben/i })).toBeNull()
+  })
+
+  it('submits a revision request with the trimmed feedback and closes the dialog', async () => {
+    const onRequestRevision = vi.fn()
+    const template = buildPinTemplate({ status: 'draft' })
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        onRequestRevision={onRequestRevision}
+      />,
+    )
+
+    // Open the dialog from the action bar.
+    fireEvent.click(screen.getByRole('button', { name: /Änderung wünschen/i }))
+
+    const textarea = screen.getByLabelText(/Was soll der Agent ändern/i)
+    fireEvent.change(textarea, { target: { value: '  Titel kürzen  ' } })
+
+    // The dialog's submit button (there are two matching buttons: the trigger and
+    // the submit — pick the one inside the dialog footer).
+    const submitButtons = screen.getAllByRole('button', { name: /Änderung wünschen/i })
+    fireEvent.click(submitButtons[submitButtons.length - 1])
+
+    await waitFor(() => expect(onRequestRevision).toHaveBeenCalledWith('Titel kürzen'))
+  })
+
+  it('does not submit an empty revision request', () => {
+    const onRequestRevision = vi.fn()
+    const template = buildPinTemplate({ status: 'draft' })
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        onRequestRevision={onRequestRevision}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Änderung wünschen/i }))
+    const submitButtons = screen.getAllByRole('button', { name: /Änderung wünschen/i })
+    fireEvent.click(submitButtons[submitButtons.length - 1])
+
+    expect(onRequestRevision).not.toHaveBeenCalled()
+  })
+
+  it('renders the change history newest first', () => {
+    const template = buildPinTemplate()
+    const revisions = [
+      buildPinTemplateRevision({ feedback: 'Neuester Wunsch', created_at: '2025-03-01T00:00:00Z' }),
+      buildPinTemplateRevision({ feedback: 'Älterer Wunsch', created_at: '2025-01-01T00:00:00Z' }),
+    ]
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        revisions={revisions}
+      />,
+    )
+
+    expect(screen.getByText(/Änderungsverlauf/i)).toBeTruthy()
+    expect(screen.getByText('Neuester Wunsch')).toBeTruthy()
+    expect(screen.getByText('Älterer Wunsch')).toBeTruthy()
+  })
+
+  it('shows an empty-history hint when there are no revisions', () => {
+    const template = buildPinTemplate()
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        revisions={[]}
+      />,
+    )
+
+    expect(screen.getByText(/Noch keine Änderungswünsche/i)).toBeTruthy()
   })
 })

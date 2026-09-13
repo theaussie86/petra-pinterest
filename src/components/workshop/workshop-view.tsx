@@ -8,6 +8,8 @@ import {
   usePinTemplatesByArticle,
   usePinTemplateOpenCounts,
   useUpdatePinTemplateStatus,
+  usePinTemplateRevisions,
+  useRequestPinTemplateRevision,
 } from '@/lib/hooks/use-pin-templates'
 import {
   countByWorkspace,
@@ -31,6 +33,7 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
   const { data: openCounts } = usePinTemplateOpenCounts(projectId)
   const { data: project } = useBlogProject(projectId)
   const updateStatus = useUpdatePinTemplateStatus()
+  const requestRevision = useRequestPinTemplateRevision()
 
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
@@ -79,6 +82,20 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
   }, [visibleTemplates])
 
   const selectedTemplate = visibleTemplates.find((tpl) => tpl.id === selectedTemplateId) ?? null
+
+  // Revision history for the selected template (loads client-side on selection).
+  const { data: revisions } = usePinTemplateRevisions(selectedTemplateId ?? '')
+
+  // Record a revision request. The template moves to needs_revision (out of the
+  // Freigegeben/Archiv tabs), so — as with a status change — advance the
+  // selection to the next template when the current tab no longer holds it.
+  const handleRequestRevision = (feedback: string) => {
+    if (!selectedTemplateId) return
+    if (activeTab !== 'open') {
+      setSelectedTemplateId(nextSelectionAfterRemoval(visibleTemplates, selectedTemplateId))
+    }
+    requestRevision.mutate({ id: selectedTemplateId, feedback })
+  }
 
   // Change the selected template's status. When the new status moves it out of
   // the current tab, advance the selection to the next template first (issue #78)
@@ -150,6 +167,9 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
             blogUrl={project?.blog_url ?? ''}
             onChangeStatus={handleChangeStatus}
             isUpdating={updateStatus.isPending}
+            revisions={revisions ?? []}
+            onRequestRevision={handleRequestRevision}
+            isRequestingRevision={requestRevision.isPending}
           />
         ) : (
           <div className="flex flex-col items-center justify-center text-center h-full py-12 text-muted-foreground">

@@ -1,7 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
+import { ensureProfile } from '@/lib/auth'
 import { workspaceForStatus } from '@/lib/pin-template-workspace'
-import type { PinTemplate, PinTemplateStatus } from '@/types/pin-templates'
+import type {
+  PinTemplate,
+  PinTemplateRevision,
+  PinTemplateStatus,
+} from '@/types/pin-templates'
 
 /**
  * All templates for a single article, ordered by position ascending (1..N).
@@ -45,6 +50,77 @@ export async function getOpenPinTemplateCountsByProject(
     counts[row.blog_article_id] = (counts[row.blog_article_id] ?? 0) + 1
   }
   return counts
+}
+
+/**
+ * The last 3 revision requests for a template, newest first — the change history
+ * shown in the detail view. Runs through the isomorphic client so it respects
+ * tenant RLS under the SSR-auth read pattern (ADR 0003). The application layer
+ * keeps only the last 3 rows per template, so the `.limit(3)` also matches the
+ * retention window (issue #79).
+ */
+export async function getPinTemplateRevisions(
+  templateId: string
+): Promise<PinTemplateRevision[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('pin_template_revisions')
+    .select('*')
+    .eq('template_id', templateId)
+    .order('created_at', { ascending: false })
+    .limit(3)
+
+  if (error) throw error
+  return data ?? []
+}
+
+/**
+ * Request a revision on a template: record the reviewer's `feedback` and move the
+ * template to `needs_revision` so the external agent picks it up (it reworks the
+ * template and sets the status back to `draft`). Both steps go through the browser
+ * `supabase` client under tenant RLS. Only the last 3 revisions per template are
+ * kept — older rows are pruned in the application layer (mirrors the
+ * `pin_metadata_generations` history pattern). Returns the updated template.
+ */
+export async function requestPinTemplateRevision(
+  templateId: string,
+  feedback: string
+): Promise<PinTemplate> {
+  const { tenant_id } = await ensureProfile()
+
+  // 1. Record the revision request.
+  const { error: insertError } = await supabase
+    .from('pin_template_revisions')
+    .insert({ template_id: templateId, tenant_id, feedback: feedback.trim() })
+
+  if (insertError) throw insertError
+
+  // 2. Move the template to needs_revision so the agent picks it up.
+  const { data, error: updateError } = await supabase
+    .from('pin_templates')
+    .update({ status: 'needs_revision' })
+    .eq('id', templateId)
+    .select()
+    .single()
+
+  if (updateError) throw updateError
+
+  // 3. Keep only the last 3 revisions per template (application-layer retention).
+  const { data: revisions } = await supabase
+    .from('pin_template_revisions')
+    .select('id')
+    .eq('template_id', templateId)
+    .order('created_at', { ascending: false })
+
+  if (revisions && revisions.length > 3) {
+    const idsToKeep = revisions.slice(0, 3).map((r) => r.id)
+    await supabase
+      .from('pin_template_revisions')
+      .delete()
+      .eq('template_id', templateId)
+      .not('id', 'in', `(${idsToKeep.join(',')})`)
+  }
+
+  return data
 }
 
 /**

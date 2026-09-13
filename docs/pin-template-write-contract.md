@@ -57,6 +57,26 @@ Additionally required by the validation constraints:
 The agent normally writes `draft`. It must not move a template to `approved`
 itself; approval happens in the UI.
 
+## Revision requests (Änderungswünsche)
+
+A reviewer can request a change on a template from the Pin-Werkstatt detail view.
+Submitting a request records a row in `public.pin_template_revisions` (see
+`00028_pin_template_revisions.sql`) and moves the template's `status` to
+`needs_revision` in one step. The agent works these off:
+
+- **Find open requests** — poll for templates with `status = 'needs_revision'`.
+  The newest (up to 3 kept) `pin_template_revisions` rows for that
+  `template_id`, ordered by `created_at DESC`, carry the reviewer `feedback`.
+- **Rework the template** and upsert it on `(blog_article_id, position)` as
+  usual. Before overwriting, write the pre-rework template fields into the
+  latest revision's `previous_snapshot` (jsonb) so the change stays auditable.
+- **Set the status back to `draft`** after the rework, so the template
+  re-enters the review queue. Do **not** set `approved`/`archived` — that is a
+  human action in the UI.
+
+The application layer keeps only the **last 3** revisions per template; older
+rows are pruned when a new request is recorded.
+
 ## `design` shape
 
 `design` is `jsonb`, all fields optional (legacy templates may omit any):

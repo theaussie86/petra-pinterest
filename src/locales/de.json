@@ -589,7 +589,9 @@
       "statusUpdateFailed": "Pin-Status konnte nicht aktualisiert werden: {{error}}"
     },
     "pinTemplate": {
-      "statusUpdateFailed": "Vorlagen-Status konnte nicht aktualisiert werden: {{error}}"
+      "statusUpdateFailed": "Vorlagen-Status konnte nicht aktualisiert werden: {{error}}",
+      "revisionRequested": "Änderungswunsch gespeichert",
+      "revisionRequestFailed": "Änderungswunsch konnte nicht gespeichert werden: {{error}}"
     },
     "metadata": {
       "generated": "Metadaten generiert",
@@ -647,7 +649,8 @@
     "actions": {
       "approve": "Freigeben",
       "archive": "Archivieren",
-      "reopen": "Zurück zu Offen"
+      "reopen": "Zurück zu Offen",
+      "requestRevision": "Änderung wünschen"
     },
     "col": {
       "position": "Nr.",
@@ -677,7 +680,14 @@
       "designFonts": "Schriften",
       "designScrollStopper": "Scroll-Stopper",
       "qualityCheck": "Qualitätscheck",
-      "imageIdea": "Bildidee"
+      "imageIdea": "Bildidee",
+      "revisionTitle": "Änderung wünschen",
+      "revisionFeedbackLabel": "Was soll der Agent ändern?",
+      "revisionFeedbackPlaceholder": "Beschreibe die gewünschte Änderung an dieser Vorlage …",
+      "revisionSubmit": "Änderung wünschen",
+      "revisionSubmitting": "Wird gesendet …",
+      "revisionHistory": "Änderungsverlauf",
+      "revisionHistoryEmpty": "Noch keine Änderungswünsche"
     }
   }
 }

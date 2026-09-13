@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
-import { updatePinTemplateStatus } from '@/lib/api/pin-templates'
+import {
+  updatePinTemplateStatus,
+  requestPinTemplateRevision,
+} from '@/lib/api/pin-templates'
 import {
   pinTemplatesByArticleQueryOptions,
   pinTemplateOpenCountsQueryOptions,
+  pinTemplateRevisionsQueryOptions,
 } from '@/lib/query/pin-templates'
 import type { PinTemplateStatus } from '@/types/pin-templates'
 
@@ -45,6 +49,39 @@ export function useUpdatePinTemplateStatus() {
     },
     onError: (error: Error) => {
       toast.error(i18n.t('toast.pinTemplate.statusUpdateFailed', { error: error.message }))
+    },
+  })
+}
+
+/**
+ * Revision history (last 3, newest first) for a template. `enabled` guards
+ * against an empty template id (nothing selected yet).
+ */
+export function usePinTemplateRevisions(templateId: string) {
+  return useQuery({
+    ...pinTemplateRevisionsQueryOptions(templateId),
+    enabled: !!templateId,
+  })
+}
+
+/**
+ * Request a revision on a template: records the feedback and moves the template
+ * to `needs_revision` in one step. Invalidates the whole `['pin-templates']`
+ * prefix so the detail history, the tab counters and the left-column open counts
+ * all refresh without a reload. Failures surface as a toast.
+ */
+export function useRequestPinTemplateRevision() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, feedback }: { id: string; feedback: string }) =>
+      requestPinTemplateRevision(id, feedback),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pin-templates'] })
+      toast.success(i18n.t('toast.pinTemplate.revisionRequested'))
+    },
+    onError: (error: Error) => {
+      toast.error(i18n.t('toast.pinTemplate.revisionRequestFailed', { error: error.message }))
     },
   })
 }

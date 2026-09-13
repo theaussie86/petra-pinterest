@@ -3,17 +3,25 @@ import {
   pinTemplatesByArticleQueryKey,
   pinTemplateOpenCountsQueryOptions,
   pinTemplateOpenCountsQueryKey,
+  pinTemplateRevisionsQueryOptions,
+  pinTemplateRevisionsQueryKey,
 } from './pin-templates'
 
-const { mockGetPinTemplatesByArticle, mockGetOpenPinTemplateCountsByProject } = vi.hoisted(() => ({
+const {
+  mockGetPinTemplatesByArticle,
+  mockGetOpenPinTemplateCountsByProject,
+  mockGetPinTemplateRevisions,
+} = vi.hoisted(() => ({
   mockGetPinTemplatesByArticle: vi.fn(),
   mockGetOpenPinTemplateCountsByProject: vi.fn(),
+  mockGetPinTemplateRevisions: vi.fn(),
 }))
 
 vi.mock('@/lib/api/pin-templates', () => ({
   getPinTemplatesByArticle: (...args: any[]) => mockGetPinTemplatesByArticle(...args),
   getOpenPinTemplateCountsByProject: (...args: any[]) =>
     mockGetOpenPinTemplateCountsByProject(...args),
+  getPinTemplateRevisions: (...args: any[]) => mockGetPinTemplateRevisions(...args),
 }))
 
 describe('pinTemplatesByArticleQueryOptions', () => {
@@ -69,5 +77,26 @@ describe('pinTemplateOpenCountsQueryOptions', () => {
 
     expect(mockGetOpenPinTemplateCountsByProject).toHaveBeenCalledWith('proj1')
     expect(result).toEqual(counts)
+  })
+})
+
+describe('pinTemplateRevisionsQueryOptions', () => {
+  it('uses a stable ["pin-templates", "revisions", templateId] key', () => {
+    expect(pinTemplateRevisionsQueryOptions('t1').queryKey).toEqual([
+      'pin-templates',
+      'revisions',
+      't1',
+    ])
+    expect(pinTemplateRevisionsQueryKey('t1')).toEqual(['pin-templates', 'revisions', 't1'])
+  })
+
+  it('resolves via getPinTemplateRevisions with the template id', async () => {
+    const revisions = [{ id: 'r1' }]
+    mockGetPinTemplateRevisions.mockResolvedValueOnce(revisions)
+
+    const result = await pinTemplateRevisionsQueryOptions('t1').queryFn!({} as any)
+
+    expect(mockGetPinTemplateRevisions).toHaveBeenCalledWith('t1')
+    expect(result).toEqual(revisions)
   })
 })
