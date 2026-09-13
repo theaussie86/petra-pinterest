@@ -1,12 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoadingSpinner } from '@/components/layout/loading-spinner'
 import { ErrorState } from '@/components/layout/error-state'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
-import { usePinTemplatesByArticle, usePinTemplateCounts } from '@/lib/hooks/use-pin-templates'
+import {
+  usePinTemplatesByArticle,
+  usePinTemplateOpenCounts,
+  useUpdatePinTemplateStatus,
+} from '@/lib/hooks/use-pin-templates'
+import {
+  countByWorkspace,
+  nextSelectionAfterRemoval,
+  workspaceForStatus,
+  type WorkspaceTab,
+} from '@/lib/pin-template-workspace'
+import type { PinTemplateStatus } from '@/types/pin-templates'
 import { WorkshopArticleList } from './workshop-article-list'
 import { WorkshopTemplateList } from './workshop-template-list'
+import { WorkshopTemplateTabs } from './workshop-template-tabs'
 import { WorkshopTemplateDetail } from './workshop-template-detail'
 
 interface WorkshopViewProps {
@@ -16,11 +28,13 @@ interface WorkshopViewProps {
 export function WorkshopView({ projectId }: WorkshopViewProps) {
   const { t } = useTranslation()
   const { data: articles, isLoading, error } = useArticles(projectId)
-  const { data: counts } = usePinTemplateCounts(projectId)
+  const { data: openCounts } = usePinTemplateOpenCounts(projectId)
   const { data: project } = useBlogProject(projectId)
+  const updateStatus = useUpdatePinTemplateStatus()
 
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null)
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('open')
 
   // Default the selection to the first article once the list arrives; leave a
   // manual selection untouched.
@@ -34,56 +48,94 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
     selectedArticleId ?? '',
   )
 
-  // Reset the template selection when the article changes.
+  // Reset the tab + template selection when the article changes.
   const handleSelectArticle = (articleId: string) => {
     setSelectedArticleId(articleId)
     setSelectedTemplateId(null)
+    setActiveTab('open')
   }
 
-  // Preselect the first template of the selected article, and drop a stale
-  // selection when the loaded templates no longer contain it.
+  const tabCounts = useMemo(() => countByWorkspace(templates ?? []), [templates])
+
+  // Templates shown in the middle column: those in the active workspace tab.
+  const visibleTemplates = useMemo(
+    () => (templates ?? []).filter((tpl) => workspaceForStatus(tpl.status) === activeTab),
+    [templates, activeTab],
+  )
+
+  // Preselect the first template of the active tab, and drop a stale selection
+  // when it is no longer visible (article/tab changed, or a status change moved
+  // it to another tab).
   useEffect(() => {
-    if (!templates || templates.length === 0) {
+    if (visibleTemplates.length === 0) {
       setSelectedTemplateId(null)
       return
     }
     setSelectedTemplateId((current) =>
-      current && templates.some((tpl) => tpl.id === current) ? current : templates[0].id,
+      current && visibleTemplates.some((tpl) => tpl.id === current)
+        ? current
+        : visibleTemplates[0].id,
     )
-  }, [templates])
+  }, [visibleTemplates])
 
-  const selectedTemplate = templates?.find((tpl) => tpl.id === selectedTemplateId) ?? null
+  const selectedTemplate = visibleTemplates.find((tpl) => tpl.id === selectedTemplateId) ?? null
+
+  // Change the selected template's status. When the new status moves it out of
+  // the current tab, advance the selection to the next template first (issue #78)
+  // so the reviewer keeps working through the open queue without a manual click.
+  const handleChangeStatus = (status: PinTemplateStatus) => {
+    if (!selectedTemplateId) return
+    if (workspaceForStatus(status) !== activeTab) {
+      setSelectedTemplateId(nextSelectionAfterRemoval(visibleTemplates, selectedTemplateId))
+    }
+    updateStatus.mutate({ id: selectedTemplateId, status })
+  }
 
   if (isLoading) return <LoadingSpinner />
   if (error) return <ErrorState error={error} />
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)]">
-      {/* Left: articles + search + template counts */}
+      {/* Left: articles + search + open-template counts */}
       <div className="lg:border-r lg:pr-6 border-purple-100/50 dark:border-white/5">
         <WorkshopArticleList
           articles={articles ?? []}
-          counts={counts ?? {}}
+          counts={openCounts ?? {}}
           selectedArticleId={selectedArticleId}
           onSelect={handleSelectArticle}
         />
       </div>
 
-      {/* Middle: templates of the selected article */}
-      <div>
-        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+      {/* Middle: workspace tabs + templates of the selected article */}
+      <div className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
           {t('workshop.templatesHeading')}
         </h2>
         {!selectedArticleId ? (
           <p className="text-sm text-muted-foreground py-4">{t('workshop.selectArticle')}</p>
         ) : templatesLoading ? (
           <LoadingSpinner />
+        ) : (templates ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">{t('workshop.noTemplates')}</p>
         ) : (
-          <WorkshopTemplateList
-            templates={templates ?? []}
-            selectedTemplateId={selectedTemplateId}
-            onSelect={setSelectedTemplateId}
-          />
+          <>
+            <WorkshopTemplateTabs
+              activeTab={activeTab}
+              counts={tabCounts}
+              onTabChange={setActiveTab}
+            />
+            {visibleTemplates.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">
+                {t('workshop.noTemplatesInTab')}
+              </p>
+            ) : (
+              <WorkshopTemplateList
+                templates={visibleTemplates}
+                selectedTemplateId={selectedTemplateId}
+                onSelect={setSelectedTemplateId}
+              />
+            )}
+          </>
         )}
       </div>
 
@@ -93,6 +145,8 @@ export function WorkshopView({ projectId }: WorkshopViewProps) {
           <WorkshopTemplateDetail
             template={selectedTemplate}
             blogUrl={project?.blog_url ?? ''}
+            onChangeStatus={handleChangeStatus}
+            isUpdating={updateStatus.isPending}
           />
         ) : (
           <div className="flex flex-col items-center justify-center text-center h-full py-12 text-muted-foreground">

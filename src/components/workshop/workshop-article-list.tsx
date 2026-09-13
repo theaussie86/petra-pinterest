@@ -71,9 +71,11 @@ export function WorkshopArticleList({
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="truncate">{article.title}</span>
-                    <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                      {t('workshop.templateCount', { count })}
-                    </span>
+                    {count > 0 && (
+                      <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+                        {t('workshop.openCount', { count })}
+                      </span>
+                    )}
                   </span>
                 </button>
               </li>

@@ -588,6 +588,9 @@
       "statusUpdated": "Status für {{count}} Pins aktualisiert",
       "statusUpdateFailed": "Pin-Status konnte nicht aktualisiert werden: {{error}}"
     },
+    "pinTemplate": {
+      "statusUpdateFailed": "Vorlagen-Status konnte nicht aktualisiert werden: {{error}}"
+    },
     "metadata": {
       "generated": "Metadaten generiert",
       "generateFailed": "Metadaten konnten nicht generiert werden",
@@ -626,15 +629,26 @@
     "description": "Artikel und ihre Pin-Vorlagen prüfen",
     "articlesHeading": "Artikel",
     "searchPlaceholder": "Artikel suchen …",
-    "templateCount_one": "{{count}} Vorlage",
-    "templateCount_other": "{{count}} Vorlagen",
     "noArticles": "Noch keine Artikel in diesem Projekt",
     "noArticlesMatch": "Keine Artikel gefunden",
     "selectArticle": "Wähle links einen Artikel, um seine Vorlagen zu sehen",
     "templatesHeading": "Pin-Vorlagen",
     "noTemplates": "Für diesen Artikel gibt es noch keine Vorlagen",
+    "openCount_one": "{{count}} offen",
+    "openCount_other": "{{count}} offen",
     "detailsPlaceholder": "Wähle eine Vorlage, um Details zu sehen",
     "detailsPlaceholderHint": "Klicke in der mittleren Spalte auf eine Vorlage",
+    "tabs": {
+      "open": "Offen",
+      "approved": "Freigegeben",
+      "archived": "Archiv"
+    },
+    "noTemplatesInTab": "Keine Vorlagen in diesem Bereich",
+    "actions": {
+      "approve": "Freigeben",
+      "archive": "Archivieren",
+      "reopen": "Zurück zu Offen"
+    },
     "col": {
       "position": "Nr.",
       "pinType": "Pin-Typ",

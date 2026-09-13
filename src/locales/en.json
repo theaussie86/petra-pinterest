@@ -588,6 +588,9 @@
       "statusUpdated": "Status updated for {{count}} pins",
       "statusUpdateFailed": "Failed to update pin status: {{error}}"
     },
+    "pinTemplate": {
+      "statusUpdateFailed": "Failed to update template status: {{error}}"
+    },
     "metadata": {
       "generated": "Metadata generated",
       "generateFailed": "Failed to generate metadata",
@@ -626,15 +629,26 @@
     "description": "Review articles and their pin templates",
     "articlesHeading": "Articles",
     "searchPlaceholder": "Search articles …",
-    "templateCount_one": "{{count}} template",
-    "templateCount_other": "{{count}} templates",
     "noArticles": "No articles in this project yet",
     "noArticlesMatch": "No articles found",
     "selectArticle": "Select an article on the left to see its templates",
     "templatesHeading": "Pin templates",
     "noTemplates": "This article has no templates yet",
+    "openCount_one": "{{count}} open",
+    "openCount_other": "{{count}} open",
     "detailsPlaceholder": "Select a template to see details",
     "detailsPlaceholderHint": "Click a template in the middle column",
+    "tabs": {
+      "open": "Open",
+      "approved": "Approved",
+      "archived": "Archive"
+    },
+    "noTemplatesInTab": "No templates in this workspace",
+    "actions": {
+      "approve": "Approve",
+      "archive": "Archive",
+      "reopen": "Back to open"
+    },
     "col": {
       "position": "No.",
       "pinType": "Pin type",

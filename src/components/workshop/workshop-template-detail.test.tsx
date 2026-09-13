@@ -81,4 +81,46 @@ describe('WorkshopTemplateDetail', () => {
 
     expect(screen.getByText('himmelstraenen.de')).toBeTruthy()
   })
+
+  it('offers Freigeben and Archivieren for an open template', () => {
+    const onChangeStatus = vi.fn()
+    const template = buildPinTemplate({ status: 'draft' })
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        onChangeStatus={onChangeStatus}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Freigeben/i }))
+    expect(onChangeStatus).toHaveBeenCalledWith('approved')
+
+    fireEvent.click(screen.getByRole('button', { name: /Archivieren/i }))
+    expect(onChangeStatus).toHaveBeenCalledWith('archived')
+  })
+
+  it('offers a reopen action for an approved template', () => {
+    const onChangeStatus = vi.fn()
+    const template = buildPinTemplate({ status: 'approved' })
+    render(
+      <WorkshopTemplateDetail
+        template={template}
+        blogUrl="https://www.example.com"
+        onChangeStatus={onChangeStatus}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /Zurück zu Offen/i }))
+    expect(onChangeStatus).toHaveBeenCalledWith('draft')
+    // No approve button once already approved.
+    expect(screen.queryByRole('button', { name: /^Freigeben$/i })).toBeNull()
+  })
+
+  it('renders no status actions when no handler is provided', () => {
+    const template = buildPinTemplate({ status: 'draft' })
+    render(<WorkshopTemplateDetail template={template} blogUrl="https://www.example.com" />)
+
+    expect(screen.queryByRole('button', { name: /Freigeben/i })).toBeNull()
+  })
 })

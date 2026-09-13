@@ -1,18 +1,19 @@
 import {
   pinTemplatesByArticleQueryOptions,
   pinTemplatesByArticleQueryKey,
-  pinTemplateCountsQueryOptions,
-  pinTemplateCountsQueryKey,
+  pinTemplateOpenCountsQueryOptions,
+  pinTemplateOpenCountsQueryKey,
 } from './pin-templates'
 
-const { mockGetPinTemplatesByArticle, mockGetPinTemplateCountsByProject } = vi.hoisted(() => ({
+const { mockGetPinTemplatesByArticle, mockGetOpenPinTemplateCountsByProject } = vi.hoisted(() => ({
   mockGetPinTemplatesByArticle: vi.fn(),
-  mockGetPinTemplateCountsByProject: vi.fn(),
+  mockGetOpenPinTemplateCountsByProject: vi.fn(),
 }))
 
 vi.mock('@/lib/api/pin-templates', () => ({
   getPinTemplatesByArticle: (...args: any[]) => mockGetPinTemplatesByArticle(...args),
-  getPinTemplateCountsByProject: (...args: any[]) => mockGetPinTemplateCountsByProject(...args),
+  getOpenPinTemplateCountsByProject: (...args: any[]) =>
+    mockGetOpenPinTemplateCountsByProject(...args),
 }))
 
 describe('pinTemplatesByArticleQueryOptions', () => {
@@ -46,23 +47,27 @@ describe('pinTemplatesByArticleQueryOptions', () => {
   })
 })
 
-describe('pinTemplateCountsQueryOptions', () => {
-  it('uses a stable ["pin-templates", "counts", projectId] key', () => {
-    expect(pinTemplateCountsQueryOptions('proj1').queryKey).toEqual([
+describe('pinTemplateOpenCountsQueryOptions', () => {
+  it('uses a stable ["pin-templates", "open-counts", projectId] key', () => {
+    expect(pinTemplateOpenCountsQueryOptions('proj1').queryKey).toEqual([
       'pin-templates',
-      'counts',
+      'open-counts',
       'proj1',
     ])
-    expect(pinTemplateCountsQueryKey('proj1')).toEqual(['pin-templates', 'counts', 'proj1'])
+    expect(pinTemplateOpenCountsQueryKey('proj1')).toEqual([
+      'pin-templates',
+      'open-counts',
+      'proj1',
+    ])
   })
 
-  it('resolves via getPinTemplateCountsByProject with the project id', async () => {
+  it('resolves via getOpenPinTemplateCountsByProject with the project id', async () => {
     const counts = { a1: 3 }
-    mockGetPinTemplateCountsByProject.mockResolvedValueOnce(counts)
+    mockGetOpenPinTemplateCountsByProject.mockResolvedValueOnce(counts)
 
-    const result = await pinTemplateCountsQueryOptions('proj1').queryFn!({} as any)
+    const result = await pinTemplateOpenCountsQueryOptions('proj1').queryFn!({} as any)
 
-    expect(mockGetPinTemplateCountsByProject).toHaveBeenCalledWith('proj1')
+    expect(mockGetOpenPinTemplateCountsByProject).toHaveBeenCalledWith('proj1')
     expect(result).toEqual(counts)
   })
 })

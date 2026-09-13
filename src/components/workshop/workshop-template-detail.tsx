@@ -4,8 +4,9 @@ import { toast } from 'sonner'
 import { Check, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { workspaceForStatus } from '@/lib/pin-template-workspace'
 import { TemplateStatusBadge } from './template-status-badge'
-import type { PinTemplate } from '@/types/pin-templates'
+import type { PinTemplate, PinTemplateStatus } from '@/types/pin-templates'
 
 /**
  * Bare domain (without a `www.` prefix) of the blog project, used as the fixed
@@ -26,6 +27,70 @@ interface WorkshopTemplateDetailProps {
   template: PinTemplate
   /** The owning blog project's URL — its domain is the overlay footer. */
   blogUrl: string
+  /**
+   * Change the template's review status (Freigeben / Archivieren / Zurück zu
+   * Offen). When omitted, no status actions render (e.g. read-only contexts).
+   */
+  onChangeStatus?: (status: PinTemplateStatus) => void
+  /** Disables the status actions while a change is in flight. */
+  isUpdating?: boolean
+}
+
+/**
+ * The status-change buttons available from a template's current workspace:
+ * - open      → Freigeben (approved), Archivieren (archived)
+ * - approved  → Zurück zu Offen (draft), Archivieren (archived)
+ * - archived  → Zurück zu Offen (draft)
+ */
+function StatusActions({
+  status,
+  onChangeStatus,
+  isUpdating,
+}: {
+  status: PinTemplateStatus
+  onChangeStatus: (status: PinTemplateStatus) => void
+  isUpdating?: boolean
+}) {
+  const { t } = useTranslation()
+  const workspace = workspaceForStatus(status)
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {workspace !== 'open' && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isUpdating}
+          onClick={() => onChangeStatus('draft')}
+        >
+          {t('workshop.actions.reopen')}
+        </Button>
+      )}
+      {workspace === 'open' && (
+        <Button
+          type="button"
+          variant="default"
+          size="sm"
+          disabled={isUpdating}
+          onClick={() => onChangeStatus('approved')}
+        >
+          {t('workshop.actions.approve')}
+        </Button>
+      )}
+      {workspace !== 'archived' && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isUpdating}
+          onClick={() => onChangeStatus('archived')}
+        >
+          {t('workshop.actions.archive')}
+        </Button>
+      )}
+    </div>
+  )
 }
 
 /**
@@ -99,7 +164,12 @@ function KeywordList({ label, items }: { label: string; items: string[] | null }
   )
 }
 
-export function WorkshopTemplateDetail({ template, blogUrl }: WorkshopTemplateDetailProps) {
+export function WorkshopTemplateDetail({
+  template,
+  blogUrl,
+  onChangeStatus,
+  isUpdating,
+}: WorkshopTemplateDetailProps) {
   const { t } = useTranslation()
 
   const overlayLines = template.overlay ? template.overlay.split('\n').filter(Boolean) : []
@@ -114,11 +184,20 @@ export function WorkshopTemplateDetail({ template, blogUrl }: WorkshopTemplateDe
           <span className="font-mono text-sm text-muted-foreground">#{template.position}</span>
           <TemplateStatusBadge status={template.status} />
         </div>
-        <CopyButton
-          text={template.image_prompt}
-          label={t('workshop.detail.copyImagePrompt')}
-          variant="default"
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          {onChangeStatus && (
+            <StatusActions
+              status={template.status}
+              onChangeStatus={onChangeStatus}
+              isUpdating={isUpdating}
+            />
+          )}
+          <CopyButton
+            text={template.image_prompt}
+            label={t('workshop.detail.copyImagePrompt')}
+            variant="default"
+          />
+        </div>
       </div>
 
       {/* Title + description (missing description is flagged, never blank) */}

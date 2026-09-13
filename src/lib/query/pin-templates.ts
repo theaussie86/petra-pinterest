@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query'
 import {
   getPinTemplatesByArticle,
-  getPinTemplateCountsByProject,
+  getOpenPinTemplateCountsByProject,
 } from '@/lib/api/pin-templates'
 import type { PinTemplate } from '@/types/pin-templates'
 
@@ -28,22 +28,24 @@ export function pinTemplatesByArticleQueryOptions(articleId: string) {
 }
 
 /**
- * The cache key for a project's per-article template counts (the left-column
- * badges). Nested under `['pin-templates']` so a broad template invalidation
- * refreshes it by prefix.
+ * The cache key for a project's per-article *open* template counts (the
+ * left-column badges). Nested under `['pin-templates']` so a broad template
+ * invalidation refreshes it by prefix — a status change updates the badges
+ * without a reload.
  */
-export function pinTemplateCountsQueryKey(projectId: string) {
-  return ['pin-templates', 'counts', projectId] as const
+export function pinTemplateOpenCountsQueryKey(projectId: string) {
+  return ['pin-templates', 'open-counts', projectId] as const
 }
 
 /**
- * Shared query options for a project's per-article template counts — the single
- * source of truth for both the workshop route loader and the consuming hook.
+ * Shared query options for a project's per-article open template counts — the
+ * single source of truth for both the workshop route loader and the consuming
+ * hook.
  */
-export function pinTemplateCountsQueryOptions(projectId: string) {
+export function pinTemplateOpenCountsQueryOptions(projectId: string) {
   return queryOptions<Record<string, number>>({
-    queryKey: pinTemplateCountsQueryKey(projectId),
-    queryFn: () => getPinTemplateCountsByProject(projectId),
+    queryKey: pinTemplateOpenCountsQueryKey(projectId),
+    queryFn: () => getOpenPinTemplateCountsByProject(projectId),
     staleTime: 30 * 1000,
   })
 }
