@@ -1,15 +1,29 @@
 # Pin-Template Write Contract (Agenten-Eingang)
 
 The Pin-Werkstatt templates are produced **exclusively by an external agent**
-that writes rows into `public.pin_templates` directly, using the Supabase
-**service role** key (epic #74, issue #77). Pinfinity only displays templates,
-changes their status, and records revision requests — it never edits template
-texts and does not create templates.
+that writes rows into `public.pin_templates` directly, logged in as the
+least-privilege Postgres role **`pin_werkstatt_agent`** (epic #74, issues #77,
+#83). Pinfinity only displays templates, changes their status, and records
+revision requests. It never edits template texts and does not create templates.
 
-This document is the contract that agent works to. The database enforces the
+This document is the contract for repo readers. The database enforces the
 rejection rules (see migration `00027_pin_template_validation.sql`); the same
 rules are mirrored in TypeScript at `src/lib/validation/pin-template.ts` for any
 future server-side ingest and for unit testing.
+
+Related:
+
+- **Agent skill** (what the agent actually reads, no repo access needed):
+  [`agent-skills/pin-werkstatt/`](../agent-skills/pin-werkstatt/SKILL.md), with
+  the finished SQL queries in `references/sql.md`.
+- **DB user setup** (enable login, grant projects, extend, rotate, revoke):
+  [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md).
+- **Skill query test** (runs every skill query as the role, rolled back):
+  `supabase/tests/pin_werkstatt_agent_skill.sql`.
+
+If this document and the skill disagree, the skill's SQL in `references/sql.md`
+is the source of truth (it is what the test runs against the DB). Change it
+there first, then update the test copy and this document.
 
 ## Write path
 
@@ -25,17 +39,22 @@ future server-side ingest and for unit testing.
   ingest for the same article must update the existing row for a position rather
   than insert a duplicate (the unique index `idx_pin_templates_article_position`
   rejects duplicates).
-- **Do not overwrite already-approved templates.** A row whose `status` is
-  `approved` (or `archived`) reflects human review inside Pinfinity. The agent
-  must exclude those positions from an upsert (e.g. `WHERE status IN
-  ('draft','needs_revision')` on update, or skip positions already `approved`/
-  `archived`), so a re-ingest never clobbers reviewed work.
+- **Do not overwrite reviewed templates.** A row whose `status` is `approved`
+  (or `archived`) reflects human review inside Pinfinity; the trigger
+  `pin_templates_guard_agent_writes` rejects any agent change to it. The batch
+  upsert only updates rows that are still `draft`
+  (`ON CONFLICT ... DO UPDATE ... WHERE pin_templates.status = 'draft'`), so a
+  re-ingest skips `approved`, `archived` **and** `needs_revision` positions.
+  `needs_revision` rows are changed only through the revision flow below, so the
+  pre-rework snapshot is never lost.
 
 ## Required fields
 
 Enforced `NOT NULL` by the schema (`00026_pin_templates.sql`):
 
-- `tenant_id` — the owning tenant. The agent sets this explicitly.
+- `tenant_id`: the owning tenant. Derived from the article by the trigger
+  `set_pin_templates_tenant_id`; the agent does not set it (a value it sends is
+  overwritten).
 - `blog_article_id` — the article the template hangs off (FK, `ON DELETE
   CASCADE`). Landing pages without a scraped article are added as normal
   articles via "Add Article" first.
@@ -71,12 +90,16 @@ Submitting a request records a row in `public.pin_template_revisions` (see
 - **Find open requests** — poll for templates with `status = 'needs_revision'`.
   The newest (up to 3 kept) `pin_template_revisions` rows for that
   `template_id`, ordered by `created_at DESC`, carry the reviewer `feedback`.
-- **Rework the template** and upsert it on `(blog_article_id, position)` as
-  usual. Before overwriting, write the pre-rework template fields into the
-  latest revision's `previous_snapshot` (jsonb) so the change stays auditable.
-- **Set the status back to `draft`** after the rework, so the template
+- **Rework the template** with a direct `UPDATE` by `id` (not the batch
+  upsert, which skips `needs_revision`). In the same statement, write the
+  pre-rework template fields into the newest revision's `previous_snapshot`
+  (jsonb) so the change stays auditable.
+- **Set the status back to `draft`** in that statement, so the template
   re-enters the review queue. Do **not** set `approved`/`archived` — that is a
   human action in the UI.
+
+The skill's query C2 does all three atomically and is a no-op once the template
+is no longer `needs_revision`.
 
 The application layer keeps only the **last 3** revisions per template; older
 rows are pruned when a new request is recorded.

@@ -299,7 +299,9 @@ Ephemeral OAuth CSRF/PKCE state. Entries auto-expire after 10 minutes.
 
 Pin-Werkstatt templates ("Vorlagen"). Each template hangs directly off a blog
 article (no campaign table in v1) via `blog_article_id` (`ON DELETE CASCADE`).
-Templates are **created exclusively by an external agent via the service role**;
+Templates are **created exclusively by an external agent** logged in as the
+least-privilege role `pin_werkstatt_agent` (migration 00029, scoped per project
+via `agent_project_access`);
 the app only displays them, changes their `status`, and records revision
 requests — template texts are never edited in the UI. Migrations
 00026 (table), 00027 (validation), 00028 (revisions relationship).
@@ -311,7 +313,8 @@ IMMUTABLE `pin_template_normalize(txt)` helper) are the DB-level rejection rules
 of the agent ingest and are mirrored in TS at `src/lib/validation/pin-template.ts`.
 See [`docs/pin-template-write-contract.md`](./pin-template-write-contract.md)
 for the full **Agenten-Eingang** write contract (upsert on the natural key
-`(blog_article_id, position)`; agent sets `tenant_id` itself; never overwrite
+`(blog_article_id, position)`; `tenant_id` derived from the article by trigger;
+never overwrite
 `approved`/`archived` rows; 30 templates per article, checked with a query, not a
 constraint).
 
@@ -338,7 +341,14 @@ constraint).
 | Users can insert pin templates in own tenant | INSERT | tenant isolation |
 | Users can update own tenant pin templates | UPDATE | tenant isolation |
 | Users can delete own tenant pin templates | DELETE | tenant isolation |
-| Service role full access pin_templates | ALL | `true` (external agent ingest) |
+| Service role full access pin_templates | ALL | `true` (background jobs, admin) |
+| Agent reads templates of granted projects | SELECT | `pin_werkstatt_agent`, article in `agent_project_access` |
+| Agent inserts templates for granted projects | INSERT | `pin_werkstatt_agent`, article in `agent_project_access` |
+| Agent updates templates of granted projects | UPDATE | `pin_werkstatt_agent`, article in `agent_project_access` |
+
+Triggers `set_pin_templates_tenant_id` (derives `tenant_id` from the article) and
+`guard_pin_templates_agent_writes` (agent may not change `approved`/`archived`
+rows and may only write `draft`/`needs_revision`) come from migration 00029.
 
 Trigger `set_pin_templates_updated_at` (BEFORE UPDATE) keeps `updated_at` current.
 
@@ -366,7 +376,9 @@ the rework and is written by the agent, not the app.
 | Users can view own tenant pin template revisions | SELECT | tenant isolation |
 | Users can insert pin template revisions in own tenant | INSERT | tenant isolation |
 | Users can delete own tenant pin template revisions | DELETE | tenant isolation (retention pruning) |
-| Service role full access pin_template_revisions | ALL | `true` (external agent) |
+| Service role full access pin_template_revisions | ALL | `true` (background jobs, admin) |
+| Agent reads revisions of granted projects | SELECT | `pin_werkstatt_agent`, template in a granted project |
+| Agent updates revisions of granted projects | UPDATE | `pin_werkstatt_agent`, column grant on `previous_snapshot` only |
 
 ## Pin Status Workflow
 
@@ -544,4 +556,5 @@ tenant_id IN (
 - **Storage buckets** use folder-based isolation: `{tenant_id}/...` with `storage.foldername(name)[1]` checks
 - **Vault secrets** are keyed by entity ID (connection or project), accessed only via `SECURITY DEFINER` functions
 - **`oauth_state_mapping`** uses `user_id = auth.uid()` instead of tenant isolation (user-scoped, not tenant-scoped)
-- **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, and `pin_template_revisions` for background jobs and the external Werkstatt agent
+- **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, and `pin_template_revisions` for background jobs
+- **`pin_werkstatt_agent`** is the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. Setup and revocation: [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md)

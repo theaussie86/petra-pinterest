@@ -4,7 +4,7 @@
  * `(blog_article_id, position)` unique index from `00026_pin_templates.sql`.
  *
  * The database is the enforcing authority: the external agent writes templates
- * directly via the service role (epic #74, issue #77) and bypasses all app
+ * directly as the Postgres role `pin_werkstatt_agent` (epic #74, issue #83) and bypasses all app
  * code, so the constraints — not these predicates — are what actually reject
  * bad rows. This module mirrors that SQL so the rules can be unit-tested
  * without a live Postgres and reused by any future server-side ingest
