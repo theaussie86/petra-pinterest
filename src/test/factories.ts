@@ -1,6 +1,7 @@
 import type { Pin, PinInsert, PinMetadataGeneration } from '@/types/pins'
 import type { Article } from '@/types/articles'
 import type { BlogProject, BlogProjectInsert } from '@/types/blog-projects'
+import type { PinTemplate, PinTemplateRevision } from '@/types/pin-templates'
 
 let counter = 0
 function nextId() {
@@ -113,6 +114,54 @@ export function buildMetadataGeneration(overrides: Partial<PinMetadataGeneration
     description: 'Generated description for Pinterest',
     alt_text: 'Generated alt text',
     feedback: null,
+    created_at: '2025-01-01T00:00:00Z',
+    ...overrides,
+  }
+}
+
+export function buildPinTemplate(overrides: Partial<PinTemplate> = {}): PinTemplate {
+  return {
+    id: nextId(),
+    tenant_id: 'test-tenant-id',
+    blog_article_id: 'article-1',
+    position: 1,
+    pin_type: 'Zitat',
+    status: 'draft',
+    title: 'Test Template Title',
+    description: 'Test template description',
+    board_name_raw: 'Test Board',
+    overlay: 'Line one\nLine two',
+    main_keyword: 'test keyword',
+    longtails: ['test keyword long'],
+    search_phrases: ['how to test keyword'],
+    quality_check: ['keyword present'],
+    search_intent: 'informational',
+    image_idea: 'A cozy desk scene',
+    image_prompt: 'A highly detailed cozy desk scene, 1000 x 1500 pixels',
+    design: {
+      name: 'Default',
+      layout: 'top-image',
+      image_position: 'top',
+      fonts: ['Nunito'],
+      scroll_stopper: 'bold overlay',
+      colors: ['#7c3aed', '#e11d48'],
+    },
+    season: null,
+    created_at: '2025-01-01T00:00:00Z',
+    updated_at: '2025-01-01T00:00:00Z',
+    ...overrides,
+  }
+}
+
+export function buildPinTemplateRevision(
+  overrides: Partial<PinTemplateRevision> = {},
+): PinTemplateRevision {
+  return {
+    id: nextId(),
+    tenant_id: 'test-tenant-id',
+    template_id: 'template-1',
+    feedback: 'Bitte den Titel kürzer fassen',
+    previous_snapshot: null,
     created_at: '2025-01-01T00:00:00Z',
     ...overrides,
   }

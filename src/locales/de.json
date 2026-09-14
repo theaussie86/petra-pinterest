@@ -45,6 +45,7 @@
     "projects": "Projekte",
     "articles": "Artikel",
     "pins": "Pins",
+    "workshop": "Werkstatt",
     "createPin": "Pin erstellen",
     "calendar": "Kalender",
     "selectProject": "Projekt wählen",
@@ -587,6 +588,11 @@
       "statusUpdated": "Status für {{count}} Pins aktualisiert",
       "statusUpdateFailed": "Pin-Status konnte nicht aktualisiert werden: {{error}}"
     },
+    "pinTemplate": {
+      "statusUpdateFailed": "Vorlagen-Status konnte nicht aktualisiert werden: {{error}}",
+      "revisionRequested": "Änderungswunsch gespeichert",
+      "revisionRequestFailed": "Änderungswunsch konnte nicht gespeichert werden: {{error}}"
+    },
     "metadata": {
       "generated": "Metadaten generiert",
       "generateFailed": "Metadaten konnten nicht generiert werden",
@@ -612,6 +618,77 @@
     "pinterest": {
       "connected": "Pinterest erfolgreich verbunden!",
       "disconnected": "Pinterest getrennt"
+    }
+  },
+  "pinTemplateStatus": {
+    "draft": "Entwurf",
+    "needs_revision": "Überarbeiten",
+    "approved": "Freigegeben",
+    "archived": "Archiviert"
+  },
+  "workshop": {
+    "title": "Werkstatt",
+    "description": "Artikel und ihre Pin-Vorlagen prüfen",
+    "articlesHeading": "Artikel",
+    "searchPlaceholder": "Artikel suchen …",
+    "noArticles": "Noch keine Artikel in diesem Projekt",
+    "noArticlesMatch": "Keine Artikel gefunden",
+    "selectArticle": "Wähle links einen Artikel, um seine Vorlagen zu sehen",
+    "templatesHeading": "Pin-Vorlagen",
+    "noTemplates": "Für diesen Artikel gibt es noch keine Vorlagen",
+    "openCount_one": "{{count}} offen",
+    "openCount_other": "{{count}} offen",
+    "detailsPlaceholder": "Wähle eine Vorlage, um Details zu sehen",
+    "detailsPlaceholderHint": "Klicke in der mittleren Spalte auf eine Vorlage",
+    "tabs": {
+      "open": "Offen",
+      "approved": "Freigegeben",
+      "archived": "Archiv"
+    },
+    "noTemplatesInTab": "Keine Vorlagen in diesem Bereich",
+    "shortcutsHint": "Tastatur: j/k nächste/vorherige · f freigeben · c Bild-Prompt kopieren · r Änderung wünschen",
+    "actions": {
+      "approve": "Freigeben",
+      "archive": "Archivieren",
+      "reopen": "Zurück zu Offen",
+      "requestRevision": "Änderung wünschen"
+    },
+    "col": {
+      "position": "Nr.",
+      "pinType": "Pin-Typ",
+      "title": "Titel",
+      "overlay": "Overlay",
+      "status": "Status"
+    },
+    "detail": {
+      "copyImagePrompt": "Bild-Prompt kopieren",
+      "copyImageIdea": "Bildidee kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "titleAndDescription": "Titel & Beschreibung",
+      "descriptionMissing": "Beschreibung fehlt",
+      "board": "Pinnwand",
+      "overlay": "Overlay-Vorschau",
+      "keywords": "Keywords",
+      "mainKeyword": "Hauptkeyword",
+      "longtails": "Longtails",
+      "searchIntent": "Suchintention",
+      "searchPhrases": "Suchsätze",
+      "imagePrompt": "Bild-Prompt",
+      "designBrief": "Designbrief",
+      "designName": "Name",
+      "designLayout": "Layout",
+      "designImagePosition": "Bildposition",
+      "designFonts": "Schriften",
+      "designScrollStopper": "Scroll-Stopper",
+      "qualityCheck": "Qualitätscheck",
+      "imageIdea": "Bildidee",
+      "revisionTitle": "Änderung wünschen",
+      "revisionFeedbackLabel": "Was soll der Agent ändern?",
+      "revisionFeedbackPlaceholder": "Beschreibe die gewünschte Änderung an dieser Vorlage …",
+      "revisionSubmit": "Änderung wünschen",
+      "revisionSubmitting": "Wird gesendet …",
+      "revisionHistory": "Änderungsverlauf",
+      "revisionHistoryEmpty": "Noch keine Änderungswünsche"
     }
   }
 }

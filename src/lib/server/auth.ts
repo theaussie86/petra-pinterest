@@ -1,11 +1,14 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient } from './supabase'
+import type { FeatureKey } from '@/lib/features'
 
 export interface AuthUser {
   id: string
   email: string
   tenant_id: string
   display_name: string
+  /** Feature flags enabled for the user's tenant (see src/lib/features.ts). */
+  features: FeatureKey[]
 }
 
 /**
@@ -16,7 +19,7 @@ export interface AuthUser {
  * asymmetric signing keys are enabled, falling back to a network call to the
  * Auth server otherwise. Profile creation is NOT done here; it runs once at
  * login (see `exchangeCodeFn`). This keeps the navigation hot path to a single
- * verify + one `profiles` read.
+ * verify + a parallel `profiles` and `tenant_features` read.
  */
 export const fetchUser = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -31,18 +34,19 @@ export const fetchUser = createServerFn({ method: 'GET' }).handler(
     const id = claims.sub
     const email = typeof claims.email === 'string' ? claims.email : ''
 
-    // Single profiles read for tenant_id + display_name.
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id, display_name')
-      .eq('id', id)
-      .single()
+    // profiles read for tenant_id + display_name, in parallel with the tenant's
+    // feature flags (RLS scopes tenant_features to the caller's own tenant).
+    const [{ data: profile }, { data: featureRows }] = await Promise.all([
+      supabase.from('profiles').select('tenant_id, display_name').eq('id', id).single(),
+      supabase.from('tenant_features').select('feature'),
+    ])
 
     return {
       id,
       email,
       tenant_id: profile?.tenant_id || '',
       display_name: profile?.display_name || email.split('@')[0] || 'User',
+      features: (featureRows ?? []).map((row) => row.feature as FeatureKey),
     } satisfies AuthUser
   },
 )

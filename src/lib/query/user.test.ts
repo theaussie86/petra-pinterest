@@ -24,6 +24,7 @@ describe('userQueryOptions', () => {
       email: 'a@b.com',
       tenant_id: 't1',
       display_name: 'A',
+      features: [],
     }
     mockFetchUser.mockResolvedValueOnce(user)
 

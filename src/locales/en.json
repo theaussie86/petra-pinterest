@@ -45,6 +45,7 @@
     "projects": "Projects",
     "articles": "Articles",
     "pins": "Pins",
+    "workshop": "Workshop",
     "createPin": "Create Pin",
     "calendar": "Calendar",
     "selectProject": "Select project",
@@ -587,6 +588,11 @@
       "statusUpdated": "Status updated for {{count}} pins",
       "statusUpdateFailed": "Failed to update pin status: {{error}}"
     },
+    "pinTemplate": {
+      "statusUpdateFailed": "Failed to update template status: {{error}}",
+      "revisionRequested": "Change request saved",
+      "revisionRequestFailed": "Could not save the change request: {{error}}"
+    },
     "metadata": {
       "generated": "Metadata generated",
       "generateFailed": "Failed to generate metadata",
@@ -612,6 +618,77 @@
     "pinterest": {
       "connected": "Pinterest connected successfully!",
       "disconnected": "Pinterest disconnected"
+    }
+  },
+  "pinTemplateStatus": {
+    "draft": "Draft",
+    "needs_revision": "Needs revision",
+    "approved": "Approved",
+    "archived": "Archived"
+  },
+  "workshop": {
+    "title": "Workshop",
+    "description": "Review articles and their pin templates",
+    "articlesHeading": "Articles",
+    "searchPlaceholder": "Search articles …",
+    "noArticles": "No articles in this project yet",
+    "noArticlesMatch": "No articles found",
+    "selectArticle": "Select an article on the left to see its templates",
+    "templatesHeading": "Pin templates",
+    "noTemplates": "This article has no templates yet",
+    "openCount_one": "{{count}} open",
+    "openCount_other": "{{count}} open",
+    "detailsPlaceholder": "Select a template to see details",
+    "detailsPlaceholderHint": "Click a template in the middle column",
+    "tabs": {
+      "open": "Open",
+      "approved": "Approved",
+      "archived": "Archive"
+    },
+    "noTemplatesInTab": "No templates in this workspace",
+    "shortcutsHint": "Keyboard: j/k next/previous · f approve · c copy image prompt · r request change",
+    "actions": {
+      "approve": "Approve",
+      "archive": "Archive",
+      "reopen": "Back to open",
+      "requestRevision": "Request change"
+    },
+    "col": {
+      "position": "No.",
+      "pinType": "Pin type",
+      "title": "Title",
+      "overlay": "Overlay",
+      "status": "Status"
+    },
+    "detail": {
+      "copyImagePrompt": "Copy image prompt",
+      "copyImageIdea": "Copy image idea",
+      "copied": "Copied to clipboard",
+      "titleAndDescription": "Title & description",
+      "descriptionMissing": "Description missing",
+      "board": "Board",
+      "overlay": "Overlay preview",
+      "keywords": "Keywords",
+      "mainKeyword": "Main keyword",
+      "longtails": "Longtails",
+      "searchIntent": "Search intent",
+      "searchPhrases": "Search phrases",
+      "imagePrompt": "Image prompt",
+      "designBrief": "Design brief",
+      "designName": "Name",
+      "designLayout": "Layout",
+      "designImagePosition": "Image position",
+      "designFonts": "Fonts",
+      "designScrollStopper": "Scroll stopper",
+      "qualityCheck": "Quality check",
+      "imageIdea": "Image idea",
+      "revisionTitle": "Request change",
+      "revisionFeedbackLabel": "What should the agent change?",
+      "revisionFeedbackPlaceholder": "Describe the change you want on this template …",
+      "revisionSubmit": "Request change",
+      "revisionSubmitting": "Sending …",
+      "revisionHistory": "Change history",
+      "revisionHistoryEmpty": "No change requests yet"
     }
   }
 }

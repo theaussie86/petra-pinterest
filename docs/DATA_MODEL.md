@@ -62,7 +62,7 @@ erDiagram
         uuid id PK "DEFAULT gen_random_uuid()"
         uuid tenant_id "NOT NULL"
         uuid blog_project_id FK "NOT NULL, ON DELETE CASCADE"
-        uuid blog_article_id FK "NOT NULL, ON DELETE CASCADE"
+        uuid blog_article_id FK "NULL, ON DELETE CASCADE (nullable since 00017)"
         text pinterest_board_id
         text pinterest_board_name
         text image_path "NOT NULL, Storage path"
@@ -115,13 +115,48 @@ erDiagram
         timestamptz expires_at "NOT NULL, DEFAULT NOW() + 10min"
     }
 
+    pin_templates {
+        uuid id PK "DEFAULT gen_random_uuid()"
+        uuid tenant_id "NOT NULL"
+        uuid blog_article_id FK "NOT NULL, ON DELETE CASCADE"
+        int position "NOT NULL, CHECK (1..30)"
+        text pin_type
+        text status "NOT NULL, DEFAULT 'draft', CHECK (4 values)"
+        text title
+        text description "CHECK (<=500 chars, starts with main_keyword)"
+        text board_name_raw "Free text, resolved to a real board on approval"
+        text overlay "NOT NULL via CHECK, must contain main_keyword"
+        text main_keyword "NOT NULL"
+        text_array longtails
+        text_array search_phrases
+        text_array quality_check
+        text search_intent
+        text image_idea
+        text image_prompt "NOT NULL"
+        jsonb design "name, layout, image_position, fonts[], scroll_stopper, colors[]"
+        text season
+        timestamptz created_at "NOT NULL, DEFAULT NOW()"
+        timestamptz updated_at "NOT NULL, DEFAULT NOW()"
+    }
+
+    pin_template_revisions {
+        uuid id PK "DEFAULT gen_random_uuid()"
+        uuid tenant_id "NOT NULL"
+        uuid template_id FK "NOT NULL, ON DELETE CASCADE"
+        text feedback "NOT NULL"
+        jsonb previous_snapshot "Template fields before rework, set by agent"
+        timestamptz created_at "NOT NULL, DEFAULT NOW()"
+    }
+
     profiles ||--o{ blog_projects : "tenant_id"
     blog_projects ||--o{ blog_articles : "blog_project_id"
     blog_projects ||--o{ pins : "blog_project_id"
     blog_projects }o--o| pinterest_connections : "pinterest_connection_id"
     blog_projects ||--o{ oauth_state_mapping : "blog_project_id"
-    blog_articles ||--o{ pins : "blog_article_id"
+    blog_articles |o--o{ pins : "blog_article_id (nullable)"
     pins ||--o{ pin_metadata_generations : "pin_id"
+    blog_articles ||--o{ pin_templates : "blog_article_id"
+    pin_templates ||--o{ pin_template_revisions : "template_id"
 ```
 
 ## Table Details
@@ -184,7 +219,7 @@ Scraped blog posts. Soft-delete via `archived_at`. Unique constraint on `(blog_p
 
 ### pins
 
-Pinterest pins with a 10-state workflow. `image_path` references `pin-images` storage bucket. `previous_status` tracks the state before the current one for error recovery.
+Pinterest pins. `image_path` references `pin-images` storage bucket. `previous_status` tracks the state before the current one for error recovery. The status CHECK constraint allows 10 values, but the app only uses 7 — see [Pin Status Workflow](#pin-status-workflow). `blog_article_id` is nullable since migration 00017 (a pin no longer has to belong to an article); the FK still cascades on delete.
 
 | Index | Columns | Type |
 |---|---|---|
@@ -258,6 +293,93 @@ Ephemeral OAuth CSRF/PKCE state. Entries auto-expire after 10 minutes.
 | Users can access own oauth state mappings | ALL | `user_id = auth.uid()` |
 | Service role full access oauth_state_mapping | ALL | `true` (for background jobs) |
 
+---
+
+### pin_templates
+
+Pin-Werkstatt templates ("Vorlagen"). Each template hangs directly off a blog
+article (no campaign table in v1) via `blog_article_id` (`ON DELETE CASCADE`).
+Templates are **created exclusively by an external agent** logged in as the
+least-privilege role `pin_werkstatt_agent` (migration 00029, scoped per project
+via `agent_project_access`);
+the app only displays them, changes their `status`, and records revision
+requests — template texts are never edited in the UI. Migrations
+00026 (table), 00027 (validation), 00028 (revisions relationship).
+
+The CHECK constraints from migration 00027 (`position BETWEEN 1 AND 30`,
+`description <= 500` chars, `overlay` present and containing `main_keyword`,
+`description` starting with `main_keyword` — all keyword matches use the
+IMMUTABLE `pin_template_normalize(txt)` helper) are the DB-level rejection rules
+of the agent ingest and are mirrored in TS at `src/lib/validation/pin-template.ts`.
+See [`docs/pin-template-write-contract.md`](./pin-template-write-contract.md)
+for the full **Agenten-Eingang** write contract (upsert on the natural key
+`(blog_article_id, position)`; `tenant_id` derived from the article by trigger;
+never overwrite
+`approved`/`archived` rows; 30 templates per article, checked with a query, not a
+constraint).
+
+**Status values** (`status` CHECK):
+
+| Status | Description |
+|---|---|
+| `draft` | New template awaiting review (Werkstatt "Offen") |
+| `needs_revision` | Reviewer requested a change; agent reworks and sets back to `draft` (Werkstatt "Offen") |
+| `approved` | Reviewer signed off (Werkstatt "Freigegeben") |
+| `archived` | Set aside (Werkstatt "Archiv") |
+
+| Index | Columns | Type |
+|---|---|---|
+| `pin_templates_pkey` | `id` | PRIMARY KEY |
+| `idx_pin_templates_article_position` | `(blog_article_id, position)` | UNIQUE |
+| `idx_pin_templates_tenant_id` | `tenant_id` | btree |
+| `idx_pin_templates_blog_article_id` | `blog_article_id` | btree |
+| `idx_pin_templates_status` | `status` | btree |
+
+| RLS Policy | Operation | Rule |
+|---|---|---|
+| Users can view own tenant pin templates | SELECT | tenant isolation |
+| Users can insert pin templates in own tenant | INSERT | tenant isolation |
+| Users can update own tenant pin templates | UPDATE | tenant isolation |
+| Users can delete own tenant pin templates | DELETE | tenant isolation |
+| Service role full access pin_templates | ALL | `true` (background jobs, admin) |
+| Agent reads templates of granted projects | SELECT | `pin_werkstatt_agent`, article in `agent_project_access` |
+| Agent inserts templates for granted projects | INSERT | `pin_werkstatt_agent`, article in `agent_project_access` |
+| Agent updates templates of granted projects | UPDATE | `pin_werkstatt_agent`, article in `agent_project_access` |
+
+Triggers `set_pin_templates_tenant_id` (derives `tenant_id` from the article) and
+`guard_pin_templates_agent_writes` (agent may not change `approved`/`archived`
+rows and may only write `draft`/`needs_revision`) come from migration 00029.
+
+Trigger `set_pin_templates_updated_at` (BEFORE UPDATE) keeps `updated_at` current.
+
+---
+
+### pin_template_revisions
+
+Immutable log of revision requests a reviewer sends to the external agent for a
+pin template (migration 00028). Submitting a request inserts a row here and moves
+the template to `needs_revision`; the agent picks up open requests, reworks the
+template (writing `previous_snapshot`), and sets the status back to `draft`.
+Immutable records (no `updated_at`); the application layer keeps only the last 3
+rows per template. `template_id` references `pin_templates(id)` `ON DELETE
+CASCADE`. `previous_snapshot` (jsonb, nullable) holds the template fields before
+the rework and is written by the agent, not the app.
+
+| Index | Columns | Type |
+|---|---|---|
+| `pin_template_revisions_pkey` | `id` | PRIMARY KEY |
+| `idx_pin_template_revisions_template_created` | `(template_id, created_at DESC)` | btree |
+| `idx_pin_template_revisions_tenant_id` | `tenant_id` | btree |
+
+| RLS Policy | Operation | Rule |
+|---|---|---|
+| Users can view own tenant pin template revisions | SELECT | tenant isolation |
+| Users can insert pin template revisions in own tenant | INSERT | tenant isolation |
+| Users can delete own tenant pin template revisions | DELETE | tenant isolation (retention pruning) |
+| Service role full access pin_template_revisions | ALL | `true` (background jobs, admin) |
+| Agent reads revisions of granted projects | SELECT | `pin_werkstatt_agent`, template in a granted project |
+| Agent updates revisions of granted projects | UPDATE | `pin_werkstatt_agent`, column grant on `previous_snapshot` only |
+
 ## Pin Status Workflow
 
 ```mermaid
@@ -294,19 +416,33 @@ stateDiagram-v2
 
 ### Status Values
 
-| Status | Description | Set By |
-|---|---|---|
-| `draft` | Initial state after pin image upload | User |
-| `generate_metadata` | User requested AI metadata generation | User |
-| `generating_metadata` | AI generation in progress | System |
-| `metadata_created` | AI metadata applied to pin | System |
-| `ready_to_schedule` | Approved and ready for scheduling | User |
-| `publishing` | Being published to Pinterest | System |
-| `published` | Live on Pinterest | System |
-| `error` | Failed operation, recoverable via `previous_status` | System |
-| `deleted` | Soft-deleted | User |
+The `pins_status_check` CHECK constraint (migrations 00007 + 00009) allows **10**
+values. The application, however, only defines and uses **7** of them in the
+`PinStatus` type (`src/types/pins.ts`). The three remaining values exist in the
+constraint but are never set or rendered by this app.
 
-> `ready_for_generation` is defined in the CHECK constraint but currently unused in the workflow.
+| Status | Description | Set By | In app (`PinStatus`)? |
+|---|---|---|---|
+| `draft` | Initial state after pin image upload | User | Yes |
+| `generate_metadata` | User requested AI metadata generation | User | Yes |
+| `generating_metadata` | AI generation in progress | System | Yes |
+| `metadata_created` | AI metadata applied to pin | System | Yes |
+| `published` | Live on Pinterest | System | Yes |
+| `error` | Failed operation, recoverable via `previous_status` | System | Yes |
+| `deleted` | Soft-deleted | User | Yes |
+| `ready_for_generation` | — | — | No (constraint only) |
+| `ready_to_schedule` | — | — | No (constraint only) |
+| `publishing` | — | — | No (constraint only) |
+
+> **Deviation from the CHECK constraint.** `ready_for_generation`,
+> `ready_to_schedule`, and `publishing` are part of the constraint but are not in
+> the `PinStatus` type and are never written by the app. Publishing happens in
+> n8n (see project overview), which writes `published` directly
+> (`src/lib/server/pinterest-publishing.ts` sets `status: 'published'`), so the
+> intermediate `publishing`/`ready_to_schedule` states are skipped. The
+> constraint is intentionally left permissive so those historical/reserved
+> values remain valid; the workflow diagram above shows the full intended flow,
+> not the subset the app currently drives.
 
 ## Storage Buckets
 
@@ -394,6 +530,7 @@ All functions use `SECURITY DEFINER` to bypass RLS and access Vault.
 | `set_blog_articles_updated_at` | `blog_articles` | BEFORE UPDATE | `handle_updated_at()` | Auto-set `updated_at` |
 | `set_pins_updated_at` | `pins` | BEFORE UPDATE | `handle_updated_at()` | Auto-set `updated_at` |
 | `set_pinterest_connections_updated_at` | `pinterest_connections` | BEFORE UPDATE | `handle_updated_at()` | Auto-set `updated_at` |
+| `set_pin_templates_updated_at` | `pin_templates` | BEFORE UPDATE | `handle_updated_at()` | Auto-set `updated_at` |
 | `trg_update_previous_status` | `pins` | BEFORE UPDATE | `update_previous_status()` | Track status before change for error recovery |
 
 ## Cron Jobs (pg_cron)
@@ -419,4 +556,5 @@ tenant_id IN (
 - **Storage buckets** use folder-based isolation: `{tenant_id}/...` with `storage.foldername(name)[1]` checks
 - **Vault secrets** are keyed by entity ID (connection or project), accessed only via `SECURITY DEFINER` functions
 - **`oauth_state_mapping`** uses `user_id = auth.uid()` instead of tenant isolation (user-scoped, not tenant-scoped)
-- **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, and `oauth_state_mapping` for background jobs
+- **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, and `pin_template_revisions` for background jobs
+- **`pin_werkstatt_agent`** is the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. Setup and revocation: [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md)

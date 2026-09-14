@@ -10,6 +10,12 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   }
 }
 
+// jsdom does not implement scrollIntoView; the workshop template list calls it
+// to keep the keyboard-selected row in view. Provide a no-op.
+if (typeof Element !== 'undefined' && !Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = function scrollIntoView() {}
+}
+
 // Stub import.meta.env for modules that read Supabase config at import time
 Object.defineProperty(import.meta, 'env', {
   value: {
