@@ -1,13 +1,21 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
 import { WorkshopView } from '@/components/workshop/workshop-view'
+import { hasFeature } from '@/lib/features'
 import { getArticlesByProject } from '@/lib/api/articles'
 import { blogProjectQueryOptions } from '@/lib/query/blog-projects'
 import { pinTemplateOpenCountsQueryOptions } from '@/lib/query/pin-templates'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/workshop/')({
+  // Pin-Werkstatt is rolled out per tenant (tenant_features). Tenants without
+  // the flag land on the project page instead.
+  beforeLoad: ({ context, params }) => {
+    if (!hasFeature(context.user, 'pin_werkstatt')) {
+      throw redirect({ to: '/projects/$projectId', params: { projectId: params.projectId } })
+    }
+  },
   // Prefetch the article list, the per-article open-template counts, and the
   // project (its domain is the overlay footer) server-side so the left column
   // and detail arrive in the SSR HTML. Templates for the selected article load

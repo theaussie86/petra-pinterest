@@ -38,6 +38,8 @@ beforeEach(() => {
   // Reset call history so per-test "was/was not called" assertions are isolated.
   // Default implementations (set via mockResolvedValue above) survive clearAllMocks.
   vi.clearAllMocks()
+  // Default for the tenant_features read; tests queue the profiles read first.
+  mockServerClient.from.mockReturnValue(createMockQueryBuilder({ data: [] }) as any)
 })
 
 // ─── fetchUser ───────────────────────────────────────────────────
@@ -56,6 +58,7 @@ describe('fetchUser', () => {
       email: 'test@example.com',
       tenant_id: 'tenant-1',
       display_name: 'Test User',
+      features: [],
     })
   })
 
@@ -132,6 +135,31 @@ describe('fetchUser', () => {
 
     expect(result?.tenant_id).toBe('')
     expect(result?.display_name).toBe('test')
+  })
+
+  it('loads the tenant feature flags', async () => {
+    const profileQb = createMockQueryBuilder({
+      data: { tenant_id: 'tenant-1', display_name: 'Test User' },
+    })
+    const featuresQb = createMockQueryBuilder({ data: [{ feature: 'pin_werkstatt' }] })
+    mockServerClient.from.mockReturnValueOnce(profileQb as any).mockReturnValueOnce(featuresQb as any)
+
+    const result = await fetchUser({})
+
+    expect(mockServerClient.from).toHaveBeenCalledWith('tenant_features')
+    expect(result?.features).toEqual(['pin_werkstatt'])
+  })
+
+  it('falls back to no features when the flag read fails', async () => {
+    const profileQb = createMockQueryBuilder({
+      data: { tenant_id: 'tenant-1', display_name: 'Test User' },
+    })
+    const featuresQb = createMockQueryBuilder({ data: null, error: { message: 'boom' } })
+    mockServerClient.from.mockReturnValueOnce(profileQb as any).mockReturnValueOnce(featuresQb as any)
+
+    const result = await fetchUser({})
+
+    expect(result?.features).toEqual([])
   })
 })
 

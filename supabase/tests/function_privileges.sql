@@ -122,11 +122,24 @@ checks(check_name, passed) AS (
   FROM unnest(ARRAY['anon', 'authenticated']) rl
 
   UNION ALL
+  --    tenant_features (00031): users read own flags, nobody but service_role writes
+  SELECT rl || ' ' || priv || ' on tenant_features = ' || expected,
+         has_table_privilege(rl, 'public.tenant_features', priv) = expected
+  FROM (VALUES
+    ('authenticated', 'SELECT', true),
+    ('authenticated', 'INSERT', false),
+    ('authenticated', 'UPDATE', false),
+    ('authenticated', 'DELETE', false),
+    ('anon',          'SELECT', false),
+    ('pin_werkstatt_agent', 'SELECT', false)
+  ) AS f(rl, priv, expected)
+
+  UNION ALL
   SELECT 'RLS enabled on ' || relname, relrowsecurity
   FROM pg_class
   WHERE relnamespace = 'public'::regnamespace
     AND relname IN ('agent_project_access', 'blog_projects', 'blog_articles',
-                    'pin_templates', 'pin_template_revisions')
+                    'pin_templates', 'pin_template_revisions', 'tenant_features')
 
   UNION ALL
   SELECT 'trigger exists: ' || name,
