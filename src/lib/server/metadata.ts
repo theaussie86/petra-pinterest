@@ -286,7 +286,8 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
   })
 
 /**
- * Server function: Trigger bulk metadata generation via Trigger.dev or edge functions (async).
+ * Server function: Trigger bulk metadata generation via Trigger.dev or the
+ * generate_metadata queue (async, ADR-0004).
  * Authenticates via cookies, dispatches jobs for each pin.
  */
 export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
@@ -298,6 +299,17 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
       error,
     } = await supabase.auth.getUser()
     if (error || !user) throw new Error('Not authenticated')
+
+    if (!isTriggerDevEnabled('metadata')) {
+      // The RPC checks the tenant, sets the pins to 'generating_metadata' and
+      // enqueues them; the queue worker picks them up within ~15s.
+      const { error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
+        p_pin_ids: data.pin_ids,
+      })
+      if (enqueueError) throw new Error(enqueueError.message)
+
+      return { success: true, pins_queued: data.pin_ids.length, useTrigger: false }
+    }
 
     const { data: profile } = await supabase
       .from('profiles')
@@ -312,38 +324,18 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
       .update({ status: 'generating_metadata' })
       .in('id', data.pin_ids)
 
-    if (isTriggerDevEnabled('metadata')) {
-      // Use Trigger.dev
-      const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
-        'generate-metadata',
-        data.pin_ids.map((pin_id) => ({
-          payload: { pin_id, tenant_id: profile.tenant_id },
-        }))
-      )
-      return {
-        success: true,
-        pins_queued: data.pin_ids.length,
-        batchId: batchHandle.batchId,
-        useTrigger: true,
-      }
+    const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
+      'generate-metadata',
+      data.pin_ids.map((pin_id) => ({
+        payload: { pin_id, tenant_id: profile.tenant_id },
+      }))
+    )
+    return {
+      success: true,
+      pins_queued: data.pin_ids.length,
+      batchId: batchHandle.batchId,
+      useTrigger: true,
     }
-
-    // Fallback: Use Edge Functions
-    const serviceClient = getSupabaseServiceClient()
-    const results: PromiseSettledResult<unknown>[] = []
-    for (let i = 0; i < data.pin_ids.length; i += 5) {
-      const batch = data.pin_ids.slice(i, i + 5)
-      const batchResults = await Promise.allSettled(
-        batch.map((pin_id) =>
-          serviceClient.functions.invoke('generate-metadata-single', {
-            body: { pin_id, tenant_id: profile.tenant_id },
-          }),
-        ),
-      )
-      results.push(...batchResults)
-    }
-
-    return { success: true, pins_queued: data.pin_ids.length, useTrigger: false }
   })
 
 /**

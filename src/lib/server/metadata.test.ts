@@ -5,6 +5,7 @@ const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateW
   vi.hoisted(() => ({
     mockServerClient: {
       from: vi.fn(),
+      rpc: vi.fn(),
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: 'test-user-id' } },
@@ -538,43 +539,25 @@ describe('Status Transition Tests', () => {
 })
 
 describe('triggerBulkMetadataFn', () => {
-  it('updates all pins to generating_metadata and invokes edge functions', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
+  it('enqueues the pins on the generate_metadata queue as the signed-in user', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: 3, error: null })
 
     const result = await triggerBulkMetadataFn({
       data: { pin_ids: ['pin-1', 'pin-2', 'pin-3'] },
     })
 
     expect(result).toEqual({ success: true, pins_queued: 3, useTrigger: false })
-    expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
-    expect(statusUpdateQb.in).toHaveBeenCalledWith('id', ['pin-1', 'pin-2', 'pin-3'])
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledTimes(3)
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledWith(
-      'generate-metadata-single',
-      expect.objectContaining({
-        body: { pin_id: 'pin-1', tenant_id: 'test-tenant-id' },
-      }),
-    )
+    expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
+      p_pin_ids: ['pin-1', 'pin-2', 'pin-3'],
+    })
+    expect(mockServiceClient.functions.invoke).not.toHaveBeenCalled()
   })
 
-  it('batches edge function calls in groups of 5', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
+  it('fails when the pins cannot be enqueued', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: null, error: { message: 'Pin not found' } })
 
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-
-    const pinIds = Array.from({ length: 7 }, (_, i) => `pin-${i}`)
-
-    await triggerBulkMetadataFn({ data: { pin_ids: pinIds } })
-
-    // 7 pins → 2 batches (5 + 2)
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledTimes(7)
+    await expect(
+      triggerBulkMetadataFn({ data: { pin_ids: ['pin-1'] } }),
+    ).rejects.toThrow('Pin not found')
   })
 })
