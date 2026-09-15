@@ -1,4 +1,4 @@
-import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn } from './metadata'
+import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn, triggerAutoMetadataFn } from './metadata'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
 const { mockServerClient, mockServiceClient, mockInvoke } = vi.hoisted(() => {
@@ -170,6 +170,30 @@ describe('triggerBulkMetadataFn', () => {
 
     await expect(
       triggerBulkMetadataFn({ data: { pin_ids: ['pin-1'] } }),
+    ).rejects.toThrow('Pin not found')
+  })
+})
+
+describe('triggerAutoMetadataFn', () => {
+  it('enqueues the new pins on the generate_metadata queue with no batch id (flag off)', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: 2, error: null })
+
+    const result = await triggerAutoMetadataFn({ data: { pin_ids: ['pin-1', 'pin-2'] } })
+
+    expect(result).toEqual({ success: true, pins_queued: 2, useTrigger: false })
+    expect('batchId' in result).toBe(false)
+    expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
+      p_pin_ids: ['pin-1', 'pin-2'],
+    })
+    // No Trigger.dev dispatch and no manual status update on the queue path.
+    expect(mockServerClient.from).not.toHaveBeenCalled()
+  })
+
+  it('fails when the pins cannot be enqueued', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: null, error: { message: 'Pin not found' } })
+
+    await expect(
+      triggerAutoMetadataFn({ data: { pin_ids: ['pin-1'] } }),
     ).rejects.toThrow('Pin not found')
   })
 })

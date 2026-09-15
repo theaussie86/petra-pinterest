@@ -3,6 +3,7 @@ import { ensureProfile } from '@/lib/auth'
 import {
   getPinsPaginated,
   getPinStatusCounts,
+  getPinStatusesById,
   getPinsByProject,
   getPinsByArticle,
   getPin,
@@ -130,6 +131,39 @@ describe('getPinsPaginated() — reaching pins past the recent-days window', () 
     expect(mockFrom).toHaveBeenCalledTimes(1)
     expect(qb.lt).toHaveBeenCalledWith('created_at', '2026-05-01T00:00:00Z')
     expect(result.pins.map((p) => p.id)).toEqual(['c1'])
+  })
+})
+
+describe('getPinStatusesById()', () => {
+  it('reads id + status for the requested pins through the isomorphic (RLS) client', async () => {
+    const qb = createMockQueryBuilder({
+      data: [
+        { id: 'pin-1', status: 'metadata_created' },
+        { id: 'pin-2', status: 'generating_metadata' },
+      ],
+    })
+    mockFrom.mockReturnValue(qb as any)
+    mockGetSupabaseClient.mockClear()
+
+    const result = await getPinStatusesById(['pin-1', 'pin-2'])
+
+    expect(mockGetSupabaseClient).toHaveBeenCalled()
+    expect(mockFrom).toHaveBeenCalledWith('pins')
+    expect(qb.select).toHaveBeenCalledWith('id, status')
+    expect(qb.in).toHaveBeenCalledWith('id', ['pin-1', 'pin-2'])
+    expect(result).toEqual([
+      { id: 'pin-1', status: 'metadata_created' },
+      { id: 'pin-2', status: 'generating_metadata' },
+    ])
+  })
+
+  it('returns an empty array without querying when given no ids', async () => {
+    mockFrom.mockClear()
+
+    const result = await getPinStatusesById([])
+
+    expect(result).toEqual([])
+    expect(mockFrom).not.toHaveBeenCalled()
   })
 })
 

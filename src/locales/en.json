@@ -600,6 +600,10 @@
       "regenerateFailed": "Failed to regenerate metadata",
       "bulkStarted": "Metadata generation started for {{count}} pins",
       "bulkFailed": "Failed to start bulk metadata generation",
+      "bulkProgress": "Metadata: {{done}}/{{total}} done",
+      "bulkComplete": "Metadata created for {{count}} pins",
+      "bulkPartial": "{{done}} created, {{failed}} failed",
+      "bulkError": "Metadata generation failed",
       "restored": "Metadata restored",
       "restoreFailed": "Failed to restore metadata"
     },

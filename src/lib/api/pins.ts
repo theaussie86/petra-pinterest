@@ -96,6 +96,25 @@ export async function getPinStatusCounts(
   return counts
 }
 
+/**
+ * Read the current status of a specific set of pins (issue #89). Used to poll
+ * bulk-metadata progress from the database. Runs through the isomorphic (RLS)
+ * client, so only pins in the caller's tenant come back.
+ */
+export async function getPinStatusesById(
+  ids: string[]
+): Promise<{ id: string; status: PinStatus }[]> {
+  if (ids.length === 0) return []
+
+  const { data, error } = await getSupabaseClient()
+    .from('pins')
+    .select('id, status')
+    .in('id', ids)
+
+  if (error) throw error
+  return data as { id: string; status: PinStatus }[]
+}
+
 export async function getPinsByProject(projectId: string): Promise<Pin[]> {
   const { data, error } = await getSupabaseClient()
     .from('pins')

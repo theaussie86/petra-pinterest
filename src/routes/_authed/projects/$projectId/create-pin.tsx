@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils'
 import { MediaUploadZone } from '@/components/pins/media-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useCreatePins } from '@/lib/hooks/use-pins'
-import { useTriggerMetadataViaTriggerDev } from '@/lib/hooks/use-metadata'
+import { useTriggerAutoMetadata } from '@/lib/hooks/use-metadata'
 import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { uploadPinMedia } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
@@ -50,7 +50,7 @@ function CreatePinPage() {
   const isConnected = connectionData?.connected === true && connectionData?.connection?.is_active !== false
   const { data: boards = [] } = usePinterestBoards(projectId)
   const createPinsMutation = useCreatePins()
-  const triggerMetadata = useTriggerMetadataViaTriggerDev()
+  const triggerMetadata = useTriggerAutoMetadata()
 
   const handleSubmit = async () => {
     if (files.length === 0) {
@@ -84,7 +84,7 @@ function CreatePinPage() {
         }))
       )
 
-      // Trigger metadata generation via Trigger.dev for all created pins
+      // Auto-trigger metadata generation for all created pins (queue or Trigger.dev)
       const pinIds = createdPins.map((pin) => pin.id)
       triggerMetadata.mutate({ pin_ids: pinIds })
 
