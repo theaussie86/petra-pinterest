@@ -4,6 +4,7 @@ import { createMockQueryBuilder } from '@/test/mocks/supabase'
 const { mockServerClient, mockServiceClient, mockDiscoverSitemapUrls } = vi.hoisted(() => ({
   mockServerClient: {
     from: vi.fn(),
+    rpc: vi.fn().mockResolvedValue({ data: 1, error: null }),
     auth: {
       getUser: vi.fn().mockResolvedValue({
         data: { user: { id: 'test-user-id' } },
@@ -125,21 +126,33 @@ describe('scrapeBlogFn', () => {
 })
 
 describe('scrapeSingleFn', () => {
-  it('authenticates and invokes scrape-single edge function', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    mockServerClient.from.mockReturnValueOnce(profileQb as any)
-
+  it('authenticates and enqueues a scrape_article job via the tenant-checked RPC', async () => {
     const result = await scrapeSingleFn({
       data: { blog_project_id: 'proj-1', url: 'https://blog.com/post' },
     })
 
-    expect(result).toMatchObject({ success: true, method: 'single' })
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledWith('scrape-single', {
-      body: {
-        blog_project_id: 'proj-1',
-        url: 'https://blog.com/post',
-        tenant_id: 'test-tenant-id',
-      },
+    expect(result).toMatchObject({ success: true, method: 'single', useTrigger: false })
+    expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_scrape_article', {
+      p_blog_project_id: 'proj-1',
+      p_url: 'https://blog.com/post',
     })
+    // The queue path never touches the synchronous edge function.
+    expect(mockServiceClient.functions.invoke).not.toHaveBeenCalled()
+  })
+
+  it('throws when the enqueue RPC rejects (foreign project or unauthenticated)', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: null, error: { message: 'Project not found' } })
+
+    await expect(
+      scrapeSingleFn({ data: { blog_project_id: 'other', url: 'https://blog.com/post' } }),
+    ).rejects.toThrow('Project not found')
+  })
+
+  it('throws when not authenticated', async () => {
+    mockServerClient.auth.getUser.mockResolvedValueOnce({ data: { user: null }, error: null })
+
+    await expect(
+      scrapeSingleFn({ data: { blog_project_id: 'proj-1', url: 'https://blog.com/post' } }),
+    ).rejects.toThrow('Not authenticated')
   })
 })

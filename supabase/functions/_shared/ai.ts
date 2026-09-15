@@ -233,7 +233,7 @@ You will receive the raw HTML of the page (cleaned of scripts/styles).
 Return ONLY valid JSON with this exact structure:
 {
   "title": "Article Title",
-  "content": "# Article Title\\n\\nIntroduction...\\n\\n## Section 1...",
+  "content": "# Article Title\n\nIntroduction...\n\n## Section 1...",
   "published_at": "2023-10-27",
   "author": "John Doe",
   "excerpt": "This is a summary of the article."

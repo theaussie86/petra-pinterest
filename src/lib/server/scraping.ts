@@ -113,20 +113,16 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
     } = await supabase.auth.getUser()
     if (error || !user) throw new Error('Not authenticated')
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-    if (!profile) throw new Error('Profile not found')
-
-    if (isTriggerDevEnabled('scraping')) {
-      // Use Trigger.dev
-      const handle = await tasks.trigger<typeof scrapeSingleTask>('scrape-single', {
-        blog_project_id: data.blog_project_id,
-        url: normalizeUrl(data.url),
-        tenant_id: profile.tenant_id,
+    if (!isTriggerDevEnabled('scraping')) {
+      // The RPC checks the caller's tenant owns the project and enqueues one
+      // scrape_article message; the queue worker picks it up within ~15s
+      // (ADR-0004, issue #90).
+      const { error: enqueueError } = await supabase.rpc('enqueue_scrape_article', {
+        p_blog_project_id: data.blog_project_id,
+        p_url: normalizeUrl(data.url),
       })
+      if (enqueueError) throw new Error(enqueueError.message)
+
       return {
         success: true,
         articles_found: 1,
@@ -134,21 +130,23 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
         articles_updated: 0,
         method: 'single',
         errors: [],
-        runId: handle.id,
-        useTrigger: true,
+        useTrigger: false,
       }
     }
 
-    // Fallback: Fire-and-forget edge function
-    const serviceClient = getSupabaseServiceClient()
-    serviceClient.functions.invoke('scrape-single', {
-      body: {
-        blog_project_id: data.blog_project_id,
-        url: normalizeUrl(data.url),
-        tenant_id: profile.tenant_id,
-      },
-    })
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single()
+    if (!profile) throw new Error('Profile not found')
 
+    // Use Trigger.dev
+    const handle = await tasks.trigger<typeof scrapeSingleTask>('scrape-single', {
+      blog_project_id: data.blog_project_id,
+      url: normalizeUrl(data.url),
+      tenant_id: profile.tenant_id,
+    })
     return {
       success: true,
       articles_found: 1,
@@ -156,6 +154,7 @@ export const scrapeSingleFn = createServerFn({ method: 'POST' })
       articles_updated: 0,
       method: 'single',
       errors: [],
-      useTrigger: false,
+      runId: handle.id,
+      useTrigger: true,
     }
   })

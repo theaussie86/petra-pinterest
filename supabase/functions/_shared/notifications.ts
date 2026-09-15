@@ -142,6 +142,63 @@ export async function resolveNotificationRecipient(
   }
 }
 
+export async function notifyProjectError(opts: {
+  supabase: SupabaseClient
+  projectId: string
+  subject: string
+  errorMessage: string
+  context?: string
+}): Promise<void> {
+  try {
+    const recipient = await resolveNotificationRecipient(opts.supabase, opts.projectId)
+    if (!recipient) return
+
+    const projectUrl = `${APP_URL}/projects/${recipient.projectId}`
+
+    const text = [
+      `Bei deinem Projekt "${recipient.projectName}" ist ein Fehler aufgetreten.`,
+      ``,
+      opts.context ? `Kontext: ${opts.context}` : null,
+      ``,
+      `Fehlermeldung:`,
+      opts.errorMessage,
+      ``,
+      `Projekt im Dashboard öffnen:`,
+      projectUrl,
+      ``,
+      `— Pinfinity`,
+    ]
+      .filter((line) => line !== null)
+      .join('\n')
+
+    const html = `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;color:#0f172a;max-width:560px;">
+        <h2 style="margin:0 0 16px;font-size:18px;">${escapeHtml(opts.subject)}</h2>
+        <p>Bei deinem Projekt <strong>${escapeHtml(recipient.projectName)}</strong> ist ein Fehler aufgetreten.</p>
+        ${opts.context ? `<p><strong>Kontext:</strong> ${escapeHtml(opts.context)}</p>` : ''}
+        <p style="background:#fef2f2;border:1px solid #fecaca;padding:12px;border-radius:6px;color:#991b1b;white-space:pre-wrap;">
+          ${escapeHtml(opts.errorMessage)}
+        </p>
+        <p>
+          <a href="${projectUrl}" style="display:inline-block;background:#0f172a;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">
+            Projekt im Dashboard öffnen
+          </a>
+        </p>
+        <p style="color:#64748b;font-size:12px;margin-top:24px;">— Pinfinity</p>
+      </div>
+    `.trim()
+
+    await sendResendMail({
+      to: recipient.email,
+      subject: opts.subject,
+      text,
+      html,
+    })
+  } catch (err) {
+    console.error('[notifications] notifyProjectError unexpected error:', err)
+  }
+}
+
 export async function notifyPinError(opts: {
   supabase: SupabaseClient
   pinId: string
