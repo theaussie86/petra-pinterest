@@ -106,7 +106,6 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
     return invokeMetadataEdge({ pin_id: data.pin_id, tenant_id, feedback: data.feedback })
   })
 
-
 /**
  * Server function: Trigger bulk metadata generation via Trigger.dev or the
  * generate_metadata queue (async, ADR-0004).
