@@ -133,13 +133,28 @@ BEGIN
     RETURN 0;
   END IF;
 
-  SELECT array_agg(p.id) INTO v_pin_ids
-  FROM public.pins p
-  WHERE p.id = ANY (p_pin_ids) AND p.tenant_id = v_tenant_id;
-
   -- All or nothing: a foreign or unknown pin id rejects the whole request.
-  IF coalesce(cardinality(v_pin_ids), 0) <> v_requested THEN
+  IF (
+    SELECT count(*) FROM public.pins p
+    WHERE p.id = ANY (p_pin_ids) AND p.tenant_id = v_tenant_id
+  ) <> v_requested THEN
     RAISE EXCEPTION 'Pin not found';
+  END IF;
+
+  -- Only pins that may enter generation (docs/pin-status-flow.md); pins that
+  -- are already generating, scheduled or published are skipped silently.
+  -- The row lock keeps two concurrent requests from queueing the same pin.
+  SELECT array_agg(p.id) INTO v_pin_ids
+  FROM (
+    SELECT id FROM public.pins
+    WHERE id = ANY (p_pin_ids)
+      AND tenant_id = v_tenant_id
+      AND status IN ('draft', 'generate_metadata', 'metadata_created', 'error')
+    FOR UPDATE
+  ) p;
+
+  IF v_pin_ids IS NULL THEN
+    RETURN 0;
   END IF;
 
   UPDATE public.pins SET status = 'generating_metadata' WHERE id = ANY (v_pin_ids);
@@ -152,7 +167,7 @@ BEGIN
     )
   );
 
-  RETURN v_requested;
+  RETURN cardinality(v_pin_ids);
 END;
 $$;
 
