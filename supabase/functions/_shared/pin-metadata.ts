@@ -4,6 +4,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   generatePinMetadata,
+  generatePinMetadataWithFeedback,
   fetchImageBytes,
   sanitizeLanguage,
   buildPinterestSeoSystemPrompt,
@@ -14,6 +15,12 @@ import { extractKeyframe } from './ffmpeg-client.ts'
 export interface PinMetadataJob {
   pin_id: string
   tenant_id: string
+  /**
+   * Optional operator feedback. When set, the previous generation is refined
+   * via the feedback variant and the feedback text is stored in the history
+   * (the single-pin "Neu-Erzeugen" path). The queue worker never passes it.
+   */
+  feedback?: string | null
 }
 
 export interface PinMetadata {
@@ -27,8 +34,9 @@ const GENERATIONS_TO_KEEP = 3
 
 export async function generateAndStorePinMetadata(
   supabase: SupabaseClient,
-  { pin_id, tenant_id }: PinMetadataJob,
+  { pin_id, tenant_id, feedback }: PinMetadataJob,
 ): Promise<PinMetadata> {
+  const trimmedFeedback = feedback?.trim() || null
   // Fetch pin with article data (article may be null)
   const { data: pin, error: fetchError } = await supabase
     .from('pins')
@@ -82,13 +90,45 @@ export async function generateAndStorePinMetadata(
     image = await fetchImageBytes(imageUrl)
   }
 
-  const metadata = await generatePinMetadata({
-    article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
-    image,
-    mediaType,
-    systemPrompt,
-    apiKey,
-  })
+  const article = { title: pin.blog_articles?.title, content: pin.blog_articles?.content }
+
+  let metadata: PinMetadata
+  if (trimmedFeedback) {
+    // Feedback variant: refine the latest generation. Requires a prior one.
+    const { data: previous } = await supabase
+      .from('pin_metadata_generations')
+      .select('title, description, alt_text')
+      .eq('pin_id', pin_id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+
+    if (!previous) {
+      throw new Error('No previous generation found for feedback')
+    }
+
+    metadata = await generatePinMetadataWithFeedback({
+      article,
+      image,
+      mediaType,
+      systemPrompt,
+      apiKey,
+      previousMetadata: {
+        title: previous.title,
+        description: previous.description,
+        alt_text: previous.alt_text,
+      },
+      feedback: trimmedFeedback,
+    })
+  } else {
+    metadata = await generatePinMetadata({
+      article,
+      image,
+      mediaType,
+      systemPrompt,
+      apiKey,
+    })
+  }
 
   await supabase.from('pin_metadata_generations').insert({
     pin_id,
@@ -96,7 +136,7 @@ export async function generateAndStorePinMetadata(
     title: metadata.title,
     description: metadata.description,
     alt_text: metadata.alt_text,
-    feedback: null,
+    feedback: trimmedFeedback,
   })
 
   await supabase

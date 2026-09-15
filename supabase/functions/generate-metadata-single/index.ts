@@ -6,6 +6,8 @@ import { generateAndStorePinMetadata } from '../_shared/pin-metadata.ts'
 interface MetadataRequest {
   pin_id: string
   tenant_id: string
+  /** Optional operator feedback for the "Neu-Erzeugen mit Feedback" path. */
+  feedback?: string | null
 }
 
 Deno.serve(async (req) => {
@@ -20,6 +22,7 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as MetadataRequest
     pin_id = body.pin_id
     const tenant_id = body.tenant_id
+    const feedback = body.feedback
 
     if (!pin_id || !tenant_id) {
       return new Response(
@@ -34,7 +37,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const metadata = await generateAndStorePinMetadata(supabase, { pin_id, tenant_id })
+    const metadata = await generateAndStorePinMetadata(supabase, { pin_id, tenant_id, feedback })
 
     return new Response(
       JSON.stringify({

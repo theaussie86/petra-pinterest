@@ -1,289 +1,111 @@
 import { createServerFn } from '@tanstack/react-start'
 import { tasks } from '@trigger.dev/sdk/v3'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
-import { generatePinMetadata, generatePinMetadataWithFeedback } from '@/lib/ai/generate'
-import { fetchImageBytes, type ImageBytes } from '@/lib/ai/image'
-import { extractKeyframe } from '@/lib/server/ffmpeg-client'
-import { getGeminiApiKeyFromVault } from '../../../server/lib/vault-helpers'
-import { sanitizeLanguage } from '@/lib/ai/language'
-import { buildPinterestSeoSystemPrompt } from '@/lib/ai/prompts'
 import { isTriggerDevEnabled } from '@/lib/config/feature-flags'
 import type { generateMetadataTask } from '@/trigger/generate-metadata'
 
-function getPinImageUrl(imagePath: string): string {
-  return `${process.env.SUPABASE_URL}/storage/v1/object/public/pin-images/${imagePath}`
+interface GeneratedMetadata {
+  title: string
+  description: string
+  alt_text: string
+}
+
+/**
+ * Authenticate the caller and confirm the pin belongs to their tenant.
+ *
+ * The read runs through the cookie-bound (RLS) client, so a pin from another
+ * tenant is invisible and rejected here — defense-in-depth before we hand the
+ * pin to the service-role Edge Function, which itself bypasses RLS.
+ */
+async function authorizePin(pin_id: string): Promise<string> {
+  const supabase = getSupabaseServerClient()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+  if (error || !user) throw new Error('Not authenticated')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+  if (!profile) throw new Error('Profile not found')
+
+  const { data: pin, error: pinError } = await supabase
+    .from('pins')
+    .select('id')
+    .eq('id', pin_id)
+    .single()
+  if (pinError || !pin) throw new Error('Pin not found')
+
+  return profile.tenant_id
+}
+
+/** Pull the human-readable message out of a Supabase Functions error. */
+async function edgeErrorMessage(error: unknown): Promise<string> {
+  const context = (error as { context?: { json?: () => Promise<unknown> } }).context
+  if (context?.json) {
+    try {
+      const body = (await context.json()) as { error?: unknown }
+      if (body?.error) return String(body.error)
+    } catch {
+      // Fall through to the error's own message.
+    }
+  }
+  return error instanceof Error ? error.message : String(error)
+}
+
+/**
+ * Invoke the synchronous generate-metadata-single Edge Function and wait for
+ * the result. Errors from the Edge Function are re-thrown so the dialog can
+ * surface them (ADR-0004, issue #88).
+ */
+async function invokeMetadataEdge(body: {
+  pin_id: string
+  tenant_id: string
+  feedback?: string
+}): Promise<{ success: true; metadata: GeneratedMetadata }> {
+  const serviceClient = getSupabaseServiceClient()
+  const { data, error } = await serviceClient.functions.invoke('generate-metadata-single', {
+    body,
+  })
+
+  if (error) {
+    throw new Error(await edgeErrorMessage(error))
+  }
+  if (!data?.success) {
+    throw new Error(data?.error ?? 'Metadata generation failed')
+  }
+
+  return { success: true, metadata: data.metadata as GeneratedMetadata }
 }
 
 /**
  * Server function: Generate metadata for a single pin (synchronous).
- * Authenticates via cookies, calls Gemini, stores history, updates pin.
+ * Authenticates via cookies, then calls the metadata Edge Function and waits
+ * for the result. No Node AI code runs here (ADR-0004, issue #88).
  */
 export const generateMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_id: string }) => data)
   .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient()
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (error || !user) throw new Error('Not authenticated')
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-    if (!profile) throw new Error('Profile not found')
-
-    try {
-      // Update pin status to 'generating_metadata' first
-      await supabase
-        .from('pins')
-        .update({ status: 'generating_metadata' })
-        .eq('id', data.pin_id)
-
-      // Fetch pin with article data
-      const { data: pin, error: fetchError } = await supabase
-        .from('pins')
-        .select('*, blog_articles(title, content)')
-        .eq('id', data.pin_id)
-        .single()
-
-      if (fetchError || !pin) throw new Error('Pin not found')
-
-      // Fetch Gemini API key from Vault using pin's blog_project_id directly
-      const serviceSupabase = getSupabaseServiceClient()
-      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
-
-      // Fetch project settings for language and AI context
-      const { data: project } = await supabase
-        .from('blog_projects')
-        .select('language, ai_context')
-        .eq('id', pin.blog_project_id)
-        .single()
-      const language = sanitizeLanguage(project?.language)
-      const systemPrompt = buildPinterestSeoSystemPrompt(language, project?.ai_context)
-
-      // Get pin image URL and derive media type from file extension
-      const imageUrl = getPinImageUrl(pin.image_path)
-      const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
-      const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
-
-      // Fetch the image bytes ourselves so private/signed URLs stay reachable.
-      // For video pins: extract a keyframe and pass its bytes through the same part.
-      let image: ImageBytes
-      if (mediaType === 'video') {
-        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
-        image = { bytes: keyframe.bytes, mimeType: keyframe.contentType }
-      } else {
-        image = await fetchImageBytes(imageUrl)
-      }
-
-      // Generate metadata via the AI SDK wrapper (article may be null)
-      const metadata = await generatePinMetadata({
-        article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
-        image,
-        mediaType,
-        systemPrompt,
-        apiKey,
-      })
-
-      // Insert into pin_metadata_generations table
-      await supabase.from('pin_metadata_generations').insert({
-        pin_id: data.pin_id,
-        tenant_id: profile.tenant_id,
-        title: metadata.title,
-        description: metadata.description,
-        alt_text: metadata.alt_text,
-        feedback: null,
-      })
-
-      // Update pin with metadata and status
-      await supabase
-        .from('pins')
-        .update({
-          title: metadata.title,
-          description: metadata.description,
-          alt_text: metadata.alt_text,
-          status: 'metadata_created',
-        })
-        .eq('id', data.pin_id)
-
-      // Prune old generations (keep last 3)
-      const { data: generations } = await supabase
-        .from('pin_metadata_generations')
-        .select('id')
-        .eq('pin_id', data.pin_id)
-        .order('created_at', { ascending: false })
-
-      if (generations && generations.length > 3) {
-        const idsToKeep = generations.slice(0, 3).map((g) => g.id)
-        await supabase
-          .from('pin_metadata_generations')
-          .delete()
-          .eq('pin_id', data.pin_id)
-          .not('id', 'in', `(${idsToKeep.join(',')})`)
-      }
-
-      return { success: true, metadata }
-    } catch (error) {
-      // On error: update pin status to 'error', set error_message
-      await supabase
-        .from('pins')
-        .update({
-          status: 'error',
-          error_message: String(error),
-        })
-        .eq('id', data.pin_id)
-
-      throw error
-    }
+    const tenant_id = await authorizePin(data.pin_id)
+    return invokeMetadataEdge({ pin_id: data.pin_id, tenant_id })
   })
 
 /**
- * Server function: Generate metadata for a single pin with feedback (synchronous).
- * Uses conversation history to refine based on user feedback.
+ * Server function: Generate metadata for a single pin with feedback
+ * (synchronous). Passes the feedback to the metadata Edge Function, which
+ * refines the latest generation and stores the feedback in the history
+ * (ADR-0004, issue #88).
  */
 export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_id: string; feedback: string }) => data)
   .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient()
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (error || !user) throw new Error('Not authenticated')
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-    if (!profile) throw new Error('Profile not found')
-
-    try {
-      // Update pin status to 'generating_metadata' first
-      await supabase
-        .from('pins')
-        .update({ status: 'generating_metadata' })
-        .eq('id', data.pin_id)
-
-      // Fetch previous generation from pin_metadata_generations (latest for pin_id)
-      const { data: previousGeneration } = await supabase
-        .from('pin_metadata_generations')
-        .select('*')
-        .eq('pin_id', data.pin_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-      if (!previousGeneration) {
-        throw new Error('No previous generation found for feedback')
-      }
-
-      // Fetch pin + article data
-      const { data: pin, error: fetchError } = await supabase
-        .from('pins')
-        .select('*, blog_articles(title, content)')
-        .eq('id', data.pin_id)
-        .single()
-
-      if (fetchError || !pin) throw new Error('Pin not found')
-
-      // Fetch Gemini API key from Vault using pin's blog_project_id directly
-      const serviceSupabase = getSupabaseServiceClient()
-      const apiKey = await getGeminiApiKeyFromVault(serviceSupabase, pin.blog_project_id)
-
-      // Fetch project settings for language and AI context
-      const { data: project } = await supabase
-        .from('blog_projects')
-        .select('language, ai_context')
-        .eq('id', pin.blog_project_id)
-        .single()
-      const language = sanitizeLanguage(project?.language)
-      const systemPrompt = buildPinterestSeoSystemPrompt(language, project?.ai_context)
-
-      // Get pin image URL and derive media type from file extension
-      const imageUrl = getPinImageUrl(pin.image_path)
-      const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
-      const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
-
-      // Fetch the image bytes ourselves so private/signed URLs stay reachable.
-      // For video pins: extract a keyframe and pass its bytes through the same part.
-      let image: ImageBytes
-      if (mediaType === 'video') {
-        const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
-        image = { bytes: keyframe.bytes, mimeType: keyframe.contentType }
-      } else {
-        image = await fetchImageBytes(imageUrl)
-      }
-
-      // Regenerate metadata via the AI SDK feedback wrapper (article may be null)
-      const metadata = await generatePinMetadataWithFeedback({
-        article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
-        image,
-        mediaType,
-        systemPrompt,
-        apiKey,
-        previousMetadata: {
-          title: previousGeneration.title,
-          description: previousGeneration.description,
-          alt_text: previousGeneration.alt_text,
-        },
-        feedback: data.feedback,
-      })
-
-      // Store new generation in pin_metadata_generations WITH feedback text
-      await supabase.from('pin_metadata_generations').insert({
-        pin_id: data.pin_id,
-        tenant_id: profile.tenant_id,
-        title: metadata.title,
-        description: metadata.description,
-        alt_text: metadata.alt_text,
-        feedback: data.feedback,
-      })
-
-      // Update pin with new values, set status to 'metadata_created'
-      await supabase
-        .from('pins')
-        .update({
-          title: metadata.title,
-          description: metadata.description,
-          alt_text: metadata.alt_text,
-          status: 'metadata_created',
-        })
-        .eq('id', data.pin_id)
-
-      // Prune old generations (keep last 3)
-      const { data: generations } = await supabase
-        .from('pin_metadata_generations')
-        .select('id')
-        .eq('pin_id', data.pin_id)
-        .order('created_at', { ascending: false })
-
-      if (generations && generations.length > 3) {
-        const idsToKeep = generations.slice(0, 3).map((g) => g.id)
-        await supabase
-          .from('pin_metadata_generations')
-          .delete()
-          .eq('pin_id', data.pin_id)
-          .not('id', 'in', `(${idsToKeep.join(',')})`)
-      }
-
-      return { success: true, metadata }
-    } catch (error) {
-      // On error: update pin status to 'error', set error_message
-      await supabase
-        .from('pins')
-        .update({
-          status: 'error',
-          error_message: String(error),
-        })
-        .eq('id', data.pin_id)
-
-      throw error
-    }
+    const tenant_id = await authorizePin(data.pin_id)
+    return invokeMetadataEdge({ pin_id: data.pin_id, tenant_id, feedback: data.feedback })
   })
+
 
 /**
  * Server function: Trigger bulk metadata generation via Trigger.dev or the
