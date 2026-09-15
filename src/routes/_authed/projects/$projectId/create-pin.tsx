@@ -84,7 +84,7 @@ function CreatePinPage() {
         }))
       )
 
-      // Auto-trigger metadata generation for all created pins (queue or Trigger.dev)
+      // Auto-trigger metadata generation for all created pins via the queue
       const pinIds = createdPins.map((pin) => pin.id)
       triggerMetadata.mutate({ pin_ids: pinIds })
 

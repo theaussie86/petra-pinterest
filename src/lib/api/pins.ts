@@ -157,8 +157,8 @@ export async function createPin(pin: PinInsert): Promise<Pin> {
     .insert({
       ...pin,
       tenant_id,
-      // Status defaults to 'draft' in DB. Metadata generation is triggered
-      // separately via Trigger.dev after pin creation.
+      // Status defaults to 'draft' in DB. Metadata generation is enqueued
+      // separately on the generate_metadata queue after pin creation.
     })
     .select()
     .single()

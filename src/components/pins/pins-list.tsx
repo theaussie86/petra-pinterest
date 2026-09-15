@@ -190,12 +190,9 @@ export function PinsList({ projectId }: PinsListProps) {
     const ids = Array.from(selectedIds)
     clearSelection()
     try {
-      const result = await triggerBulkMetadata.mutateAsync({ pin_ids: ids })
-      // Only the queue path exposes DB-polled progress; the Trigger.dev path
-      // (flag on) has no DB status handshake to track here.
-      if (result.useTrigger === false) {
-        setMetadataProgressPinIds(ids)
-      }
+      await triggerBulkMetadata.mutateAsync({ pin_ids: ids })
+      // The queue path exposes DB-polled progress; start tracking the pins.
+      setMetadataProgressPinIds(ids)
     } catch {
       // The mutation's onError already surfaced a toast.
     }

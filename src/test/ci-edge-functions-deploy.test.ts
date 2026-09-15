@@ -5,8 +5,9 @@ import { describe, expect, it } from 'vitest'
 
 // Guards the CI-Deploy für Edge Functions (issue #86): a merge to main must
 // deploy the Supabase Edge Functions when — and only when — something under
-// supabase/functions changed, mirroring the existing Trigger.dev deploy job,
-// and it must never apply database migrations.
+// supabase/functions changed, and it must never apply database migrations.
+// After stage 2 (issue #93) there is no separate deploy job for background
+// tasks — Edge Functions are the only deploy path.
 
 interface WorkflowStep {
   name?: string
@@ -65,6 +66,10 @@ describe('CI edge-functions deploy job', () => {
     expect(deployStep?.env?.SUPABASE_ACCESS_TOKEN).toContain(
       'secrets.SUPABASE_ACCESS_TOKEN',
     )
+  })
+
+  it('no longer has a Trigger.dev deploy job (removed in stage 2, issue #93)', () => {
+    expect(ci.jobs?.['deploy-trigger']).toBeUndefined()
   })
 
   it('never applies database migrations', () => {

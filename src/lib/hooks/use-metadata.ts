@@ -63,9 +63,9 @@ export function useGenerateMetadataWithFeedback() {
 
 /**
  * Mutation hook: Trigger bulk metadata generation for multiple pins.
- * Enqueues the pins (queue path) or dispatches a Trigger.dev batch. Progress is
- * tracked separately by useMetadataBatchProgress, which polls the pin status in
- * the database (issue #89), so this hook shows no success toast of its own.
+ * Enqueues the pins on the generate_metadata queue. Progress is tracked
+ * separately by useMetadataBatchProgress, which polls the pin status in the
+ * database (issue #89), so this hook shows no success toast of its own.
  */
 export function useTriggerBulkMetadata() {
   const queryClient = useQueryClient()
@@ -85,8 +85,8 @@ export function useTriggerBulkMetadata() {
 
 /**
  * Mutation hook: auto-trigger metadata generation after pins are created.
- * Uses the generate_metadata queue (flag off) or Trigger.dev. No toast on
- * success (silent). See ADR-0004, issue #89.
+ * Enqueues the pins on the generate_metadata queue. No toast on success
+ * (silent). See ADR-0004, issue #89.
  */
 export function useTriggerAutoMetadata() {
   const queryClient = useQueryClient()

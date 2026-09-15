@@ -14,9 +14,8 @@ const MAX_DURATION_MS = 5 * 60 * 1000
 /**
  * Track bulk metadata generation by polling the affected pins' status in the
  * database (issue #89). Shows a persistent progress toast that ends with
- * success, a partial-failure warning, or an error — replacing the removed
- * Trigger.dev batch-progress hook. Pass a fresh, stable array of pin ids to
- * start a run; pass `null` when there is nothing to track.
+ * success, a partial-failure warning, or an error. Pass a fresh, stable array
+ * of pin ids to start a run; pass `null` when there is nothing to track.
  */
 export function useMetadataBatchProgress(pinIds: string[] | null) {
   const queryClient = useQueryClient()

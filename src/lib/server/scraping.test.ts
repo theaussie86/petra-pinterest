@@ -39,7 +39,7 @@ describe('scrapeBlogFn', () => {
       },
     })
 
-    expect(result).toEqual({ success: true, dispatched: 1, useTrigger: false })
+    expect(result).toEqual({ success: true, dispatched: 1 })
     expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_scrape_blog', {
       p_blog_project_id: 'proj-1',
     })
@@ -73,7 +73,7 @@ describe('scrapeSingleFn', () => {
       data: { blog_project_id: 'proj-1', url: 'https://blog.com/post' },
     })
 
-    expect(result).toMatchObject({ success: true, method: 'single', useTrigger: false })
+    expect(result).toMatchObject({ success: true, method: 'single' })
     expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_scrape_article', {
       p_blog_project_id: 'proj-1',
       p_url: 'https://blog.com/post',

@@ -158,7 +158,7 @@ describe('triggerBulkMetadataFn', () => {
       data: { pin_ids: ['pin-1', 'pin-2', 'pin-1'] },
     })
 
-    expect(result).toEqual({ success: true, pins_queued: 2, useTrigger: false })
+    expect(result).toEqual({ success: true, pins_queued: 2 })
     expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
       p_pin_ids: ['pin-1', 'pin-2', 'pin-1'],
     })
@@ -175,17 +175,16 @@ describe('triggerBulkMetadataFn', () => {
 })
 
 describe('triggerAutoMetadataFn', () => {
-  it('enqueues the new pins on the generate_metadata queue with no batch id (flag off)', async () => {
+  it('enqueues the new pins on the generate_metadata queue', async () => {
     mockServerClient.rpc.mockResolvedValueOnce({ data: 2, error: null })
 
     const result = await triggerAutoMetadataFn({ data: { pin_ids: ['pin-1', 'pin-2'] } })
 
-    expect(result).toEqual({ success: true, pins_queued: 2, useTrigger: false })
-    expect('batchId' in result).toBe(false)
+    expect(result).toEqual({ success: true, pins_queued: 2 })
     expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
       p_pin_ids: ['pin-1', 'pin-2'],
     })
-    // No Trigger.dev dispatch and no manual status update on the queue path.
+    // The RPC handles the status update; no manual pin write on the queue path.
     expect(mockServerClient.from).not.toHaveBeenCalled()
   })
 

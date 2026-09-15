@@ -32,7 +32,7 @@ checks(check_name, passed) AS (
 
   UNION ALL
   -- 2. Roles the app relies on keep EXECUTE
-  --    service_role: src/lib/server/*, Trigger.dev tasks, Edge Functions
+  --    service_role: src/lib/server/*, Edge Functions
   SELECT 'service_role can execute: ' || fn,
          has_function_privilege('service_role', fn, 'EXECUTE')
   FROM unnest(ARRAY[

@@ -1,9 +1,9 @@
 // Single-article scrape pipeline shared by the synchronous scrape-single
-// function and the scrape_article queue worker (ADR-0004, issue #90). Mirrors
-// the Node Trigger.dev task: normalise the URL, read the project's Gemini key
-// from the Vault, fetch + clean the HTML, extract the article, parse a robust
-// published_at and upsert into blog_articles. Throws on any failure; callers
-// decide what an error means (the worker mails once after the last attempt).
+// function and the scrape_article queue worker (ADR-0004, issue #90):
+// normalise the URL, read the project's Gemini key from the Vault, fetch +
+// clean the HTML, extract the article, parse a robust published_at and upsert
+// into blog_articles. Throws on any failure; callers decide what an error means
+// (the worker mails once after the last attempt).
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { generateArticleFromHtml } from './ai.ts'
 import { normalizeUrl } from './url.ts'

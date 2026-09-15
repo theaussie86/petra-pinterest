@@ -1,15 +1,15 @@
 /**
- * Deno/Edge mirror of the Node `src/lib/ai/` stack (ADR 0002 / PRD #40, issue
- * #44). The Supabase Edge fallback path (`isTriggerDevEnabled('metadata')`
- * false) must produce the same validated metadata/article shape as the primary
- * Trigger.dev path, so this file is kept structurally identical to the Node
- * implementation — same prompts, schemas, settings, repair logic.
+ * Deno/Edge AI stack (ADR 0002 / PRD #40, issue #44; ADR-0004). This is the
+ * single home for the metadata/article generation logic — it produces the
+ * validated metadata/article shape used by the queue workers and the
+ * synchronous single-pin functions. Prompts, schemas, settings and repair logic
+ * live here.
  *
  * `generatePinMetadata`, `generatePinMetadataWithFeedback` (the synchronous
  * "Neu-Erzeugen mit Feedback" path, issue #88) and `generateArticleFromHtml`
- * are mirrored here. The AI SDK is imported via Deno `npm:` specifiers; vitest
+ * are defined here. The AI SDK is imported via Deno `npm:` specifiers; vitest
  * aliases map them onto the installed Node packages so this module can be
- * exercised for parity tests.
+ * exercised in tests.
  */
 
 import {

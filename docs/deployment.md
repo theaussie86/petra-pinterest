@@ -5,17 +5,18 @@
 `.github/workflows/ci.yml` runs on every push and PR against `main`:
 
 - **`ci`** — install, `npm test`, `npm run build`. Always runs.
-- **`deploy-trigger`** — deploys the Trigger.dev tasks, but only on a push to
-  `main` and only when something under `src/trigger/`, `server/lib/` or
-  `trigger.config.ts` changed. Left untouched until Trigger.dev is removed in
-  stage 2 (spec #85).
 - **`deploy-edge-functions`** — deploys the Supabase Edge Functions, only on a
   push to `main` and only when something under `supabase/functions/` changed
   (issue #86).
 
+> Stage 2 (issue #85 / #93) removed Trigger.dev entirely. The former
+> `deploy-trigger` job, the `TRIGGER_ACCESS_TOKEN` secret and the `USE_TRIGGER_*`
+> feature flags no longer exist — the pgmq queues + Edge Functions are the only
+> background-job path.
+
 ## Edge Functions deploy
 
-The job mirrors the Trigger.dev change-gate pattern:
+The job is change-gated:
 
 1. Checkout with `fetch-depth: 2` so `HEAD~1..HEAD` is available.
 2. If `git diff --name-only HEAD~1 HEAD` touches `supabase/functions/`, install
@@ -24,8 +25,7 @@ The job mirrors the Trigger.dev change-gate pattern:
    redeploys **all** functions in `supabase/functions/`.
 
 Redeploying every function (rather than only the changed one) keeps the whole
-folder in sync with `main` on any change — the same "deploy everything on any
-change" behaviour the Trigger.dev job has.
+folder in sync with `main` on any change.
 
 ### Migrations are never applied automatically
 
@@ -43,7 +43,6 @@ Configure these under **GitHub → Settings → Secrets and variables → Action
 | --- | --- | --- |
 | `SUPABASE_ACCESS_TOKEN` | `deploy-edge-functions` | Supabase personal access token used by the CLI to authenticate the deploy. Create one at <https://supabase.com/dashboard/account/tokens>. |
 | `SUPABASE_PROJECT_REF` | `deploy-edge-functions` | Project ref of the production project (`dedacaqstvzxlxpxvxgb`, "Pinterest Management"). |
-| `TRIGGER_ACCESS_TOKEN` | `deploy-trigger` | Existing Trigger.dev deploy token (unchanged). |
 
 `SUPABASE_ACCESS_TOKEN` grants deploy rights to the account's projects, so scope
 it to a service/CI account where possible and rotate it if leaked.
@@ -81,10 +80,18 @@ after the step above):
 
 ## Stage 1 production cutover & observation (issue #92, PRD #85)
 
-Stage 1 switches every background job onto the pgmq queue path while keeping
-Trigger.dev available as a fall-back behind the `USE_TRIGGER_*` flags. Run the
-cutover, then observe for several days before deciding whether to proceed to
-stage 2 (removing Trigger.dev, #93) or roll back.
+> **Historical runbook.** Stage 1 switched every background job onto the pgmq
+> queue path while keeping Trigger.dev available as a fall-back behind the
+> now-removed `USE_TRIGGER_*` flags. Stage 2 (issue #93) has since removed
+> Trigger.dev and the flags entirely, so the flag-flip and rollback steps below
+> no longer apply — the queue path is the only path. The migration + Edge
+> Function deploy/delete steps remain the reference for how the queues were
+> brought live.
+
+Stage 1 switched every background job onto the pgmq queue path while keeping
+Trigger.dev available as a fall-back behind the `USE_TRIGGER_*` flags. The team
+observed for several days before proceeding to stage 2 (removing Trigger.dev,
+#93).
 
 > **Requires production access** (Supabase `SUPABASE_ACCESS_TOKEN` + project ref
 > `dedacaqstvzxlxpxvxgb`, and Hostinger env access). None of it is runnable from

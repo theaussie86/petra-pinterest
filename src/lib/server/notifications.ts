@@ -267,8 +267,8 @@ export async function notifyPinError(opts: {
 }
 
 /**
- * Notify about a non-pin failure inside a project (e.g. a Trigger.dev scrape
- * task that failed before any pin existed). No throttling — these are rare.
+ * Notify about a non-pin failure inside a project (e.g. a scrape job that
+ * failed before any pin existed). No throttling — these are rare.
  */
 export async function notifyProjectError(opts: {
   supabase: ServiceClient
