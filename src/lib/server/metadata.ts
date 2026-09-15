@@ -107,57 +107,63 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
   })
 
 /**
+ * Dispatch metadata generation for the given pins, authenticating via cookies
+ * first. With the Trigger.dev flag off, the tenant-checked RPC sets the pins to
+ * 'generating_metadata' and enqueues them on the generate_metadata queue (the
+ * worker picks them up within ~15s); with the flag on, it sets the status and
+ * dispatches a Trigger.dev batch, returning its batch id (ADR-0004).
+ */
+async function dispatchMetadataGeneration(pin_ids: string[]) {
+  const supabase = getSupabaseServerClient()
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+  if (error || !user) throw new Error('Not authenticated')
+
+  if (!isTriggerDevEnabled('metadata')) {
+    const { data: pinsQueued, error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
+      p_pin_ids: pin_ids,
+    })
+    if (enqueueError) throw new Error(enqueueError.message)
+
+    return { success: true, pins_queued: pinsQueued as number, useTrigger: false }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('tenant_id')
+    .eq('id', user.id)
+    .single()
+  if (!profile) throw new Error('Profile not found')
+
+  await supabase
+    .from('pins')
+    .update({ status: 'generating_metadata' })
+    .in('id', pin_ids)
+
+  const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
+    'generate-metadata',
+    pin_ids.map((pin_id) => ({
+      payload: { pin_id, tenant_id: profile.tenant_id },
+    }))
+  )
+  return {
+    success: true,
+    pins_queued: pin_ids.length,
+    batchId: batchHandle.batchId,
+    useTrigger: true,
+  }
+}
+
+/**
  * Server function: Trigger bulk metadata generation via Trigger.dev or the
  * generate_metadata queue (async, ADR-0004).
  * Authenticates via cookies, dispatches jobs for each pin.
  */
 export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_ids: string[] }) => data)
-  .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient()
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (error || !user) throw new Error('Not authenticated')
-
-    if (!isTriggerDevEnabled('metadata')) {
-      // The RPC checks the tenant, sets the pins to 'generating_metadata' and
-      // enqueues them; the queue worker picks them up within ~15s.
-      const { data: pinsQueued, error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
-        p_pin_ids: data.pin_ids,
-      })
-      if (enqueueError) throw new Error(enqueueError.message)
-
-      return { success: true, pins_queued: pinsQueued as number, useTrigger: false }
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-    if (!profile) throw new Error('Profile not found')
-
-    // Update all selected pins status to 'generating_metadata'
-    await supabase
-      .from('pins')
-      .update({ status: 'generating_metadata' })
-      .in('id', data.pin_ids)
-
-    const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
-      'generate-metadata',
-      data.pin_ids.map((pin_id) => ({
-        payload: { pin_id, tenant_id: profile.tenant_id },
-      }))
-    )
-    return {
-      success: true,
-      pins_queued: data.pin_ids.length,
-      batchId: batchHandle.batchId,
-      useTrigger: true,
-    }
-  })
+  .handler(({ data }) => dispatchMetadataGeneration(data.pin_ids))
 
 /**
  * Server function: auto-trigger metadata generation after pins are created.
@@ -167,50 +173,4 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
  */
 export const triggerAutoMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_ids: string[] }) => data)
-  .handler(async ({ data }) => {
-    const supabase = getSupabaseServerClient()
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-    if (error || !user) throw new Error('Not authenticated')
-
-    if (!isTriggerDevEnabled('metadata')) {
-      // Same queue path as bulk metadata: the RPC checks the tenant, sets the
-      // pins to 'generating_metadata' and enqueues them for the worker.
-      const { data: pinsQueued, error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
-        p_pin_ids: data.pin_ids,
-      })
-      if (enqueueError) throw new Error(enqueueError.message)
-
-      return { success: true, pins_queued: pinsQueued as number, useTrigger: false }
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('tenant_id')
-      .eq('id', user.id)
-      .single()
-    if (!profile) throw new Error('Profile not found')
-
-    // Update all pins status to 'generating_metadata'
-    await supabase
-      .from('pins')
-      .update({ status: 'generating_metadata' })
-      .in('id', data.pin_ids)
-
-    // Always use Trigger.dev
-    const batchHandle = await tasks.batchTrigger<typeof generateMetadataTask>(
-      'generate-metadata',
-      data.pin_ids.map((pin_id) => ({
-        payload: { pin_id, tenant_id: profile.tenant_id },
-      }))
-    )
-
-    return {
-      success: true,
-      pins_queued: data.pin_ids.length,
-      batchId: batchHandle.batchId,
-      useTrigger: true,
-    }
-  })
+  .handler(({ data }) => dispatchMetadataGeneration(data.pin_ids))
