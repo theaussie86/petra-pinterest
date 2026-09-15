@@ -71,8 +71,8 @@ after the step above):
 - `generate-metadata-worker`
 - `publish-scheduled-pins`
 - `refresh-pinterest-tokens`
-- `scrape-blog`
-- `scrape-scheduled`
+- `scrape-article-worker`
+- `scrape-blog-worker`
 - `scrape-single`
 
 > Note: the local/CI reconciliation deploy requires production access
