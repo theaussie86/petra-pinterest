@@ -540,15 +540,16 @@ describe('Status Transition Tests', () => {
 
 describe('triggerBulkMetadataFn', () => {
   it('enqueues the pins on the generate_metadata queue as the signed-in user', async () => {
-    mockServerClient.rpc.mockResolvedValueOnce({ data: 3, error: null })
+    // The RPC de-duplicates, so the reported count comes from the database
+    mockServerClient.rpc.mockResolvedValueOnce({ data: 2, error: null })
 
     const result = await triggerBulkMetadataFn({
-      data: { pin_ids: ['pin-1', 'pin-2', 'pin-3'] },
+      data: { pin_ids: ['pin-1', 'pin-2', 'pin-1'] },
     })
 
-    expect(result).toEqual({ success: true, pins_queued: 3, useTrigger: false })
+    expect(result).toEqual({ success: true, pins_queued: 2, useTrigger: false })
     expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
-      p_pin_ids: ['pin-1', 'pin-2', 'pin-3'],
+      p_pin_ids: ['pin-1', 'pin-2', 'pin-1'],
     })
     expect(mockServiceClient.functions.invoke).not.toHaveBeenCalled()
   })

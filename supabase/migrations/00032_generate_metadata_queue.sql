@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS public.queue_worker_locks (
 );
 
 ALTER TABLE public.queue_worker_locks ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.queue_worker_locks FROM anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.try_acquire_queue_worker_lock(p_queue text, p_ttl_seconds integer)
 RETURNS boolean
@@ -192,7 +193,9 @@ BEGIN
       'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'edge_function_anon_key')
     ),
     body := jsonb_build_object('queue', p_queue),
-    timeout_milliseconds := 5000
+    -- Keep the connection open for a full worker run (400s wall clock), like
+    -- the other cron jobs, so the run is never cut off by the caller hanging up.
+    timeout_milliseconds := 420000
   );
 END;
 $$;

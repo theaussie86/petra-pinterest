@@ -519,6 +519,13 @@ All functions use `SECURITY DEFINER` to bypass RLS and access Vault.
 | `get_gemini_api_key(...)` | `blog_project_id` | `TEXT` | Retrieve decrypted Gemini key |
 | `delete_gemini_api_key(...)` | `blog_project_id` | `void` | Remove Gemini key |
 | `has_gemini_api_key(...)` | `blog_project_id` | `BOOLEAN` | Check existence (no decryption) |
+| `enqueue_generate_metadata(...)` | `pin_ids UUID[]` | `INTEGER` | Tenant-checked (all or nothing): set pins to `generating_metadata` and enqueue them on `generate_metadata`. Callable by `authenticated` |
+| `try_acquire_queue_worker_lock(...)` | `queue, ttl_seconds` | `BOOLEAN` | Take the expiring per-queue worker lock. `service_role` only |
+| `release_queue_worker_lock(...)` | `queue` | `void` | Release the worker lock. `service_role` only |
+| `queue_read(...)` | `queue, vt, qty` | `SETOF pgmq.message_record` | Wrapper around `pgmq.read`. `service_role` only |
+| `queue_delete(...)` | `queue, msg_id` | `BOOLEAN` | Wrapper around `pgmq.delete`. `service_role` only |
+| `queue_archive(...)` | `queue, msg_id` | `BOOLEAN` | Wrapper around `pgmq.archive`. `service_role` only |
+| `kick_queue_worker(...)` | `queue, function` | `void` | Called by pg_cron: invoke the worker Edge Function if visible messages wait and the lock is free |
 
 ## Triggers
 
@@ -539,8 +546,22 @@ All functions use `SECURITY DEFINER` to bypass RLS and access Vault.
 |---|---|---|---|
 | `scrape-scheduled-daily` | `0 6 * * *` (daily 06:00 UTC) | Edge Function `scrape-scheduled` | Scrape blogs with `scraping_frequency = 'daily'` |
 | `publish-scheduled-pins` | `*/10 7-23 * * *` (every 10 min, 07-23 UTC) | Edge Function `publish-scheduled-pins` | Publish pins where `scheduled_at <= NOW()` |
+| `cleanup-published-images` | `0 3 * * *` (daily 03:00 UTC) | Edge Function `cleanup-published-images` | Delete storage images of pins published more than 7 days ago |
+| `kick-generate-metadata-worker` | `15 seconds` | `kick_queue_worker('generate_metadata', 'generate-metadata-worker')` | Start the metadata queue worker when messages wait and no run holds the lock |
 
-Both jobs use `net.http_post` to invoke Edge Functions, authenticating with the `edge_function_anon_key` from Vault.
+All jobs use `net.http_post` to invoke Edge Functions, authenticating with the `edge_function_anon_key` from Vault. The queue kick calls it from inside `kick_queue_worker()`.
+
+## Queues (pgmq)
+
+Background jobs run on pgmq queues drained by Edge Function workers (ADR-0004).
+
+| Queue | Message | Worker | Max attempts |
+|---|---|---|---|
+| `generate_metadata` | `{ pin_id, tenant_id }` | Edge Function `generate-metadata-worker` | 3 |
+
+- A worker run takes the per-queue lock in `queue_worker_locks`, reads up to 5 messages with a 420s visibility timeout, deletes a message on success and leaves it for retry on failure.
+- On the last attempt the message is moved to the queue's archive (`pgmq.a_<queue>`), the pin is set to `error` and one notification mail is sent. Inspect failures with `SELECT * FROM pgmq.a_generate_metadata ORDER BY archived_at DESC`.
+- `queue_worker_locks` holds no tenant data: RLS is enabled without policies and table grants are revoked from `anon`/`authenticated`, so only `service_role` and the `SECURITY DEFINER` helpers touch it.
 
 ## Multi-Tenancy Pattern
 

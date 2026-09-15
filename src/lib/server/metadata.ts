@@ -303,12 +303,12 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
     if (!isTriggerDevEnabled('metadata')) {
       // The RPC checks the tenant, sets the pins to 'generating_metadata' and
       // enqueues them; the queue worker picks them up within ~15s.
-      const { error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
+      const { data: pinsQueued, error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
         p_pin_ids: data.pin_ids,
       })
       if (enqueueError) throw new Error(enqueueError.message)
 
-      return { success: true, pins_queued: data.pin_ids.length, useTrigger: false }
+      return { success: true, pins_queued: pinsQueued as number, useTrigger: false }
     }
 
     const { data: profile } = await supabase

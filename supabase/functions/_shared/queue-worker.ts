@@ -28,7 +28,8 @@ export interface QueueWorkerOptions<T> {
 }
 
 export interface QueueWorkerResult {
-  locked: boolean
+  /** Another run holds the lock; this run did nothing. */
+  lockHeldElsewhere: boolean
   succeeded: number
   retrying: number
   failed: number
@@ -43,7 +44,7 @@ export async function runQueueWorker<T>(opts: QueueWorkerOptions<T>): Promise<Qu
   const { supabase, queue } = opts
   const batchSize = opts.batchSize ?? DEFAULT_BATCH_SIZE
   const vt = opts.visibilityTimeoutSeconds ?? DEFAULT_VISIBILITY_TIMEOUT_SECONDS
-  const result: QueueWorkerResult = { locked: false, succeeded: 0, retrying: 0, failed: 0 }
+  const result: QueueWorkerResult = { lockHeldElsewhere: false, succeeded: 0, retrying: 0, failed: 0 }
 
   const { data: acquired, error: lockError } = await supabase.rpc('try_acquire_queue_worker_lock', {
     p_queue: queue,
@@ -51,7 +52,7 @@ export async function runQueueWorker<T>(opts: QueueWorkerOptions<T>): Promise<Qu
   })
   if (lockError) throw new Error(`Failed to acquire worker lock for ${queue}: ${lockError.message}`)
   if (!acquired) {
-    result.locked = true
+    result.lockHeldElsewhere = true
     return result
   }
 
@@ -114,7 +115,10 @@ async function finalFailure<T>(opts: QueueWorkerOptions<T>, msg: QueueMessage<T>
   const { supabase, queue } = opts
   const { error: archiveError } = await supabase.rpc('queue_archive', { p_queue: queue, p_msg_id: msg.msg_id })
   if (archiveError) {
+    // The message stays in the queue and comes back past the attempt limit;
+    // that run archives it and reports the failure, so it is reported once.
     console.error(`[queue-worker] ${queue} msg ${msg.msg_id}: archive failed:`, archiveError.message)
+    return
   }
   try {
     await opts.onFinalFailure(msg.message, errorMessage)

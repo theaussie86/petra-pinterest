@@ -70,6 +70,7 @@ function setupDb(opts: {
   pins?: Record<string, Record<string, unknown>>
   generations?: { id: string }[]
   lockHeld?: boolean
+  archiveFails?: boolean
   apiKey?: string | null
 }) {
   const pins = opts.pins ?? {
@@ -158,6 +159,7 @@ function setupDb(opts: {
         state.deleted.push(args.p_msg_id)
         return { data: true, error: null }
       case 'queue_archive':
+        if (opts.archiveFails) return { data: null, error: { message: 'connection reset' } }
         state.archived.push(args.p_msg_id)
         return { data: true, error: null }
       case 'get_gemini_api_key':
@@ -229,7 +231,7 @@ describe('generate-metadata-worker', () => {
     const { status, body } = await runWorker()
 
     expect(status).toBe(200)
-    expect(body).toMatchObject({ locked: true })
+    expect(body).toMatchObject({ lockHeldElsewhere: true })
     expect(db.read).toEqual([])
     expect(mockGeneratePinMetadata).not.toHaveBeenCalled()
   })
@@ -376,6 +378,45 @@ describe('generate-metadata-worker', () => {
     await runWorker()
 
     expect(db.generationDeletes).toEqual([{ notIn: '(g1,g2,g3)' }])
+  })
+
+  it('ends cleanly when the queue is empty', async () => {
+    const db = setupDb({ messages: [] })
+
+    const { status, body } = await runWorker()
+
+    expect(status).toBe(200)
+    expect(body).toMatchObject({ success: true, succeeded: 0, retrying: 0, failed: 0 })
+    expect(mockGeneratePinMetadata).not.toHaveBeenCalled()
+    expect(db.lockReleased).toBe(true)
+  })
+
+  it('treats a pin without image as a job failure', async () => {
+    const db = setupDb({
+      messages: [message(11, 3, 'pin-noimg')],
+      pins: {
+        'pin-noimg': { id: 'pin-noimg', blog_project_id: 'proj-1', image_path: null, blog_articles: null },
+      },
+    })
+
+    await runWorker()
+
+    expect(mockGeneratePinMetadata).not.toHaveBeenCalled()
+    expect(db.archived).toEqual([11])
+    expect(db.pinUpdates).toContainEqual({
+      id: 'pin-noimg',
+      values: { status: 'error', error_message: 'Pin pin-noimg has no image' },
+    })
+  })
+
+  it('does not mail when the final message cannot be archived, so the retry mails only once', async () => {
+    const db = setupDb({ messages: [message(11, 3)], archiveFails: true })
+    mockGeneratePinMetadata.mockRejectedValueOnce(new Error('Gemini unavailable'))
+
+    await runWorker()
+
+    expect(mockNotifyPinError).not.toHaveBeenCalled()
+    expect(db.pinUpdates.filter((u) => u.values.status === 'error')).toEqual([])
   })
 
   it('does not prune when three or fewer generations exist', async () => {
