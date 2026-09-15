@@ -1,7 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-// js-yaml ships no bundled types and @types/js-yaml is not installed.
-// @ts-expect-error - untyped module, load() returns unknown which we cast below
 import yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
 
