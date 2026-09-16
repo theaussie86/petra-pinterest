@@ -83,10 +83,10 @@ RLS is enabled on all tables. Application-level checks provide defense-in-depth.
 ### Server Functions (Scraping)
 
 Scraping operations use `createServerFn` from TanStack Start (`src/lib/server/scraping.ts`). These run server-side with cookie-based auth — no Bearer tokens or manual `fetch()` needed. The client calls them like regular async functions:
-- `scrapeBlogFn` — dispatches to Supabase Edge Functions for async background processing
-- `scrapeSingleFn` — synchronous single-URL scrape with immediate DB upsert
+- `scrapeBlogFn` — enqueues one `scrape_blog` message via a tenant-checked RPC; a worker Edge Function discovers the sitemap and fans out into `scrape_article`
+- `scrapeSingleFn` — enqueues one `scrape_article` message via a tenant-checked RPC; the worker scrapes and upserts
 
-Shared scraping logic (RSS/HTML parsing) lives in `server/lib/scraping.ts`.
+All scraping and metadata logic lives in the Supabase Edge Functions and their shared modules (`supabase/functions/_shared/`). The pgmq queues (`scrape_blog`, `scrape_article`, `generate_metadata`) are drained by worker Edge Functions kicked by `pg_cron` (ADR-0004). There is no Node-side copy of this logic and no Trigger.dev.
 
 ### Database Migrations
 

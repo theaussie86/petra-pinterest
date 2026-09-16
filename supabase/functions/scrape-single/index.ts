@@ -1,55 +1,14 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
-import { generateArticleFromHtml } from '../_shared/ai.ts'
-import { normalizeUrl } from '../_shared/url.ts'
-import { parsePublishedAt } from '../_shared/published-at.ts'
-
-interface ScrapeRequest {
-  blog_project_id: string
-  url: string
-  tenant_id: string
-}
-
-/**
- * Clean HTML by stripping non-content tags via regex.
- * DOMParser is not available in the Supabase Edge Function runtime.
- */
-function cleanHtml(html: string): string {
-  // Remove entire tag blocks (opening + content + closing)
-  const tagsToRemove = [
-    'script',
-    'style',
-    'svg',
-    'noscript',
-    'nav',
-    'footer',
-    'header',
-  ]
-  let cleaned = html
-  for (const tag of tagsToRemove) {
-    cleaned = cleaned.replace(
-      new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'),
-      ''
-    )
-  }
-  // Remove self-closing tags: <link>, <meta>
-  cleaned = cleaned.replace(/<(link|meta)[^>]*\/?>/gi, '')
-  // Extract body content if present
-  const bodyMatch = cleaned.match(/<body[^>]*>([\s\S]*)<\/body>/i)
-  return bodyMatch ? bodyMatch[1] : cleaned
-}
+import { scrapeAndStoreArticle, type ScrapeArticleJob } from '../_shared/scrape-article.ts'
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req)
   if (corsResponse) return corsResponse
 
   try {
-    const { blog_project_id, url: rawUrl, tenant_id } =
-      (await req.json()) as ScrapeRequest
-
-    // Store the normalized URL so the next sitemap diff matches (issue #71)
-    const url = rawUrl ? normalizeUrl(rawUrl) : rawUrl
+    const { blog_project_id, url, tenant_id } = (await req.json()) as ScrapeArticleJob
 
     if (!blog_project_id || !url || !tenant_id) {
       return new Response(
@@ -60,71 +19,12 @@ Deno.serve(async (req) => {
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
+        },
       )
     }
 
     const supabase = createServiceClient()
-
-    // Get Gemini API key from Vault
-    const { data: apiKey, error: vaultError } = await supabase.rpc(
-      'get_gemini_api_key',
-      { p_blog_project_id: blog_project_id }
-    )
-
-    if (vaultError || !apiKey) {
-      throw new Error(
-        `Failed to retrieve Gemini API key: ${vaultError?.message || 'No key configured'}`
-      )
-    }
-
-    // Fetch and clean HTML
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (compatible; PetraPinterestBot/1.0; +http://localhost:3000)',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(
-        `Failed to fetch URL: ${response.status} ${response.statusText}`
-      )
-    }
-
-    const html = await response.text()
-    const cleanedHtml = cleanHtml(html)
-
-    // Extract article via the AI SDK wrapper
-    const article = await generateArticleFromHtml({
-      html: cleanedHtml,
-      url,
-      apiKey,
-    })
-
-    // Upsert into blog_articles
-    // Gemini sometimes returns "null" or a mangled date; an unusable value
-    // must not fail the whole upsert (issue #71)
-    const publishedAt = parsePublishedAt(article.published_at)
-
-    const { error: upsertError } = await supabase
-      .from('blog_articles')
-      .upsert(
-        {
-          tenant_id,
-          blog_project_id,
-          title: article.title,
-          url,
-          content: article.content,
-          published_at: publishedAt,
-          scraped_at: new Date().toISOString(),
-        },
-        { onConflict: 'blog_project_id,url' }
-      )
-
-    if (upsertError) {
-      throw new Error(upsertError.message)
-    }
+    await scrapeAndStoreArticle(supabase, { blog_project_id, url, tenant_id })
 
     return new Response(
       JSON.stringify({
@@ -137,7 +37,7 @@ Deno.serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      },
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -148,7 +48,7 @@ Deno.serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      },
     )
   }
 })

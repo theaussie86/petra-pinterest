@@ -600,6 +600,10 @@
       "regenerateFailed": "Metadaten konnten nicht neu generiert werden",
       "bulkStarted": "Metadaten-Generierung für {{count}} Pins gestartet",
       "bulkFailed": "Bulk-Metadaten-Generierung konnte nicht gestartet werden",
+      "bulkProgress": "Metadaten: {{done}}/{{total}} fertig",
+      "bulkComplete": "Metadaten für {{count}} Pins erstellt",
+      "bulkPartial": "{{done}} erstellt, {{failed}} fehlgeschlagen",
+      "bulkError": "Metadaten-Generierung fehlgeschlagen",
       "restored": "Metadaten wiederhergestellt",
       "restoreFailed": "Metadaten konnten nicht wiederhergestellt werden"
     },

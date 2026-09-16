@@ -1,0 +1,97 @@
+// Single-article scrape pipeline shared by the synchronous scrape-single
+// function and the scrape_article queue worker (ADR-0004, issue #90):
+// normalise the URL, read the project's Gemini key from the Vault, fetch +
+// clean the HTML, extract the article, parse a robust published_at and upsert
+// into blog_articles. Throws on any failure; callers decide what an error means
+// (the worker mails once after the last attempt).
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { generateArticleFromHtml } from './ai.ts'
+import { normalizeUrl } from './url.ts'
+import { parsePublishedAt } from './published-at.ts'
+
+export interface ScrapeArticleJob {
+  blog_project_id: string
+  url: string
+  tenant_id: string
+}
+
+/**
+ * Clean HTML by stripping non-content tags via regex.
+ * DOMParser is not available in the Supabase Edge Function runtime.
+ */
+export function cleanHtml(html: string): string {
+  // Remove entire tag blocks (opening + content + closing)
+  const tagsToRemove = ['script', 'style', 'svg', 'noscript', 'nav', 'footer', 'header']
+  let cleaned = html
+  for (const tag of tagsToRemove) {
+    cleaned = cleaned.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'), '')
+  }
+  // Remove self-closing tags: <link>, <meta>
+  cleaned = cleaned.replace(/<(link|meta)[^>]*\/?>/gi, '')
+  // Extract body content if present
+  const bodyMatch = cleaned.match(/<body[^>]*>([\s\S]*)<\/body>/i)
+  return bodyMatch ? bodyMatch[1] : cleaned
+}
+
+export async function scrapeAndStoreArticle(
+  supabase: SupabaseClient,
+  { blog_project_id, url: rawUrl, tenant_id }: ScrapeArticleJob,
+): Promise<{ url: string; title: string }> {
+  if (!blog_project_id || !rawUrl || !tenant_id) {
+    throw new Error('blog_project_id, url, and tenant_id are required')
+  }
+
+  // Store the normalized URL so the next sitemap diff matches (issue #71)
+  const url = normalizeUrl(rawUrl)
+
+  // Get Gemini API key from Vault
+  const { data: apiKey, error: vaultError } = await supabase.rpc('get_gemini_api_key', {
+    p_blog_project_id: blog_project_id,
+  })
+
+  if (vaultError || !apiKey) {
+    throw new Error(
+      `Failed to retrieve Gemini API key: ${vaultError?.message || 'No key configured'}`,
+    )
+  }
+
+  // Fetch and clean HTML
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; PetraPinterestBot/1.0; +http://localhost:3000)',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`)
+  }
+
+  const html = await response.text()
+  const cleanedHtml = cleanHtml(html)
+
+  // Extract article via the AI SDK wrapper
+  const article = await generateArticleFromHtml({ html: cleanedHtml, url, apiKey })
+
+  // Gemini sometimes returns "null" or a mangled date; an unusable value
+  // must not fail the whole upsert (issue #71)
+  const publishedAt = parsePublishedAt(article.published_at)
+
+  const { error: upsertError } = await supabase.from('blog_articles').upsert(
+    {
+      tenant_id,
+      blog_project_id,
+      title: article.title,
+      url,
+      content: article.content,
+      published_at: publishedAt,
+      scraped_at: new Date().toISOString(),
+    },
+    { onConflict: 'blog_project_id,url' },
+  )
+
+  if (upsertError) {
+    throw new Error(upsertError.message)
+  }
+
+  return { url, title: article.title }
+}

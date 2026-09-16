@@ -1,18 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
-import {
-  generatePinMetadata,
-  fetchImageBytes,
-  sanitizeLanguage,
-  buildPinterestSeoSystemPrompt,
-  type ImageBytes,
-} from '../_shared/ai.ts'
-import { extractKeyframe } from '../_shared/ffmpeg-client.ts'
+import { generateAndStorePinMetadata } from '../_shared/pin-metadata.ts'
 
 interface MetadataRequest {
   pin_id: string
   tenant_id: string
+  /** Optional operator feedback for the "Neu-Erzeugen mit Feedback" path. */
+  feedback?: string | null
 }
 
 Deno.serve(async (req) => {
@@ -27,6 +22,7 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as MetadataRequest
     pin_id = body.pin_id
     const tenant_id = body.tenant_id
+    const feedback = body.feedback
 
     if (!pin_id || !tenant_id) {
       return new Response(
@@ -41,107 +37,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Fetch pin with article data (article may be null)
-    const { data: pin, error: fetchError } = await supabase
-      .from('pins')
-      .select('*, blog_articles(title, content)')
-      .eq('id', pin_id)
-      .single()
-
-    if (fetchError || !pin) {
-      throw new Error(`Pin not found: ${pin_id}`)
-    }
-
-    if (!pin.image_path) {
-      throw new Error(`Pin ${pin_id} has no image`)
-    }
-
-    // Get Gemini API key from Vault using pin's blog_project_id directly
-    const projectId = pin.blog_project_id
-
-    // Fetch project settings for language and AI context
-    const { data: projectData } = await supabase
-      .from('blog_projects')
-      .select('language, ai_context')
-      .eq('id', projectId)
-      .single()
-    const language = sanitizeLanguage(projectData?.language)
-    const systemPrompt = buildPinterestSeoSystemPrompt(language, projectData?.ai_context)
-
-    const { data: apiKey, error: vaultError } = await supabase.rpc(
-      'get_gemini_api_key',
-      { p_blog_project_id: projectId }
-    )
-
-    if (vaultError || !apiKey) {
-      throw new Error(
-        `Failed to retrieve Gemini API key: ${vaultError?.message || 'No key configured'}`
-      )
-    }
-
-    // Construct public image URL
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const imageUrl = `${supabaseUrl}/storage/v1/object/public/pin-images/${pin.image_path}`
-
-    // Derive media type from file extension
-    const ext = pin.image_path.split('.').pop()?.toLowerCase() ?? ''
-    const mediaType = ['mp4', 'mov', 'avi', 'webm'].includes(ext) ? 'video' : 'image'
-
-    // Fetch the image bytes ourselves so private/signed URLs stay reachable.
-    // For video pins: extract a keyframe and pass its bytes through the same part.
-    let image: ImageBytes
-    if (mediaType === 'video') {
-      const keyframe = await extractKeyframe(imageUrl, { second: pin.cover_keyframe_seconds ?? 1 })
-      image = { bytes: keyframe.bytes, mimeType: keyframe.contentType }
-    } else {
-      image = await fetchImageBytes(imageUrl)
-    }
-
-    // Generate metadata via the AI SDK wrapper (article may be null)
-    const metadata = await generatePinMetadata({
-      article: { title: pin.blog_articles?.title, content: pin.blog_articles?.content },
-      image,
-      mediaType,
-      systemPrompt,
-      apiKey,
-    })
-
-    // Insert generation history
-    await supabase.from('pin_metadata_generations').insert({
-      pin_id,
-      tenant_id,
-      title: metadata.title,
-      description: metadata.description,
-      alt_text: metadata.alt_text,
-      feedback: null,
-    })
-
-    // Update pin with metadata + status
-    await supabase
-      .from('pins')
-      .update({
-        title: metadata.title,
-        description: metadata.description,
-        alt_text: metadata.alt_text,
-        status: 'metadata_created',
-      })
-      .eq('id', pin_id)
-
-    // Prune old generations (keep last 3)
-    const { data: generations } = await supabase
-      .from('pin_metadata_generations')
-      .select('id')
-      .eq('pin_id', pin_id)
-      .order('created_at', { ascending: false })
-
-    if (generations && generations.length > 3) {
-      const idsToKeep = generations.slice(0, 3).map((g: { id: string }) => g.id)
-      await supabase
-        .from('pin_metadata_generations')
-        .delete()
-        .eq('pin_id', pin_id)
-        .not('id', 'in', `(${idsToKeep.join(',')})`)
-    }
+    const metadata = await generateAndStorePinMetadata(supabase, { pin_id, tenant_id, feedback })
 
     return new Response(
       JSON.stringify({

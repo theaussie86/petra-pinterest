@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
-import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn, triggerMetadataViaTriggerDevFn } from '@/lib/server/metadata'
+import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn, triggerAutoMetadataFn } from '@/lib/server/metadata'
 import { getMetadataHistory, restoreMetadataGeneration } from '@/lib/api/metadata'
 
 /**
@@ -63,7 +63,9 @@ export function useGenerateMetadataWithFeedback() {
 
 /**
  * Mutation hook: Trigger bulk metadata generation for multiple pins.
- * Triggers async processing via Edge Functions.
+ * Enqueues the pins on the generate_metadata queue. Progress is tracked
+ * separately by useMetadataBatchProgress, which polls the pin status in the
+ * database (issue #89), so this hook shows no success toast of its own.
  */
 export function useTriggerBulkMetadata() {
   const queryClient = useQueryClient()
@@ -72,8 +74,7 @@ export function useTriggerBulkMetadata() {
     mutationFn: async ({ pin_ids }: { pin_ids: string[] }) => {
       return await triggerBulkMetadataFn({ data: { pin_ids } })
     },
-    onSuccess: (data) => {
-      toast.success(i18n.t('toast.metadata.bulkStarted', { count: data.pins_queued }))
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
     onError: () => {
@@ -83,15 +84,16 @@ export function useTriggerBulkMetadata() {
 }
 
 /**
- * Mutation hook: Trigger metadata generation via Trigger.dev (always).
- * Used for auto-triggering after pin creation. No toast on success (silent).
+ * Mutation hook: auto-trigger metadata generation after pins are created.
+ * Enqueues the pins on the generate_metadata queue. No toast on success
+ * (silent). See ADR-0004, issue #89.
  */
-export function useTriggerMetadataViaTriggerDev() {
+export function useTriggerAutoMetadata() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: async ({ pin_ids }: { pin_ids: string[] }) => {
-      return await triggerMetadataViaTriggerDevFn({ data: { pin_ids } })
+      return await triggerAutoMetadataFn({ data: { pin_ids } })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })

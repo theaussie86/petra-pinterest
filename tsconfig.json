@@ -1,8 +1,7 @@
 {
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    "trigger.config.ts"
+    "**/*.tsx"
   ],
   "exclude": ["supabase/functions/**/*"],
   "compilerOptions": {

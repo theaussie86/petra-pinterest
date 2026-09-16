@@ -519,6 +519,17 @@ All functions use `SECURITY DEFINER` to bypass RLS and access Vault.
 | `get_gemini_api_key(...)` | `blog_project_id` | `TEXT` | Retrieve decrypted Gemini key |
 | `delete_gemini_api_key(...)` | `blog_project_id` | `void` | Remove Gemini key |
 | `has_gemini_api_key(...)` | `blog_project_id` | `BOOLEAN` | Check existence (no decryption) |
+| `enqueue_generate_metadata(...)` | `pin_ids UUID[]` | `INTEGER` | Tenant-checked (all or nothing): set pins to `generating_metadata` and enqueue them on `generate_metadata`. Callable by `authenticated` |
+| `enqueue_scrape_article(...)` | `blog_project_id, url` | `INTEGER` | Tenant-checked: enqueue one `scrape_article` job. Callable by `authenticated` |
+| `enqueue_scrape_blog(...)` | `blog_project_id` | `INTEGER` | Tenant-checked: enqueue one `scrape_blog` job. Callable by `authenticated` |
+| `enqueue_due_blog_scrapes()` | — | `INTEGER` | Daily cron: enqueue every project due today (daily always, weekly on Sunday UTC) on `scrape_blog`. `service_role`/cron only |
+| `try_acquire_queue_worker_lock(...)` | `queue, ttl_seconds` | `BOOLEAN` | Take the expiring per-queue worker lock. `service_role` only |
+| `release_queue_worker_lock(...)` | `queue` | `void` | Release the worker lock. `service_role` only |
+| `queue_read(...)` | `queue, vt, qty` | `SETOF pgmq.message_record` | Wrapper around `pgmq.read`. `service_role` only |
+| `queue_send_batch(...)` | `queue, messages` | `SETOF bigint` | Wrapper around `pgmq.send_batch` (messages is a JSON array). `service_role` only |
+| `queue_delete(...)` | `queue, msg_id` | `BOOLEAN` | Wrapper around `pgmq.delete`. `service_role` only |
+| `queue_archive(...)` | `queue, msg_id` | `BOOLEAN` | Wrapper around `pgmq.archive`. `service_role` only |
+| `kick_queue_worker(...)` | `queue, function` | `void` | Called by pg_cron: invoke the worker Edge Function if visible messages wait and the lock is free |
 
 ## Triggers
 
@@ -537,10 +548,29 @@ All functions use `SECURITY DEFINER` to bypass RLS and access Vault.
 
 | Job name | Schedule | Target | Purpose |
 |---|---|---|---|
-| `scrape-scheduled-daily` | `0 6 * * *` (daily 06:00 UTC) | Edge Function `scrape-scheduled` | Scrape blogs with `scraping_frequency = 'daily'` |
+| `enqueue-due-blog-scrapes-daily` | `0 6 * * *` (daily 06:00 UTC) | `enqueue_due_blog_scrapes()` | Enqueue `scrape_blog` for projects due today (daily always, weekly on Sunday UTC) |
 | `publish-scheduled-pins` | `*/10 7-23 * * *` (every 10 min, 07-23 UTC) | Edge Function `publish-scheduled-pins` | Publish pins where `scheduled_at <= NOW()` |
+| `cleanup-published-images` | `0 3 * * *` (daily 03:00 UTC) | Edge Function `cleanup-published-images` | Delete storage images of pins published more than 7 days ago |
+| `kick-generate-metadata-worker` | `15 seconds` | `kick_queue_worker('generate_metadata', 'generate-metadata-worker')` | Start the metadata queue worker when messages wait and no run holds the lock |
+| `kick-scrape-article-worker` | `15 seconds` | `kick_queue_worker('scrape_article', 'scrape-article-worker')` | Start the article queue worker when messages wait and no run holds the lock |
+| `kick-scrape-blog-worker` | `15 seconds` | `kick_queue_worker('scrape_blog', 'scrape-blog-worker')` | Start the blog queue worker when messages wait and no run holds the lock |
 
-Both jobs use `net.http_post` to invoke Edge Functions, authenticating with the `edge_function_anon_key` from Vault.
+All jobs use `net.http_post` to invoke Edge Functions, authenticating with the `edge_function_anon_key` from Vault. The queue kick calls it from inside `kick_queue_worker()`.
+
+## Queues (pgmq)
+
+Background jobs run on pgmq queues drained by Edge Function workers (ADR-0004).
+
+| Queue | Message | Worker | Max attempts |
+|---|---|---|---|
+| `generate_metadata` | `{ pin_id, tenant_id }` | Edge Function `generate-metadata-worker` | 3 |
+| `scrape_article` | `{ blog_project_id, url, tenant_id }` | Edge Function `scrape-article-worker` | 3 |
+| `scrape_blog` | `{ blog_project_id, tenant_id }` | Edge Function `scrape-blog-worker` | 2 |
+
+- A worker run takes the per-queue lock in `queue_worker_locks`, reads up to 5 messages with a 420s visibility timeout, deletes a message on success and leaves it for retry on failure.
+- On the last attempt the message is moved to the queue's archive (`pgmq.a_<queue>`), one notification mail is sent (metadata jobs also set the pin to `error`). Inspect failures with `SELECT * FROM pgmq.a_generate_metadata ORDER BY archived_at DESC`.
+- `scrape_blog` reads the sitemap with `lastmod`, diffs new + changed articles against `blog_articles` and batch-enqueues every match into `scrape_article` (no per-run cap) via `queue_send_batch`, then sets `last_scraped_at`. The daily cron enqueues due projects directly via SQL; there is no `scrape-scheduled` or `scrape-blog` Edge Function.
+- `queue_worker_locks` holds no tenant data: RLS is enabled without policies and table grants are revoked from `anon`/`authenticated`, so only `service_role` and the `SECURITY DEFINER` helpers touch it.
 
 ## Multi-Tenancy Pattern
 

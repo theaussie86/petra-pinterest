@@ -1,10 +1,13 @@
-import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn } from './metadata'
+import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn, triggerAutoMetadataFn } from './metadata'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
-const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateWithFeedback, mockGetVaultKey, mockExtractKeyframe, mockFetchImageBytes } =
-  vi.hoisted(() => ({
+const { mockServerClient, mockServiceClient, mockInvoke } = vi.hoisted(() => {
+  const invoke = vi.fn()
+  return {
+    mockInvoke: invoke,
     mockServerClient: {
       from: vi.fn(),
+      rpc: vi.fn(),
       auth: {
         getUser: vi.fn().mockResolvedValue({
           data: { user: { id: 'test-user-id' } },
@@ -13,23 +16,10 @@ const { mockServerClient, mockServiceClient, mockGenerateMetadata, mockGenerateW
       },
     },
     mockServiceClient: {
-      from: vi.fn(),
-      functions: { invoke: vi.fn().mockResolvedValue({ data: null, error: null }) },
+      functions: { invoke },
     },
-    mockGenerateMetadata: vi.fn().mockResolvedValue({
-      title: 'Generated Title',
-      description: 'Generated description',
-      alt_text: 'Generated alt',
-    }),
-    mockGenerateWithFeedback: vi.fn().mockResolvedValue({
-      title: 'Feedback Title',
-      description: 'Feedback description',
-      alt_text: 'Feedback alt',
-    }),
-    mockGetVaultKey: vi.fn().mockResolvedValue('test-gemini-api-key'),
-    mockExtractKeyframe: vi.fn().mockResolvedValue({ bytes: new Uint8Array([1, 2, 3]), contentType: 'image/jpeg' }),
-    mockFetchImageBytes: vi.fn().mockResolvedValue({ bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' }),
-  }))
+  }
+})
 
 vi.mock('@tanstack/react-start', () => ({
   createServerFn: () => ({
@@ -44,537 +34,165 @@ vi.mock('./supabase', () => ({
   getSupabaseServiceClient: () => mockServiceClient,
 }))
 
-vi.mock('@/lib/ai/generate', () => ({
-  generatePinMetadata: (...args: any[]) => mockGenerateMetadata(...args),
-  generatePinMetadataWithFeedback: (...args: any[]) => mockGenerateWithFeedback(...args),
-}))
-
-vi.mock('@/lib/ai/image', () => ({
-  fetchImageBytes: (...args: any[]) => mockFetchImageBytes(...args),
-}))
-
-vi.mock('./ffmpeg-client', () => ({
-  extractKeyframe: (...args: any[]) => mockExtractKeyframe(...args),
-}))
-
-vi.mock('../../../server/lib/vault-helpers', () => ({
-  getGeminiApiKeyFromVault: (...args: any[]) => mockGetVaultKey(...args),
-}))
-
-beforeAll(() => {
-  process.env.SUPABASE_URL = 'https://test.supabase.co'
-})
+const METADATA = {
+  title: 'Generated Title',
+  description: 'Generated description',
+  alt_text: 'Generated alt',
+}
 
 beforeEach(() => {
   vi.clearAllMocks()
-  // Reset default mock implementations
-  mockGenerateMetadata.mockResolvedValue({
-    title: 'Generated Title',
-    description: 'Generated description',
-    alt_text: 'Generated alt',
-  })
-  mockGenerateWithFeedback.mockResolvedValue({
-    title: 'Feedback Title',
-    description: 'Feedback description',
-    alt_text: 'Feedback alt',
-  })
-  mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
-  mockFetchImageBytes.mockResolvedValue({ bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' })
   mockServerClient.auth.getUser.mockResolvedValue({
     data: { user: { id: 'test-user-id' } },
     error: null,
   })
+  mockInvoke.mockResolvedValue({
+    data: { success: true, pin_id: 'pin-1', metadata: METADATA },
+    error: null,
+  })
 })
 
-const mockPin = {
-  id: 'pin-1',
-  blog_project_id: 'proj-1',
-  image_path: 'tenant/image.png',
-  blog_articles: { title: 'Article Title', content: 'Article Content' },
-}
-
-const mockPinNoArticle = {
-  id: 'pin-2',
-  blog_project_id: 'proj-1',
-  image_path: 'tenant/image.png',
-  blog_articles: null,
+/** Wire the two RLS reads: profile (tenant) then pin-ownership check. */
+function setupAuthPin(opts: { tenantId?: string; pinExists?: boolean } = {}) {
+  const profileQb = createMockQueryBuilder({ data: { tenant_id: opts.tenantId ?? 'test-tenant-id' } })
+  const pinQb =
+    opts.pinExists === false
+      ? createMockQueryBuilder({ data: null, error: { message: 'not found' } })
+      : createMockQueryBuilder({ data: { id: 'pin-1' } })
+  mockServerClient.from
+    .mockReturnValueOnce(profileQb as any) // profiles
+    .mockReturnValueOnce(pinQb as any) // pins - ownership check
+  return { profileQb, pinQb }
 }
 
 describe('generateMetadataFn', () => {
-  it('happy path: auth → fetch pin → Gemini → store generation → update pin → prune', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const insertGenQb = createMockQueryBuilder({ data: null })
-    const updatePinQb = createMockQueryBuilder({ data: null })
-    const pruneSelectQb = createMockQueryBuilder({ data: [{ id: 'g1' }, { id: 'g2' }] })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)      // profiles
-      .mockReturnValueOnce(statusUpdateQb as any)  // pins - set generating_metadata
-      .mockReturnValueOnce(pinFetchQb as any)      // pins - fetch pin + article
-      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
-      .mockReturnValueOnce(insertGenQb as any)     // pin_metadata_generations - insert
-      .mockReturnValueOnce(updatePinQb as any)     // pins - update with metadata
-      .mockReturnValueOnce(pruneSelectQb as any)   // pin_metadata_generations - prune check
+  it('invokes the metadata Edge Function synchronously and returns the result', async () => {
+    setupAuthPin()
 
     const result = await generateMetadataFn({ data: { pin_id: 'pin-1' } })
 
-    expect(result).toEqual({
-      success: true,
-      metadata: { title: 'Generated Title', description: 'Generated description', alt_text: 'Generated alt' },
+    expect(result).toEqual({ success: true, metadata: METADATA })
+    expect(mockInvoke).toHaveBeenCalledWith('generate-metadata-single', {
+      body: { pin_id: 'pin-1', tenant_id: 'test-tenant-id' },
     })
-
-    // Verify status was set to generating_metadata
-    expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
-
-    // Verify the AI wrapper was called with article content, fetched image bytes, and system prompt
-    expect(mockGenerateMetadata).toHaveBeenCalledWith({
-      article: { title: 'Article Title', content: 'Article Content' },
-      image: { bytes: new Uint8Array([10, 20, 30]), mimeType: 'image/png' },
-      mediaType: 'image',
-      systemPrompt: expect.any(String),
-      apiKey: 'test-gemini-api-key',
-    })
-    // Image bytes fetched from the public pin URL
-    expect(mockFetchImageBytes).toHaveBeenCalledWith(
-      'https://test.supabase.co/storage/v1/object/public/pin-images/tenant/image.png',
-    )
-
-    // Verify API key was fetched from vault
-    expect(mockGetVaultKey).toHaveBeenCalledWith(mockServiceClient, 'proj-1')
-
-    // Verify pin was updated with metadata and status
-    expect(updatePinQb.update).toHaveBeenCalledWith({
-      title: 'Generated Title',
-      description: 'Generated description',
-      alt_text: 'Generated alt',
-      status: 'metadata_created',
-    })
+    // No feedback on the plain generate path
+    expect(mockInvoke.mock.calls[0][1].body.feedback).toBeUndefined()
   })
 
-  it('prunes old generations when more than 3 exist', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const insertGenQb = createMockQueryBuilder({ data: null })
-    const updatePinQb = createMockQueryBuilder({ data: null })
-    const pruneSelectQb = createMockQueryBuilder({
-      data: [{ id: 'g1' }, { id: 'g2' }, { id: 'g3' }, { id: 'g4' }],
-    })
-    const pruneDeleteQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
-      .mockReturnValueOnce(insertGenQb as any)
-      .mockReturnValueOnce(updatePinQb as any)
-      .mockReturnValueOnce(pruneSelectQb as any)
-      .mockReturnValueOnce(pruneDeleteQb as any)
-
-    await generateMetadataFn({ data: { pin_id: 'pin-1' } })
-
-    // Should delete generations not in the top 3
-    expect(pruneDeleteQb.delete).toHaveBeenCalled()
-    expect(pruneDeleteQb.not).toHaveBeenCalledWith('id', 'in', '(g1,g2,g3)')
-  })
-
-  it('passes null article data when pin has no linked article', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPinNoArticle })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const insertGenQb = createMockQueryBuilder({ data: null })
-    const updatePinQb = createMockQueryBuilder({ data: null })
-    const pruneSelectQb = createMockQueryBuilder({ data: [] })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
-      .mockReturnValueOnce(insertGenQb as any)
-      .mockReturnValueOnce(updatePinQb as any)
-      .mockReturnValueOnce(pruneSelectQb as any)
-
-    await generateMetadataFn({ data: { pin_id: 'pin-2' } })
-
-    // AI wrapper called with no article title/content (image-only generation)
-    expect(mockGenerateMetadata).toHaveBeenCalledWith(
-      expect.objectContaining({
-        article: { title: undefined, content: undefined },
-        mediaType: 'image',
-        apiKey: 'test-gemini-api-key',
-      }),
-    )
-    expect(mockFetchImageBytes).toHaveBeenCalledWith(expect.stringContaining('pin-images'))
-    // API key fetched using pin.blog_project_id directly
-    expect(mockGetVaultKey).toHaveBeenCalledWith(mockServiceClient, 'proj-1')
-  })
-
-  it('sets error status on failure', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: null, error: { message: 'not found' } })
-    const errorUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(errorUpdateQb as any)
+  it('rejects a pin that does not belong to the caller (RLS returns nothing)', async () => {
+    setupAuthPin({ pinExists: false })
 
     await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow('Pin not found')
+    expect(mockInvoke).not.toHaveBeenCalled()
+  })
 
-    expect(errorUpdateQb.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'error' }),
+  it('throws when not authenticated', async () => {
+    mockServerClient.auth.getUser.mockResolvedValue({ data: { user: null }, error: { message: 'no session' } })
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow('Not authenticated')
+    expect(mockInvoke).not.toHaveBeenCalled()
+  })
+
+  it('surfaces the Edge Function error message from the response body', async () => {
+    setupAuthPin()
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: { context: { json: async () => ({ error: 'Gemini returned empty response' }) } },
+    })
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
+      'Gemini returned empty response',
     )
+  })
+
+  it('surfaces a plain error message when the Edge error has no JSON body', async () => {
+    setupAuthPin()
+    mockInvoke.mockResolvedValue({ data: null, error: new Error('Edge Function returned a non-2xx status code') })
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow('non-2xx status code')
+  })
+
+  it('throws when the Edge Function reports success: false', async () => {
+    setupAuthPin()
+    mockInvoke.mockResolvedValue({ data: { success: false, error: 'Pin has no image' }, error: null })
+
+    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow('Pin has no image')
   })
 })
 
 describe('generateMetadataWithFeedbackFn', () => {
-  it('fetches previous generation, calls Gemini with feedback, stores new generation', async () => {
-    const previousGen = {
-      title: 'Old Title',
-      description: 'Old desc',
-      alt_text: 'Old alt',
-    }
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const prevGenQb = createMockQueryBuilder({ data: previousGen })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const insertGenQb = createMockQueryBuilder({ data: null })
-    const updatePinQb = createMockQueryBuilder({ data: null })
-    const pruneSelectQb = createMockQueryBuilder({ data: [{ id: 'g1' }] })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(prevGenQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
-      .mockReturnValueOnce(insertGenQb as any)
-      .mockReturnValueOnce(updatePinQb as any)
-      .mockReturnValueOnce(pruneSelectQb as any)
+  it('passes the feedback through to the Edge Function and returns the refined metadata', async () => {
+    setupAuthPin()
+    const refined = { title: 'Feedback Title', description: 'Feedback description', alt_text: 'Feedback alt' }
+    mockInvoke.mockResolvedValue({ data: { success: true, pin_id: 'pin-1', metadata: refined }, error: null })
 
     const result = await generateMetadataWithFeedbackFn({
       data: { pin_id: 'pin-1', feedback: 'Make it more catchy' },
     })
 
-    expect(result).toEqual({
-      success: true,
-      metadata: { title: 'Feedback Title', description: 'Feedback description', alt_text: 'Feedback alt' },
+    expect(result).toEqual({ success: true, metadata: refined })
+    expect(mockInvoke).toHaveBeenCalledWith('generate-metadata-single', {
+      body: { pin_id: 'pin-1', tenant_id: 'test-tenant-id', feedback: 'Make it more catchy' },
     })
-
-    // Verify the AI SDK feedback wrapper was called with image bytes, previous
-    // metadata, feedback, and the built system prompt.
-    expect(mockGenerateWithFeedback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        article: { title: 'Article Title', content: 'Article Content' },
-        image: { bytes: expect.any(Uint8Array), mimeType: 'image/png' },
-        mediaType: 'image',
-        systemPrompt: expect.any(String),
-        apiKey: 'test-gemini-api-key',
-        previousMetadata: previousGen,
-        feedback: 'Make it more catchy',
-      }),
-    )
-
-    // Verify new generation was stored with feedback text
-    expect(insertGenQb.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ feedback: 'Make it more catchy' }),
-    )
   })
 
-  it('passes null article data when pin has no linked article', async () => {
-    const previousGen = { title: 'Old Title', description: 'Old desc', alt_text: 'Old alt' }
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const prevGenQb = createMockQueryBuilder({ data: previousGen })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPinNoArticle })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const insertGenQb = createMockQueryBuilder({ data: null })
-    const updatePinQb = createMockQueryBuilder({ data: null })
-    const pruneSelectQb = createMockQueryBuilder({ data: [] })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(prevGenQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)       // blog_projects - fetch language
-      .mockReturnValueOnce(insertGenQb as any)
-      .mockReturnValueOnce(updatePinQb as any)
-      .mockReturnValueOnce(pruneSelectQb as any)
-
-    await generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-2', feedback: 'More minimal' } })
-
-    expect(mockGenerateWithFeedback).toHaveBeenCalledWith(
-      expect.objectContaining({
-        article: { title: undefined, content: undefined },
-        image: { bytes: expect.any(Uint8Array), mimeType: 'image/png' },
-        mediaType: 'image',
-        previousMetadata: previousGen,
-        feedback: 'More minimal',
-        apiKey: 'test-gemini-api-key',
-      }),
-    )
-  })
-
-  it('throws when no previous generation exists', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const prevGenQb = createMockQueryBuilder({ data: null, error: { message: 'not found' } })
-    const errorUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(prevGenQb as any)
-      .mockReturnValueOnce(errorUpdateQb as any)
+  it('surfaces the Edge Function error in the feedback path', async () => {
+    setupAuthPin()
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: { context: { json: async () => ({ error: 'No previous generation found for feedback' }) } },
+    })
 
     await expect(
-      generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-1', feedback: 'test' } }),
-    ).rejects.toThrow('No previous generation found')
-  })
-})
-
-describe('generateMetadataFn - Error Handling', () => {
-  it('sets error status with message when Gemini returns JSON parse error', async () => {
-    // Reset mock to avoid pollution
-    mockServerClient.from.mockReset()
-    mockGenerateMetadata.mockReset()
-    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const errorUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)
-      .mockReturnValueOnce(errorUpdateQb as any)
-
-    // Simulate the exact error that was happening in production
-    mockGenerateMetadata.mockRejectedValue(
-      new SyntaxError('Unterminated string in JSON at position 282 (line 3 column 174)')
-    )
-
-    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
-      'Unterminated string in JSON at position 282'
-    )
-
-    expect(errorUpdateQb.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'error',
-        error_message: expect.stringContaining('Unterminated string'),
-      })
-    )
-  })
-
-  it('sets error status when Gemini API key is missing', async () => {
-    // Reset mock to avoid pollution
-    mockServerClient.from.mockReset()
-    mockGenerateMetadata.mockReset()
-    mockGetVaultKey.mockReset()
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    // Note: vault key fetch happens BEFORE blog_projects fetch, so error handler is called
-    // without needing projectQb in the chain
-    const errorUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)      // 1. profiles
-      .mockReturnValueOnce(statusUpdateQb as any) // 2. pins - set status
-      .mockReturnValueOnce(pinFetchQb as any)     // 3. pins - fetch pin
-      // vault key fails here, skipping blog_projects query
-      .mockReturnValueOnce(errorUpdateQb as any)  // 4. pins - error update
-
-    mockGetVaultKey.mockRejectedValue(new Error('No Gemini API key configured for project'))
-
-    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
-      'No Gemini API key configured'
-    )
-
-    expect(errorUpdateQb.update).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'error' })
-    )
-  })
-
-  it('sets error status when Gemini returns empty response', async () => {
-    // Reset mock to avoid pollution
-    mockServerClient.from.mockReset()
-    mockGenerateMetadata.mockReset()
-    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const errorUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)
-      .mockReturnValueOnce(errorUpdateQb as any)
-
-    mockGenerateMetadata.mockRejectedValue(new Error('Gemini returned empty response'))
-
-    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
-      'Gemini returned empty response'
-    )
-
-    expect(errorUpdateQb.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        status: 'error',
-        error_message: expect.stringContaining('empty response'),
-      })
-    )
-  })
-})
-
-describe('Status Transition Tests', () => {
-  it('transitions: -> generating_metadata -> metadata_created on success', async () => {
-    // Reset mock to avoid pollution
-    mockServerClient.from.mockReset()
-    mockGenerateMetadata.mockReset()
-    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
-    mockGenerateMetadata.mockResolvedValue({
-      title: 'Generated Title',
-      description: 'Generated description',
-      alt_text: 'Generated alt',
-    })
-
-    const statusUpdates: string[] = []
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = {
-      ...createMockQueryBuilder({ data: null }),
-      update: vi.fn((data: { status: string }) => {
-        statusUpdates.push(data.status)
-        return statusUpdateQb
-      }),
-    }
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const insertGenQb = createMockQueryBuilder({ data: null })
-    const updatePinQb = {
-      ...createMockQueryBuilder({ data: null }),
-      update: vi.fn((data: { status?: string }) => {
-        if (data.status) statusUpdates.push(data.status)
-        return updatePinQb
-      }),
-    }
-    const pruneSelectQb = createMockQueryBuilder({ data: [] })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)
-      .mockReturnValueOnce(insertGenQb as any)
-      .mockReturnValueOnce(updatePinQb as any)
-      .mockReturnValueOnce(pruneSelectQb as any)
-
-    await generateMetadataFn({ data: { pin_id: 'pin-1' } })
-
-    expect(statusUpdates).toEqual(['generating_metadata', 'metadata_created'])
-  })
-
-  it('transitions: -> generating_metadata -> error on failure', async () => {
-    // Reset mock to avoid pollution
-    mockServerClient.from.mockReset()
-    mockGenerateMetadata.mockReset()
-    mockGetVaultKey.mockResolvedValue('test-gemini-api-key')
-
-    const statusUpdates: string[] = []
-
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = {
-      ...createMockQueryBuilder({ data: null }),
-      update: vi.fn((data: { status: string }) => {
-        statusUpdates.push(data.status)
-        return statusUpdateQb
-      }),
-    }
-    const pinFetchQb = createMockQueryBuilder({ data: mockPin })
-    const projectQb = createMockQueryBuilder({ data: { language: null } })
-    const errorUpdateQb = {
-      ...createMockQueryBuilder({ data: null }),
-      update: vi.fn((data: { status?: string }) => {
-        if (data.status) statusUpdates.push(data.status)
-        return errorUpdateQb
-      }),
-    }
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
-      .mockReturnValueOnce(pinFetchQb as any)
-      .mockReturnValueOnce(projectQb as any)
-      .mockReturnValueOnce(errorUpdateQb as any)
-
-    mockGenerateMetadata.mockRejectedValue(new Error('Gemini API error'))
-
-    await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow()
-
-    expect(statusUpdates).toEqual(['generating_metadata', 'error'])
+      generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-1', feedback: 'x' } }),
+    ).rejects.toThrow('No previous generation found for feedback')
   })
 })
 
 describe('triggerBulkMetadataFn', () => {
-  it('updates all pins to generating_metadata and invokes edge functions', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
-
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
+  it('enqueues the pins on the generate_metadata queue as the signed-in user', async () => {
+    // The RPC de-duplicates, so the reported count comes from the database
+    mockServerClient.rpc.mockResolvedValueOnce({ data: 2, error: null })
 
     const result = await triggerBulkMetadataFn({
-      data: { pin_ids: ['pin-1', 'pin-2', 'pin-3'] },
+      data: { pin_ids: ['pin-1', 'pin-2', 'pin-1'] },
     })
 
-    expect(result).toEqual({ success: true, pins_queued: 3, useTrigger: false })
-    expect(statusUpdateQb.update).toHaveBeenCalledWith({ status: 'generating_metadata' })
-    expect(statusUpdateQb.in).toHaveBeenCalledWith('id', ['pin-1', 'pin-2', 'pin-3'])
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledTimes(3)
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledWith(
-      'generate-metadata-single',
-      expect.objectContaining({
-        body: { pin_id: 'pin-1', tenant_id: 'test-tenant-id' },
-      }),
-    )
+    expect(result).toEqual({ success: true, pins_queued: 2 })
+    expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
+      p_pin_ids: ['pin-1', 'pin-2', 'pin-1'],
+    })
+    expect(mockServiceClient.functions.invoke).not.toHaveBeenCalled()
   })
 
-  it('batches edge function calls in groups of 5', async () => {
-    const profileQb = createMockQueryBuilder({ data: { tenant_id: 'test-tenant-id' } })
-    const statusUpdateQb = createMockQueryBuilder({ data: null })
+  it('fails when the pins cannot be enqueued', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: null, error: { message: 'Pin not found' } })
 
-    mockServerClient.from
-      .mockReturnValueOnce(profileQb as any)
-      .mockReturnValueOnce(statusUpdateQb as any)
+    await expect(
+      triggerBulkMetadataFn({ data: { pin_ids: ['pin-1'] } }),
+    ).rejects.toThrow('Pin not found')
+  })
+})
 
-    const pinIds = Array.from({ length: 7 }, (_, i) => `pin-${i}`)
+describe('triggerAutoMetadataFn', () => {
+  it('enqueues the new pins on the generate_metadata queue', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: 2, error: null })
 
-    await triggerBulkMetadataFn({ data: { pin_ids: pinIds } })
+    const result = await triggerAutoMetadataFn({ data: { pin_ids: ['pin-1', 'pin-2'] } })
 
-    // 7 pins → 2 batches (5 + 2)
-    expect(mockServiceClient.functions.invoke).toHaveBeenCalledTimes(7)
+    expect(result).toEqual({ success: true, pins_queued: 2 })
+    expect(mockServerClient.rpc).toHaveBeenCalledWith('enqueue_generate_metadata', {
+      p_pin_ids: ['pin-1', 'pin-2'],
+    })
+    // The RPC handles the status update; no manual pin write on the queue path.
+    expect(mockServerClient.from).not.toHaveBeenCalled()
+  })
+
+  it('fails when the pins cannot be enqueued', async () => {
+    mockServerClient.rpc.mockResolvedValueOnce({ data: null, error: { message: 'Pin not found' } })
+
+    await expect(
+      triggerAutoMetadataFn({ data: { pin_ids: ['pin-1'] } }),
+    ).rejects.toThrow('Pin not found')
   })
 })

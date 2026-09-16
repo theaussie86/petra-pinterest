@@ -1,20 +1,22 @@
 /**
- * Deno/Edge mirror of the Node `src/lib/ai/` stack (ADR 0002 / PRD #40, issue
- * #44). The Supabase Edge fallback path (`isTriggerDevEnabled('metadata')`
- * false) must produce the same validated metadata/article shape as the primary
- * Trigger.dev path, so this file is kept structurally identical to the Node
- * implementation — same prompts, schemas, settings, repair logic.
+ * Deno/Edge AI stack (ADR 0002 / PRD #40, issue #44; ADR-0004). This is the
+ * single home for the metadata/article generation logic — it produces the
+ * validated metadata/article shape used by the queue workers and the
+ * synchronous single-pin functions. Prompts, schemas, settings and repair logic
+ * live here.
  *
- * The Edge functions have no feedback path, so only `generatePinMetadata` and
- * `generateArticleFromHtml` are mirrored here. The AI SDK is imported via Deno
- * `npm:` specifiers; vitest aliases map them onto the installed Node packages so
- * this module can be exercised for parity tests.
+ * `generatePinMetadata`, `generatePinMetadataWithFeedback` (the synchronous
+ * "Neu-Erzeugen mit Feedback" path, issue #88) and `generateArticleFromHtml`
+ * are defined here. The AI SDK is imported via Deno `npm:` specifiers; vitest
+ * aliases map them onto the installed Node packages so this module can be
+ * exercised in tests.
  */
 
 import {
   generateText,
   Output,
   type LanguageModel,
+  type ModelMessage,
   type RepairTextFunction,
 } from 'npm:ai'
 import { createGoogleGenerativeAI } from 'npm:@ai-sdk/google'
@@ -231,7 +233,7 @@ You will receive the raw HTML of the page (cleaned of scripts/styles).
 Return ONLY valid JSON with this exact structure:
 {
   "title": "Article Title",
-  "content": "# Article Title\\n\\nIntroduction...\\n\\n## Section 1...",
+  "content": "# Article Title\n\nIntroduction...\n\n## Section 1...",
   "published_at": "2023-10-27",
   "author": "John Doe",
   "excerpt": "This is a summary of the article."
@@ -435,37 +437,38 @@ function buildPinMetadataPromptText({
 }
 
 /**
- * Generate Pinterest-optimized metadata (title, description, alt text) for a pin.
- *
- * Builds a multimodal prompt — a text section plus a `Uint8Array` image part —
- * and wraps `generateText` + `Output.object` with the metadata Zod schema. Image and video pins
- * share the same image part (video pins pass the ffmpeg keyframe bytes). The
- * Google `thinkingLevel: 'low'` and `temperature: 0.7` behavior is set via
- * provider options; the control-char repair only fires on parse failure.
+ * Build the multimodal user turn: the pin prompt text plus a `Uint8Array` image
+ * part. Image and video pins share this part (video pins pass keyframe bytes).
  */
-export async function generatePinMetadata({
+function buildPinMetadataUserMessage({
   article,
-  image,
   mediaType,
-  systemPrompt,
-  apiKey,
-  model,
-}: GeneratePinMetadataOptions): Promise<GeneratedMetadata> {
-  const promptText = buildPinMetadataPromptText({ article, mediaType })
+  image,
+}: Pick<GeneratePinMetadataOptions, 'article' | 'mediaType' | 'image'>): ModelMessage {
+  return {
+    role: 'user',
+    content: [
+      { type: 'text', text: buildPinMetadataPromptText({ article, mediaType }) },
+      { type: 'image', image: image.bytes, mediaType: image.mimeType },
+    ],
+  }
+}
 
+/**
+ * Shared `generateText` + `Output.object` call for both pin-metadata paths
+ * (mirror of the Node `generatePinMetadataObject`). Same temperature, token, and
+ * Google provider-option settings; the control-char repair only fires on parse
+ * failure.
+ */
+async function generatePinMetadataObject(
+  messages: ModelMessage[],
+  { model, apiKey, systemPrompt }: Pick<GeneratePinMetadataOptions, 'model' | 'apiKey' | 'systemPrompt'>,
+): Promise<GeneratedMetadata> {
   const { output } = await generateText({
     model: model ?? getModel(apiKey),
     output: repairableObject(generatedMetadataSchema),
     system: systemPrompt || PINTEREST_SEO_SYSTEM_PROMPT,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          { type: 'text', text: promptText },
-          { type: 'image', image: image.bytes, mediaType: image.mimeType },
-        ],
-      },
-    ],
+    messages,
     temperature: 0.7,
     maxOutputTokens: 8192,
     providerOptions: {
@@ -474,4 +477,53 @@ export async function generatePinMetadata({
   })
 
   return output
+}
+
+/**
+ * Generate Pinterest-optimized metadata (title, description, alt text) for a pin.
+ *
+ * Sends a single multimodal user turn — a text section plus a `Uint8Array` image
+ * part — to the shared metadata generator. Image and video pins share the same
+ * image part (video pins pass the ffmpeg keyframe bytes).
+ */
+export async function generatePinMetadata(
+  options: GeneratePinMetadataOptions,
+): Promise<GeneratedMetadata> {
+  return generatePinMetadataObject([buildPinMetadataUserMessage(options)], options)
+}
+
+export interface GeneratePinMetadataWithFeedbackOptions extends GeneratePinMetadataOptions {
+  /** The previous generation being refined; replayed as the assistant turn. */
+  previousMetadata: GeneratedMetadata
+  /** Operator feedback steering the refinement; sent as the final user turn. */
+  feedback: string
+}
+
+/**
+ * Regenerate pin metadata from operator feedback (mirror of the Node feedback
+ * path). Replays an explicit `[user, assistant, user]` messages array: the
+ * original multimodal request, the previous generation as JSON, then the
+ * feedback.
+ */
+export async function generatePinMetadataWithFeedback(
+  options: GeneratePinMetadataWithFeedbackOptions,
+): Promise<GeneratedMetadata> {
+  const { previousMetadata, feedback } = options
+
+  return generatePinMetadataObject(
+    [
+      buildPinMetadataUserMessage(options),
+      {
+        role: 'assistant',
+        content: [{ type: 'text', text: JSON.stringify(previousMetadata) }],
+      },
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: `Please regenerate the metadata with this feedback: ${feedback}` },
+        ],
+      },
+    ],
+    options,
+  )
 }

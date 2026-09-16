@@ -36,6 +36,7 @@ import type { PinColumnId } from '@/components/pins/pin-data-table-columns'
 import { usePinsPaginatedSuspense, usePinStatusCountsSuspense, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
+import { useMetadataBatchProgress } from '@/lib/hooks/use-metadata-progress'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { PinStatusFilterBar, filterPinsByTab, tabCountsFromStatusCounts, TAB_LABEL_KEYS } from '@/components/pins/pin-status-filter-bar'
@@ -105,6 +106,11 @@ export function PinsList({ projectId }: PinsListProps) {
   const deletePinMutation = useDeletePin()
   const triggerBulkMetadata = useTriggerBulkMetadata()
   const publishBulkMutation = usePublishPinsBulk()
+
+  // Pins whose bulk metadata run is being tracked. Polling the DB status drives
+  // the progress toast (issue #89); a fresh array restarts tracking.
+  const [metadataProgressPinIds, setMetadataProgressPinIds] = useState<string[] | null>(null)
+  useMetadataBatchProgress(metadataProgressPinIds)
 
   // Build article lookup map
   const articleMap = useMemo(() => {
@@ -180,9 +186,16 @@ export function PinsList({ projectId }: PinsListProps) {
     clearSelection()
   }
 
-  const handleBulkGenerateMetadata = () => {
-    triggerBulkMetadata.mutate({ pin_ids: Array.from(selectedIds) })
+  const handleBulkGenerateMetadata = async () => {
+    const ids = Array.from(selectedIds)
     clearSelection()
+    try {
+      await triggerBulkMetadata.mutateAsync({ pin_ids: ids })
+      // The queue path exposes DB-polled progress; start tracking the pins.
+      setMetadataProgressPinIds(ids)
+    } catch {
+      // The mutation's onError already surfaced a toast.
+    }
   }
 
   const handleBulkPublish = async () => {
