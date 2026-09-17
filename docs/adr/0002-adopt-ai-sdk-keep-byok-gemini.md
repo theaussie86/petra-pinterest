@@ -1,6 +1,13 @@
 ---
-status: accepted
+status: superseded-in-part
+superseded-by: ADR-0004
 ---
+
+> **Partly superseded by [ADR-0004](0004-replace-trigger-dev-with-pgmq-and-edge-functions.md).**
+> Trigger.dev and the Node-side AI path are gone; the AI SDK now runs only in
+> the Supabase Edge Functions (`supabase/functions/_shared/ai.ts`). The AI SDK
+> and BYOK-Gemini decision itself still stands - only the "both runtimes"
+> consequence below is history.
 
 # Adopt Vercel AI SDK for all AI calls, keep per-project BYOK Gemini
 

@@ -1,5 +1,6 @@
 ---
 status: accepted
+implemented: 2026-09-17
 ---
 
 # Replace Trigger.dev with pgmq queues and Supabase Edge Functions
@@ -21,4 +22,4 @@ We remove Trigger.dev entirely (SDK, `trigger.config.ts`, CI deploy, account) an
 - **Throttling:** at most one worker per queue (a lock stops overlapping cron kicks), 5 messages per worker run, 420s visibility timeout (just above the 400s Edge Function wall clock on Pro).
 - **No per-run URL cap on blog scans.** A first import enqueues every new or changed article at once; cost lands on the project's BYOK key immediately instead of spread over days.
 - **Sitemap diff = new + changed articles (by `lastmod`)**, the behaviour the Edge path already had.
-- **Rollout in two stages:** first build the queue path and switch the `USE_TRIGGER_*` flags off in production, then delete Trigger.dev once it has run cleanly.
+- **Rollout in two stages (done).** Stage 1 built the queue path and switched the `USE_TRIGGER_*` flags off in production (#92); stage 2 removed Trigger.dev entirely (#93). The flags, the `TRIGGER_*` secrets, the `deploy-trigger` CI job and the Trigger.dev account are gone (#96) - there is no fall-back path left.

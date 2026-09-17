@@ -10,9 +10,10 @@
   (issue #86).
 
 > Stage 2 (issue #85 / #93) removed Trigger.dev entirely. The former
-> `deploy-trigger` job, the `TRIGGER_ACCESS_TOKEN` secret and the `USE_TRIGGER_*`
-> feature flags no longer exist — the pgmq queues + Edge Functions are the only
-> background-job path.
+> `deploy-trigger` job and the `USE_TRIGGER_*` feature flags no longer exist, and
+> the clean-up in #96 deleted the `TRIGGER_ACCESS_TOKEN` / `TRIGGER_SECRET_KEY`
+> Actions secrets and the Trigger.dev account itself. The pgmq queues + Edge
+> Functions are the only background-job path.
 
 ## Edge Functions deploy
 
@@ -77,25 +78,18 @@ after the step above):
 > (`SUPABASE_ACCESS_TOKEN` + project ref) that is not available from the agent
 > environment. Run it as a human step and record any pre-existing drift here.
 
-## Stage 1 production cutover & observation (issue #92, PRD #85)
+## Stage 1 production cutover (issue #92, PRD #85) - historical
 
-> **Historical runbook.** Stage 1 switched every background job onto the pgmq
-> queue path while keeping Trigger.dev available as a fall-back behind the
-> now-removed `USE_TRIGGER_*` flags. Stage 2 (issue #93) has since removed
-> Trigger.dev and the flags entirely, so the flag-flip and rollback steps below
-> no longer apply — the queue path is the only path. The migration + Edge
-> Function deploy/delete steps remain the reference for how the queues were
-> brought live.
+> **Done, kept for reference.** Stage 1 moved every background job onto the pgmq
+> queue path while Trigger.dev stayed available behind the `USE_TRIGGER_*` flags.
+> Stage 2 (#93) removed Trigger.dev, and #96 removed the leftover `TRIGGER_*`
+> secrets, environment variables and the Trigger.dev account. The flags are gone,
+> there is no fall-back and no flag rollback - the queues are the only path.
 
-Stage 1 switched every background job onto the pgmq queue path while keeping
-Trigger.dev available as a fall-back behind the `USE_TRIGGER_*` flags. The team
-observed for several days before proceeding to stage 2 (removing Trigger.dev,
-#93).
-
-> **Requires production access** (Supabase `SUPABASE_ACCESS_TOKEN` + project ref
-> `dedacaqstvzxlxpxvxgb`, and Hostinger env access). None of it is runnable from
-> the agent environment — this is a human runbook. Record results in the
-> **Observation log** below and in a comment on issue #92.
+The migration and Edge Function steps below are the reference for how the queues
+were brought live. They require production access (Supabase
+`SUPABASE_ACCESS_TOKEN` + project ref `dedacaqstvzxlxpxvxgb`) and are a human
+step, not an agent one.
 
 ### Prerequisites (blocked-by issues, all merged)
 
@@ -107,18 +101,15 @@ observed for several days before proceeding to stage 2 (removing Trigger.dev,
 
 ### Cutover steps
 
-Do these in order. Steps 1–2 are safe to run before flipping the flags — the
-queue path only becomes active once the flags are `false`.
-
 1. **Apply the queue migrations to production**, in order, via the Supabase CLI
    or MCP (`apply_migration`). Migrations are never applied by CI (see above):
 
-   - `00032_generate_metadata_queue.sql` — pgmq extension, `generate_metadata`
+   - `00032_generate_metadata_queue.sql` - pgmq extension, `generate_metadata`
      queue, `enqueue_generate_metadata`, `kick_queue_worker`, cron
      `kick-generate-metadata-worker` (15s).
-   - `00033_scrape_article_queue.sql` — `scrape_article` queue,
+   - `00033_scrape_article_queue.sql` - `scrape_article` queue,
      `enqueue_scrape_article`, cron `kick-scrape-article-worker` (15s).
-   - `00034_scrape_blog_queue.sql` — `scrape_blog` queue, `queue_send_batch`,
+   - `00034_scrape_blog_queue.sql` - `scrape_blog` queue, `queue_send_batch`,
      `enqueue_scrape_blog`, `enqueue_due_blog_scrapes`; **unschedules**
      `scrape-scheduled-daily` and schedules `enqueue-due-blog-scrapes-daily`
      (`0 6 * * *`) + `kick-scrape-blog-worker` (15s).
@@ -132,42 +123,21 @@ queue path only becomes active once the flags are `false`.
 
 2. **Deploy / reconcile the Edge Functions.** Run the reconciliation deploy
    (see *One-time reconciliation with `main`* above) so the deployed set matches
-   `main`, then **delete the obsolete functions in production** — they no longer
-   exist in the repo and their cron caller is gone:
+   `main`. The obsolete fan-out functions were deleted in production (#95):
 
    ```bash
    supabase functions deploy --project-ref dedacaqstvzxlxpxvxgb
-   supabase functions delete scrape-scheduled --project-ref dedacaqstvzxlxpxvxgb
-   supabase functions delete scrape-blog       --project-ref dedacaqstvzxlxpxvxgb
-   supabase functions delete scrape-single     --project-ref dedacaqstvzxlxpxvxgb  # issue #95
+   supabase functions list   --project-ref dedacaqstvzxlxpxvxgb
    ```
 
-   Confirm the deployed set matches the repo list (workers present, old
-   fan-out functions gone):
-   ```bash
-   supabase functions list --project-ref dedacaqstvzxlxpxvxgb
-   ```
+## Queue health checks
 
-3. **Flip the flags on Hostinger and restart.** Set both to `false` (queue path
-   active; Trigger.dev retained as the fall-back), then restart the app:
+Run these when background jobs look wrong (pins stuck, no mails, growing
+backlog). They were the stage-1 observation checklist and stay useful as the
+standing diagnostic set.
 
-   ```
-   USE_TRIGGER_METADATA=false
-   USE_TRIGGER_SCRAPING=false
-   ```
-
-   The flags default to `false` when unset (`src/lib/config/feature-flags.ts`),
-   so removing them entirely has the same effect. **Rollback** at any point is
-   setting either back to `true` and restarting — no redeploy or migration
-   needed.
-
-### Observation checklist (run daily for several days)
-
-Watch these; anything unexpected is a rollback signal (flip the relevant flag
-back to `true`).
-
-- **Queue archives — final failures.** Non-empty archives mean jobs exhausted
-  their attempts (blog 2, article 3, metadata 3). Investigate before dismissing.
+- **Queue archives - final failures.** Non-empty archives mean jobs exhausted
+  their attempts (blog 2, article 3, metadata 3).
   ```sql
   SELECT 'generate_metadata' q, count(*) FROM pgmq.a_generate_metadata
   UNION ALL SELECT 'scrape_article', count(*) FROM pgmq.a_scrape_article
@@ -182,7 +152,7 @@ back to `true`).
   ```
 
 - **Pins stuck in `generating_metadata`.** A pin should leave this status within
-  a few minutes (success → `metadata_created`, final failure → `error`). Rows
+  a few minutes (success -> `metadata_created`, final failure -> `error`). Rows
   older than ~10 min with an empty queue indicate a lost/hung job.
   ```sql
   SELECT id, updated_at FROM public.pins
@@ -204,21 +174,3 @@ back to `true`).
     AND (r.status <> 'succeeded' OR j.jobname LIKE '%blog-scrapes%')
   ORDER BY r.start_time DESC LIMIT 50;
   ```
-
-### Observation log
-
-Record each observation day here (or in the issue #92 comment thread):
-
-| Date | Archives | Backlog | Stuck pins | Error mails | Daily run | Cron failures | Notes |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| _(pending prod access)_ | | | | | | | |
-
-### Go / no-go decision
-
-After a clean observation window, document the decision **as a comment on issue
-#92**:
-
-- **Go** → proceed to stage 2 (#93): remove Trigger.dev tasks, SDK, config,
-  flags, `TRIGGER_*` secrets and the `deploy-trigger` CI job.
-- **No-go** → set the affected `USE_TRIGGER_*` flag back to `true`, restart, and
-  record the reason and the failing signal above.
