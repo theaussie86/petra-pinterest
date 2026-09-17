@@ -72,7 +72,6 @@ after the step above):
 - `refresh-pinterest-tokens`
 - `scrape-article-worker`
 - `scrape-blog-worker`
-- `scrape-single`
 
 > Note: the local/CI reconciliation deploy requires production access
 > (`SUPABASE_ACCESS_TOKEN` + project ref) that is not available from the agent
@@ -140,6 +139,7 @@ queue path only becomes active once the flags are `false`.
    supabase functions deploy --project-ref dedacaqstvzxlxpxvxgb
    supabase functions delete scrape-scheduled --project-ref dedacaqstvzxlxpxvxgb
    supabase functions delete scrape-blog       --project-ref dedacaqstvzxlxpxvxgb
+   supabase functions delete scrape-single     --project-ref dedacaqstvzxlxpxvxgb  # issue #95
    ```
 
    Confirm the deployed set matches the repo list (workers present, old

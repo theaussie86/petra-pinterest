@@ -15,7 +15,7 @@ We remove Trigger.dev entirely (SDK, `trigger.config.ts`, CI deploy, account) an
 ## Consequences
 
 - **User-facing single actions bypass the queue.** Generating or regenerating (with feedback) metadata for one pin invokes the Edge Function directly and waits; no automatic retry, the error shows in the dialog.
-- **Enqueueing happens in SQL.** The app calls RPCs that check the tenant and `pgmq.send`. The daily scheduled scrape enqueues from pg_cron directly; the `scrape-scheduled` Edge Function goes away.
+- **Enqueueing happens in SQL.** The app calls RPCs that check the tenant and `pgmq.send`. The daily scheduled scrape enqueues from pg_cron directly; the old `scrape-scheduled`, `scrape-blog` and `scrape-single` Edge Functions go away (removed from the repo and production in issue #95).
 - **Failure semantics:** a pin stays `generating_metadata` across retries; `error` status and the notification mail happen only after the last attempt (blog 2, article 3, metadata 3), then the message is archived.
 - **Workers are kicked only by pg_cron**, every ~15s per queue, and only when the queue has visible messages (checked in SQL before `net.http_post`). No database trigger on enqueue - an immediate start was considered for metadata jobs and rejected as not worth the extra moving parts; up to ~15s delay is accepted.
 - **Throttling:** at most one worker per queue (a lock stops overlapping cron kicks), 5 messages per worker run, 420s visibility timeout (just above the 400s Edge Function wall clock on Pro).
