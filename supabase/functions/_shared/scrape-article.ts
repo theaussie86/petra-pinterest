@@ -1,5 +1,5 @@
-// Single-article scrape pipeline shared by the synchronous scrape-single
-// function and the scrape_article queue worker (ADR-0004, issue #90):
+// Single-article scrape pipeline run by the scrape_article queue worker
+// (ADR-0004, issue #90):
 // normalise the URL, read the project's Gemini key from the Vault, fetch +
 // clean the HTML, extract the article, parse a robust published_at and upsert
 // into blog_articles. Throws on any failure; callers decide what an error means

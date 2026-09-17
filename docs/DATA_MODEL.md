@@ -569,7 +569,7 @@ Background jobs run on pgmq queues drained by Edge Function workers (ADR-0004).
 
 - A worker run takes the per-queue lock in `queue_worker_locks`, reads up to 5 messages with a 420s visibility timeout, deletes a message on success and leaves it for retry on failure.
 - On the last attempt the message is moved to the queue's archive (`pgmq.a_<queue>`), one notification mail is sent (metadata jobs also set the pin to `error`). Inspect failures with `SELECT * FROM pgmq.a_generate_metadata ORDER BY archived_at DESC`.
-- `scrape_blog` reads the sitemap with `lastmod`, diffs new + changed articles against `blog_articles` and batch-enqueues every match into `scrape_article` (no per-run cap) via `queue_send_batch`, then sets `last_scraped_at`. The daily cron enqueues due projects directly via SQL; there is no `scrape-scheduled` or `scrape-blog` Edge Function.
+- `scrape_blog` reads the sitemap with `lastmod`, diffs new + changed articles against `blog_articles` and batch-enqueues every match into `scrape_article` (no per-run cap) via `queue_send_batch`, then sets `last_scraped_at`. The daily cron enqueues due projects directly via SQL; there is no `scrape-scheduled`, `scrape-blog` or `scrape-single` Edge Function.
 - `queue_worker_locks` holds no tenant data: RLS is enabled without policies and table grants are revoked from `anon`/`authenticated`, so only `service_role` and the `SECURITY DEFINER` helpers touch it.
 
 ## Multi-Tenancy Pattern

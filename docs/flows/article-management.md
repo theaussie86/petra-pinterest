@@ -9,32 +9,34 @@ sequenceDiagram
     actor User
     participant Button as ScrapeButton
     participant Server as scrapeBlogFn
-    participant Sitemap as discoverSitemapUrls()
+    participant Queue as pgmq scrape_blog / scrape_article
+    participant BlogWorker as scrape-blog-worker
+    participant ArticleWorker as scrape-article-worker
     participant DB as blog_articles
-    participant Edge as scrape-single Edge Function
     participant Gemini as Gemini API
 
     User->>Button: Click "Scrape Blog"
     Button->>Server: scrapeBlogFn({ blog_project_id, blog_url, sitemap_url })
-    Server->>Sitemap: Discover URLs from sitemap XML
-    Sitemap-->>Server: string[] of blog post URLs
-    Server->>DB: Fetch existing article URLs for project (incl. archived)
-    DB-->>Server: Existing URLs
-    Server->>Server: Diff: new URLs = discovered - existing
-
-    loop Each new URL (concurrency: 5)
-        Server->>Edge: invoke('scrape-single', { url, blog_project_id, tenant_id })
-        Edge->>Edge: Fetch HTML, strip non-content tags
-        Edge->>Gemini: Extract title, content, published_at
-        Gemini-->>Edge: Structured article data
-        Edge->>DB: Upsert article (ON CONFLICT blog_project_id, url)
-    end
-
-    Server-->>Button: { success: true, dispatched: N }
+    Server->>Queue: rpc enqueue_scrape_blog (tenant-checked)
+    Server-->>Button: { success: true, dispatched: 1 }
     Button->>Button: Show green checkmark for 3s
+
+    Note over Queue,BlogWorker: pg_cron kicks the worker every ~15s
+    Queue->>BlogWorker: scrape_blog message
+    BlogWorker->>BlogWorker: Discover sitemap URLs with lastmod
+    BlogWorker->>DB: Fetch existing articles for project (incl. archived)
+    BlogWorker->>Queue: queue_send_batch new + changed URLs into scrape_article
+
+    loop Each scrape_article message
+        Queue->>ArticleWorker: { url, blog_project_id, tenant_id }
+        ArticleWorker->>ArticleWorker: Fetch HTML, strip non-content tags
+        ArticleWorker->>Gemini: Extract title, content, published_at
+        Gemini-->>ArticleWorker: Structured article data
+        ArticleWorker->>DB: Upsert article (ON CONFLICT blog_project_id, url)
+    end
 ```
 
-The server function returns immediately after dispatching to Edge Functions (fire-and-forget). New articles appear via Supabase Realtime subscription on the articles table.
+The server function returns immediately after enqueueing (fire-and-forget). New articles appear via Supabase Realtime subscription on the articles table.
 
 > **Note:** The duplicate check queries all articles for the project **including archived ones** (no `archived_at` filter). This ensures archived articles are not re-scraped. If an archived article's `lastmod` in the sitemap is newer than its `scraped_at`, it will be re-scraped and updated in place — but it remains archived.
 
@@ -48,7 +50,7 @@ flowchart TD
     D --> E[Zod validation:<br/>valid http/https URL]
     E -->|Invalid| F[Show error]
     E -->|Valid| G[scrapeSingleFn invoked]
-    G --> H[Edge Function scrapes URL asynchronously]
+    G --> H[RPC enqueues scrape_article,<br/>scrape-article-worker scrapes URL]
     H --> I[Close dialog]
     I --> J[Toast: Article added]
     J --> K[Article appears via Realtime]
@@ -117,6 +119,7 @@ Displays article metadata, content, and linked pins:
 | `src/routes/_authed/projects/$projectId/articles/index.tsx` | Articles list page |
 | `src/routes/_authed/projects/$projectId/articles/$articleId.tsx` | Article detail with content editing |
 | `src/lib/server/scraping.ts` | Server functions: `scrapeBlogFn`, `scrapeSingleFn` |
-| `server/lib/scraping.ts` | Sitemap discovery: `discoverSitemapUrls()` |
+| `supabase/functions/_shared/scrape-blog.ts` | Sitemap discovery + fan-out into `scrape_article` |
+| `supabase/functions/_shared/scrape-article.ts` | Single-article scrape pipeline |
 | `src/lib/api/articles.ts` | API: CRUD, archive/restore, content update |
 | `src/lib/hooks/use-articles.ts` | TanStack Query hooks with realtime invalidation |
