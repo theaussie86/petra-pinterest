@@ -133,6 +133,11 @@ The external `format` field (constant `1000 x 1500 Pixel`) is dropped.
 
 ## Rejection rules (enforced by the DB)
 
+`description` is optional and the agent leaves it `null`: the Pinterest
+description is generated later in Pinfinity, on the pin, once the image exists
+(`pins.description`, `pin_metadata_generations`). It is never copied from the
+template.
+
 A write that breaks any of these is rejected by a CHECK constraint or the unique
 index:
 

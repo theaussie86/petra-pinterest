@@ -662,7 +662,7 @@
       "copyImageIdea": "Copy image idea",
       "copied": "Copied to clipboard",
       "titleAndDescription": "Title & description",
-      "descriptionMissing": "Description missing",
+      "descriptionLater": "The pin description is created later in Pinfinity, once the image exists.",
       "board": "Board",
       "overlay": "Overlay preview",
       "keywords": "Keywords",
