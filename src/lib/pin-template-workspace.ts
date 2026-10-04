@@ -10,6 +10,9 @@ export const WORKSPACE_TABS = ['open', 'approved', 'archived'] as const
 
 export type WorkspaceTab = (typeof WORKSPACE_TABS)[number]
 
+/** Template counts per workspace. */
+export type WorkspaceCounts = Record<WorkspaceTab, number>
+
 /** The workspace a template belongs to, derived from its status. */
 export function workspaceForStatus(status: PinTemplateStatus): WorkspaceTab {
   switch (status) {
@@ -23,8 +26,8 @@ export function workspaceForStatus(status: PinTemplateStatus): WorkspaceTab {
 }
 
 /** Per-workspace template counts for the tab badges. */
-export function countByWorkspace(templates: PinTemplate[]): Record<WorkspaceTab, number> {
-  const counts: Record<WorkspaceTab, number> = { open: 0, approved: 0, archived: 0 }
+export function countByWorkspace(templates: PinTemplate[]): WorkspaceCounts {
+  const counts: WorkspaceCounts = { open: 0, approved: 0, archived: 0 }
   for (const template of templates) {
     counts[workspaceForStatus(template.status)] += 1
   }
@@ -38,7 +41,7 @@ export function countByWorkspace(templates: PinTemplate[]): Record<WorkspaceTab,
  * not in the list.
  */
 export function nextSelectionAfterRemoval(
-  list: PinTemplate[],
+  list: { id: string }[],
   removedId: string,
 ): string | null {
   const index = list.findIndex((t) => t.id === removedId)

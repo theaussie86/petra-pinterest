@@ -17,11 +17,11 @@ export function WorkshopTemplateTabs({ activeTab, counts, onTabChange }: Worksho
 
   return (
     <Tabs value={activeTab} onValueChange={(value) => onTabChange(value as WorkspaceTab)}>
-      <TabsList>
+      <TabsList className="w-full">
         {WORKSPACE_TABS.map((tab) => (
-          <TabsTrigger key={tab} value={tab} className="gap-1.5">
+          <TabsTrigger key={tab} value={tab} className="flex-1 gap-1.5">
             <span>{t(`workshop.tabs.${tab}`)}</span>
-            <span className="rounded-full bg-muted px-1.5 text-xs text-muted-foreground">
+            <span className="rounded-full bg-muted px-1.5 text-xs tabular-nums text-muted-foreground">
               {counts[tab]}
             </span>
           </TabsTrigger>

@@ -572,7 +572,8 @@
       "multipleArchived": "{{count}} Artikel archiviert",
       "multipleArchiveFailed": "Artikel konnten nicht archiviert werden",
       "multipleRestored": "{{count}} Artikel wiederhergestellt",
-      "multipleRestoreFailed": "Artikel konnten nicht wiederhergestellt werden"
+      "multipleRestoreFailed": "Artikel konnten nicht wiederhergestellt werden",
+      "workshopStatusFailed": "Auswahl konnte nicht gespeichert werden"
     },
     "pin": {
       "created": "Pin erstellt",
@@ -637,7 +638,7 @@
     "searchPlaceholder": "Artikel suchen …",
     "noArticles": "Noch keine Artikel in diesem Projekt",
     "noArticlesMatch": "Keine Artikel gefunden",
-    "selectArticle": "Wähle links einen Artikel, um seine Vorlagen zu sehen",
+    "selectArticle": "Wähle links einen Artikel.",
     "templatesHeading": "Pin-Vorlagen",
     "noTemplates": "Für diesen Artikel gibt es noch keine Vorlagen",
     "openCount_one": "{{count}} offen",
@@ -650,19 +651,11 @@
       "archived": "Archiv"
     },
     "noTemplatesInTab": "Keine Vorlagen in diesem Bereich",
-    "shortcutsHint": "Tastatur: j/k nächste/vorherige · f freigeben · c Bild-Prompt kopieren · r Änderung wünschen",
     "actions": {
       "approve": "Freigeben",
       "archive": "Archivieren",
       "reopen": "Zurück zu Offen",
       "requestRevision": "Änderung wünschen"
-    },
-    "col": {
-      "position": "Nr.",
-      "pinType": "Pin-Typ",
-      "title": "Titel",
-      "overlay": "Overlay",
-      "status": "Status"
     },
     "detail": {
       "copyImagePrompt": "Bild-Prompt kopieren",
@@ -692,7 +685,60 @@
       "revisionSubmit": "Änderung wünschen",
       "revisionSubmitting": "Wird gesendet …",
       "revisionHistory": "Änderungsverlauf",
-      "revisionHistoryEmpty": "Noch keine Änderungswünsche"
+      "revisionHistoryEmpty": "Noch keine Änderungswünsche",
+      "sketchNote": "Skizze aus dem Designbrief, kein fertiges Bild",
+      "showFullPrompt": "Ganzen Prompt anzeigen",
+      "showLess": "Weniger anzeigen",
+      "positionOf": "{{index}} / {{total}}",
+      "previous": "Vorherige Vorlage",
+      "next": "Nächste Vorlage",
+      "descriptionLength": "{{count}} / {{max}} Zeichen",
+      "season": "Saison"
+    },
+    "progress": "{{approved}} von {{total}} freigegeben",
+    "articleDone": "fertig",
+    "allReviewed": "Alles geprüft. Keine offenen Vorlagen mehr in diesem Artikel.",
+    "openArticle": "Artikel im Blog öffnen",
+    "statusChanged": "#{{position}}: {{status}}",
+    "undo": "Rückgängig",
+    "shortcuts": {
+      "move": "weiter/zurück",
+      "approve": "freigeben",
+      "copy": "Prompt kopieren",
+      "revision": "Änderung wünschen"
+    },
+    "waitingForAgent": "Wartet auf den Agenten",
+    "detailsNoTemplates": "Sobald der Agent Vorlagen geliefert hat, erscheinen sie hier.",
+    "segments": {
+      "wanted": "Gewünscht",
+      "undecided": "Neu",
+      "excluded": "Keine Pins"
+    },
+    "segmentEmpty": {
+      "wanted": "Noch keine Artikel gewünscht. Unter „Neu“ wählst du aus, wofür der Agent Pins erstellen soll.",
+      "undecided": "Alle Artikel sind entschieden.",
+      "excluded": "Keine ausgeschlossenen Artikel."
+    },
+    "curate": {
+      "want": "Pins erstellen lassen",
+      "exclude": "Keine Pins",
+      "reset": "Zurück zu Neu",
+      "withdraw": "Anfrage zurückziehen",
+      "question": "Soll der Agent für diesen Artikel 30 Pin-Vorlagen erstellen?",
+      "noteLabel": "Hinweis für den Agenten (optional)",
+      "notePlaceholder": "Zum Beispiel: Fokus auf Weihnachten, Zielgruppe Mütter …",
+      "noteHint": "Der Agent liest den Hinweis, wenn er die Vorlagen schreibt.",
+      "saveNote": "Hinweis speichern",
+      "noteSaved": "Hinweis gespeichert",
+      "since": "seit {{date}}",
+      "excludedInfo": "Für diesen Artikel erstellt der Agent keine Pins. Sonst bleibt der Artikel überall nutzbar.",
+      "noContent": "Kein Artikeltext vorhanden.",
+      "noteShort": "Hinweis:",
+      "done": {
+        "wanted": "Pins angefragt",
+        "excluded": "Keine Pins für diesen Artikel",
+        "reset": "Zurück zu Neu"
+      }
     }
   }
 }

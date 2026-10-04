@@ -8,9 +8,21 @@ export interface Article {
   published_at: string | null
   scraped_at: string
   archived_at: string | null
+  /** Pin-Werkstatt curation: null = undecided (migration 00035). */
+  workshop_status: ArticleWorkshopStatus | null
+  /** Optional note for the template agent, set with `wanted`. */
+  workshop_note: string | null
+  workshop_status_changed_at: string | null
   created_at: string
   updated_at: string
 }
+
+/**
+ * Whether the external agent should write pin templates for an article:
+ * `wanted` puts it in the agent's queue, `excluded` keeps it out of the
+ * Werkstatt (the article stays usable elsewhere, unlike archiving).
+ */
+export type ArticleWorkshopStatus = 'wanted' | 'excluded'
 
 // For manual article addition (just a URL, content scraped automatically)
 export interface ArticleInsert {

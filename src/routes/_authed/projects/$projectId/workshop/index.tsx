@@ -6,7 +6,7 @@ import { WorkshopView } from '@/components/workshop/workshop-view'
 import { hasFeature } from '@/lib/features'
 import { getArticlesByProject } from '@/lib/api/articles'
 import { blogProjectQueryOptions } from '@/lib/query/blog-projects'
-import { pinTemplateOpenCountsQueryOptions } from '@/lib/query/pin-templates'
+import { pinTemplateCountsQueryOptions } from '@/lib/query/pin-templates'
 
 export const Route = createFileRoute('/_authed/projects/$projectId/workshop/')({
   // Pin-Werkstatt is rolled out per tenant (tenant_features). Tenants without
@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_authed/projects/$projectId/workshop/')({
       throw redirect({ to: '/projects/$projectId', params: { projectId: params.projectId } })
     }
   },
-  // Prefetch the article list, the per-article open-template counts, and the
+  // Prefetch the article list, the per-article workspace counts, and the
   // project (its domain is the overlay footer) server-side so the left column
   // and detail arrive in the SSR HTML. Templates for the selected article load
   // client-side once a selection is made.
@@ -26,7 +26,7 @@ export const Route = createFileRoute('/_authed/projects/$projectId/workshop/')({
         queryKey: ['articles', params.projectId],
         queryFn: () => getArticlesByProject(params.projectId),
       }),
-      context.queryClient.ensureQueryData(pinTemplateOpenCountsQueryOptions(params.projectId)),
+      context.queryClient.ensureQueryData(pinTemplateCountsQueryOptions(params.projectId)),
       context.queryClient.ensureQueryData(blogProjectQueryOptions(params.projectId)),
     ]),
   component: WorkshopPage,
@@ -36,12 +36,14 @@ function WorkshopPage() {
   const { projectId } = Route.useParams()
   const { t } = useTranslation()
 
+  // On desktop the Werkstatt is a fixed-height workbench: the header stays put
+  // and each column scrolls on its own, so the action bar never leaves view.
   return (
-    <>
+    <div className="flex flex-col lg:h-svh">
       <PageHeader title={t('workshop.title')} description={t('workshop.description')} />
-      <PageLayout maxWidth="full">
+      <PageLayout maxWidth="full" className="lg:min-h-0 lg:flex-1 lg:py-6">
         <WorkshopView projectId={projectId} />
       </PageLayout>
-    </>
+    </div>
   )
 }

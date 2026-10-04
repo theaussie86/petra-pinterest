@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
+import type { Article, ArticleWorkshopStatus } from '@/types/articles'
 import {
   getAllArticles,
   getArticlesByProject,
@@ -21,6 +22,7 @@ import {
   deleteArticles,
   archiveArticles,
   restoreArticles,
+  updateArticleWorkshopStatus,
 } from '@/lib/api/articles'
 import {
   articleQueryOptions,
@@ -98,6 +100,52 @@ export function useArchiveArticle() {
     onError: () => {
       toast.error(i18n.t('toast.article.archiveFailed'))
     }
+  })
+}
+
+/**
+ * Curate an article for the Pin-Werkstatt. Optimistic on the project's article
+ * list, so working through dozens of undecided articles never waits on the
+ * network; rolls back and toasts on failure.
+ */
+export function useUpdateArticleWorkshopStatus(projectId: string) {
+  const queryClient = useQueryClient()
+  const queryKey = ['articles', projectId]
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      status,
+      note,
+    }: {
+      id: string
+      status: ArticleWorkshopStatus | null
+      note?: string | null
+    }) => updateArticleWorkshopStatus(id, status, note),
+    onMutate: async ({ id, status, note }) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previous = queryClient.getQueryData<Article[]>(queryKey)
+      queryClient.setQueryData<Article[]>(queryKey, (old) =>
+        old?.map((a) =>
+          a.id === id
+            ? {
+                ...a,
+                workshop_status: status,
+                workshop_note: status === 'wanted' ? note?.trim() || null : null,
+                workshop_status_changed_at: new Date().toISOString(),
+              }
+            : a
+        )
+      )
+      return { previous }
+    },
+    onError: (_error, _vars, context) => {
+      if (context?.previous) queryClient.setQueryData(queryKey, context.previous)
+      toast.error(i18n.t('toast.article.workshopStatusFailed'))
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['articles'] })
+    },
   })
 }
 
