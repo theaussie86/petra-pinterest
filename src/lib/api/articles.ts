@@ -1,7 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { scrapeBlogFn, scrapeSingleFn } from '@/lib/server/scraping'
-import type { Article, ScrapeRequest, ScrapeResponse } from '@/types/articles'
+import type {
+  Article,
+  ArticleWorkshopStatus,
+  ScrapeRequest,
+  ScrapeResponse,
+} from '@/types/articles'
 
 export interface PaginatedArticlesResult {
   articles: Article[]
@@ -63,6 +68,33 @@ export async function restoreArticle(id: string): Promise<Article> {
   const { data, error } = await supabase
     .from('blog_articles')
     .update({ archived_at: null })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * Curate an article for the Pin-Werkstatt: `wanted` queues it for the template
+ * agent (with an optional note), `excluded` keeps it out, `null` resets it to
+ * undecided. The note is only kept for `wanted`. Goes through the browser
+ * client under tenant RLS.
+ */
+export async function updateArticleWorkshopStatus(
+  id: string,
+  status: ArticleWorkshopStatus | null,
+  note?: string | null
+): Promise<Article> {
+  const trimmed = note?.trim() || null
+  const { data, error } = await supabase
+    .from('blog_articles')
+    .update({
+      workshop_status: status,
+      workshop_note: status === 'wanted' ? trimmed : null,
+      workshop_status_changed_at: new Date().toISOString(),
+    })
     .eq('id', id)
     .select()
     .single()

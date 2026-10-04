@@ -12,10 +12,12 @@ import { createMockQueryBuilder } from '@/test/mocks/supabase'
 
 const sendMock = vi.fn()
 
+// A class, not vi.fn(() => ...): the code calls `new Resend()`, and vitest 4+
+// no longer lets arrow-function mock implementations act as constructors.
 vi.mock('resend', () => ({
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: { send: (...args: unknown[]) => sendMock(...args) },
-  })),
+  Resend: class {
+    emails = { send: (...args: unknown[]) => sendMock(...args) }
+  },
 }))
 
 import { notifyPinError, resolveNotificationRecipient } from './notifications'

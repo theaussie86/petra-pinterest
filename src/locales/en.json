@@ -572,7 +572,8 @@
       "multipleArchived": "{{count}} articles archived",
       "multipleArchiveFailed": "Failed to archive articles",
       "multipleRestored": "{{count}} articles restored",
-      "multipleRestoreFailed": "Failed to restore articles"
+      "multipleRestoreFailed": "Failed to restore articles",
+      "workshopStatusFailed": "Could not save the selection"
     },
     "pin": {
       "created": "Pin created",
@@ -637,7 +638,7 @@
     "searchPlaceholder": "Search articles …",
     "noArticles": "No articles in this project yet",
     "noArticlesMatch": "No articles found",
-    "selectArticle": "Select an article on the left to see its templates",
+    "selectArticle": "Pick an article on the left.",
     "templatesHeading": "Pin templates",
     "noTemplates": "This article has no templates yet",
     "openCount_one": "{{count}} open",
@@ -650,19 +651,11 @@
       "archived": "Archive"
     },
     "noTemplatesInTab": "No templates in this workspace",
-    "shortcutsHint": "Keyboard: j/k next/previous · f approve · c copy image prompt · r request change",
     "actions": {
       "approve": "Approve",
       "archive": "Archive",
       "reopen": "Back to open",
       "requestRevision": "Request change"
-    },
-    "col": {
-      "position": "No.",
-      "pinType": "Pin type",
-      "title": "Title",
-      "overlay": "Overlay",
-      "status": "Status"
     },
     "detail": {
       "copyImagePrompt": "Copy image prompt",
@@ -692,7 +685,60 @@
       "revisionSubmit": "Request change",
       "revisionSubmitting": "Sending …",
       "revisionHistory": "Change history",
-      "revisionHistoryEmpty": "No change requests yet"
+      "revisionHistoryEmpty": "No change requests yet",
+      "sketchNote": "Sketch from the design brief, not the final image",
+      "showFullPrompt": "Show full prompt",
+      "showLess": "Show less",
+      "positionOf": "{{index}} / {{total}}",
+      "previous": "Previous template",
+      "next": "Next template",
+      "descriptionLength": "{{count}} / {{max}} characters",
+      "season": "Season"
+    },
+    "progress": "{{approved}} of {{total}} approved",
+    "articleDone": "done",
+    "allReviewed": "All reviewed. No open templates left in this article.",
+    "openArticle": "Open article on the blog",
+    "statusChanged": "#{{position}}: {{status}}",
+    "undo": "Undo",
+    "shortcuts": {
+      "move": "next/previous",
+      "approve": "approve",
+      "copy": "copy prompt",
+      "revision": "request change"
+    },
+    "waitingForAgent": "Waiting for the agent",
+    "detailsNoTemplates": "Templates appear here once the agent has delivered them.",
+    "segments": {
+      "wanted": "Wanted",
+      "undecided": "New",
+      "excluded": "No pins"
+    },
+    "segmentEmpty": {
+      "wanted": "No articles wanted yet. Under “New” you choose which articles the agent should create pins for.",
+      "undecided": "Every article is decided.",
+      "excluded": "No excluded articles."
+    },
+    "curate": {
+      "want": "Request pins",
+      "exclude": "No pins",
+      "reset": "Back to New",
+      "withdraw": "Withdraw request",
+      "question": "Should the agent create 30 pin templates for this article?",
+      "noteLabel": "Note for the agent (optional)",
+      "notePlaceholder": "For example: focus on Christmas, audience mothers …",
+      "noteHint": "The agent reads the note when writing the templates.",
+      "saveNote": "Save note",
+      "noteSaved": "Note saved",
+      "since": "since {{date}}",
+      "excludedInfo": "The agent will not create pins for this article. It stays usable everywhere else.",
+      "noContent": "No article text available.",
+      "noteShort": "Note:",
+      "done": {
+        "wanted": "Pins requested",
+        "excluded": "No pins for this article",
+        "reset": "Back to New"
+      }
     }
   }
 }

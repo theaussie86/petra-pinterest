@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
-import { workspaceForStatus } from '@/lib/pin-template-workspace'
+import { workspaceForStatus, type WorkspaceCounts } from '@/lib/pin-template-workspace'
 import type {
   PinTemplate,
   PinTemplateRevision,
@@ -25,18 +25,18 @@ export async function getPinTemplatesByArticle(articleId: string): Promise<PinTe
 }
 
 /**
- * Count of *open* (still-to-review: `draft` + `needs_revision`) templates per
- * article for a project, keyed by article id. Powers the left-column badge that
- * shows how much review work each article still has. `pin_templates` has no
+ * Per-article template counts per review workspace (Offen / Freigegeben /
+ * Archiv) for a project, keyed by article id. Powers the left-column progress
+ * (approved of total) and the open-work badge. `pin_templates` has no
  * `blog_project_id`, so the project scope is applied through an inner join on
- * `blog_articles`; the open/closed split is done client-side over a lightweight
- * `blog_article_id, status` read (mirroring `getPinStatusCounts`). Articles with
- * no open templates are omitted (count 0). Runs through the isomorphic client so
- * it respects tenant RLS under SSR-auth (ADR 0003).
+ * `blog_articles`; the workspace split is done client-side over a lightweight
+ * `blog_article_id, status` read (mirroring `getPinStatusCounts`). Articles
+ * without templates are omitted. Runs through the isomorphic client so it
+ * respects tenant RLS under SSR-auth (ADR 0003).
  */
-export async function getOpenPinTemplateCountsByProject(
+export async function getPinTemplateCountsByProject(
   projectId: string
-): Promise<Record<string, number>> {
+): Promise<Record<string, WorkspaceCounts>> {
   const { data, error } = await getSupabaseClient()
     .from('pin_templates')
     .select('blog_article_id, status, blog_articles!inner(blog_project_id)')
@@ -44,10 +44,10 @@ export async function getOpenPinTemplateCountsByProject(
 
   if (error) throw error
 
-  const counts: Record<string, number> = {}
+  const counts: Record<string, WorkspaceCounts> = {}
   for (const row of data as { blog_article_id: string; status: PinTemplateStatus }[]) {
-    if (workspaceForStatus(row.status) !== 'open') continue
-    counts[row.blog_article_id] = (counts[row.blog_article_id] ?? 0) + 1
+    const entry = (counts[row.blog_article_id] ??= { open: 0, approved: 0, archived: 0 })
+    entry[workspaceForStatus(row.status)] += 1
   }
   return counts
 }

@@ -48,6 +48,16 @@ there first, then update the test copy and this document.
   `needs_revision` rows are changed only through the revision flow below, so the
   pre-rework snapshot is never lost.
 
+## Which articles get templates
+
+The reviewer curates articles in the Pin-Werkstatt (migration
+`00035_article_workshop_curation.sql`). `blog_articles.workshop_status` is
+`NULL` (undecided), `wanted` or `excluded`. The agent only writes templates for
+`wanted` articles that are not archived, oldest `workshop_status_changed_at`
+first, and reads the optional `workshop_note` as per-article guidance (skill
+query A3). The agent cannot change these columns. A request counts as done once
+the article has 30 templates; nothing is stored for that.
+
 ## Required fields
 
 Enforced `NOT NULL` by the schema (`00026_pin_templates.sql`):

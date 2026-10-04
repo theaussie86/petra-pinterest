@@ -1,6 +1,6 @@
 import {
   getPinTemplatesByArticle,
-  getOpenPinTemplateCountsByProject,
+  getPinTemplateCountsByProject,
   updatePinTemplateStatus,
   getPinTemplateRevisions,
   requestPinTemplateRevision,
@@ -43,8 +43,8 @@ describe('getPinTemplatesByArticle()', () => {
   })
 })
 
-describe('getOpenPinTemplateCountsByProject()', () => {
-  it('aggregates only open (draft + needs_revision) templates per article', async () => {
+describe('getPinTemplateCountsByProject()', () => {
+  it('aggregates templates per article and workspace', async () => {
     // Rows come back scoped to the project via the embedded blog_articles join.
     const rows = [
       { blog_article_id: 'a1', status: 'draft' },
@@ -56,19 +56,22 @@ describe('getOpenPinTemplateCountsByProject()', () => {
     const qb = createMockQueryBuilder({ data: rows })
     mockFrom.mockReturnValue(qb as any)
 
-    const result = await getOpenPinTemplateCountsByProject('proj-1')
+    const result = await getPinTemplateCountsByProject('proj-1')
 
     expect(mockFrom).toHaveBeenCalledWith('pin_templates')
     expect(qb.eq).toHaveBeenCalledWith('blog_articles.blog_project_id', 'proj-1')
-    // a1 has 2 open, a2 has 1 open, a3 has 0 open (omitted).
-    expect(result).toEqual({ a1: 2, a2: 1 })
+    expect(result).toEqual({
+      a1: { open: 2, approved: 1, archived: 0 },
+      a2: { open: 1, approved: 0, archived: 0 },
+      a3: { open: 0, approved: 0, archived: 1 },
+    })
   })
 
   it('returns an empty map when the project has no templates', async () => {
     const qb = createMockQueryBuilder({ data: [] })
     mockFrom.mockReturnValue(qb as any)
 
-    const result = await getOpenPinTemplateCountsByProject('proj-1')
+    const result = await getPinTemplateCountsByProject('proj-1')
 
     expect(result).toEqual({})
   })

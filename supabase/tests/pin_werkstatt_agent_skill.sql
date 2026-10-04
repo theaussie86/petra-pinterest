@@ -55,15 +55,16 @@ WHERE id = '__PROJECT__'
 $q$;
 
   q_a3 text := $q$
-SELECT a.id AS article_id, a.title, a.url, a.published_at,
+SELECT a.id AS article_id, a.title, a.url, a.published_at, a.workshop_note,
        count(t.id) AS template_count
 FROM public.blog_articles a
 LEFT JOIN public.pin_templates t ON t.blog_article_id = a.id
 WHERE a.blog_project_id = '__PROJECT__'
   AND a.archived_at IS NULL
+  AND a.workshop_status = 'wanted'
 GROUP BY a.id
 HAVING count(t.id) < 30
-ORDER BY a.published_at DESC NULLS LAST
+ORDER BY a.workshop_status_changed_at ASC NULLS LAST
 LIMIT 20
 $q$;
 
@@ -76,7 +77,7 @@ ORDER BY gs.position
 $q$;
 
   q_a5 text := $q$
-SELECT id AS article_id, title, url, published_at, content
+SELECT id AS article_id, title, url, published_at, workshop_note, content
 FROM public.blog_articles
 WHERE id = '__ARTICLE__'
 $q$;
@@ -256,6 +257,12 @@ BEGIN
     RAISE EXCEPTION 'SKILL-TEST: no active article without templates to test with';
   END IF;
 
+  -- Only wanted articles are in the agent's queue (00035); mark the test article.
+  UPDATE public.blog_articles
+  SET workshop_status = 'wanted', workshop_note = 'Skill-Test Hinweis',
+      workshop_status_changed_at = now()
+  WHERE id = v_article;
+
   GRANT pin_werkstatt_agent TO postgres WITH INHERIT FALSE, SET TRUE;
 
   INSERT INTO public.agent_project_access (role_name, blog_project_id)
@@ -313,6 +320,20 @@ BEGIN
           || ') q WHERE template_count < 30' INTO v_n;
   IF v_n >= 1 THEN v_ok := v_ok + 1; v_log := v_log || E'\nok   A3 articles without 30 templates: ' || v_n;
   ELSE v_fail := v_fail + 1; v_log := v_log || E'\nFAIL A3 returned no article'; END IF;
+
+  EXECUTE 'SELECT count(*) FROM (' || replace(q_a3, '__PROJECT__', v_project::text)
+          || ') q WHERE article_id = ''' || v_article || ''' AND workshop_note = ''Skill-Test Hinweis''' INTO v_n;
+  IF v_n = 1 THEN v_ok := v_ok + 1; v_log := v_log || E'\nok   A3 lists the wanted test article with its note';
+  ELSE v_fail := v_fail + 1; v_log := v_log || E'\nFAIL A3 misses the wanted test article'; END IF;
+
+  SELECT count(*) INTO v_n FROM public.blog_articles
+  WHERE blog_project_id = v_project AND archived_at IS NULL
+    AND workshop_status IS DISTINCT FROM 'wanted';
+  EXECUTE 'SELECT count(*) FROM (' || replace(q_a3, '__PROJECT__', v_project::text)
+          || ') q JOIN public.blog_articles a ON a.id = q.article_id'
+          || ' WHERE a.workshop_status IS DISTINCT FROM ''wanted''' INTO v_txt;
+  IF v_txt = '0' THEN v_ok := v_ok + 1; v_log := v_log || E'\nok   A3 skips ' || v_n || ' undecided/excluded article(s)';
+  ELSE v_fail := v_fail + 1; v_log := v_log || E'\nFAIL A3 lists non-wanted articles: ' || v_txt; END IF;
 
   EXECUTE 'SELECT count(*) FILTER (WHERE status IS NULL) FROM (' || replace(q_a4, '__ARTICLE__', v_article::text) || ') q' INTO v_n;
   IF v_n = 30 THEN v_ok := v_ok + 1; v_log := v_log || E'\nok   A4 30 free positions';

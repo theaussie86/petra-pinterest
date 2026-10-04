@@ -7,7 +7,7 @@ import {
 } from '@/lib/api/pin-templates'
 import {
   pinTemplatesByArticleQueryOptions,
-  pinTemplateOpenCountsQueryOptions,
+  pinTemplateCountsQueryOptions,
   pinTemplateRevisionsQueryOptions,
 } from '@/lib/query/pin-templates'
 import type { PinTemplateStatus } from '@/types/pin-templates'
@@ -24,11 +24,11 @@ export function usePinTemplatesByArticle(articleId: string) {
 }
 
 /**
- * Per-article *open* template counts for a project (left-column badges).
+ * Per-article workspace counts for a project (left-column progress + badges).
  */
-export function usePinTemplateOpenCounts(projectId: string) {
+export function usePinTemplateCounts(projectId: string) {
   return useQuery({
-    ...pinTemplateOpenCountsQueryOptions(projectId),
+    ...pinTemplateCountsQueryOptions(projectId),
     enabled: !!projectId,
   })
 }
@@ -36,7 +36,7 @@ export function usePinTemplateOpenCounts(projectId: string) {
 /**
  * Change a template's review status. Invalidates the whole `['pin-templates']`
  * prefix so both the selected article's template list (tab counters) and the
- * left-column open counts refresh without a reload. Failures surface as a toast.
+ * left-column counts refresh without a reload. Failures surface as a toast.
  */
 export function useUpdatePinTemplateStatus() {
   const queryClient = useQueryClient()
@@ -67,7 +67,7 @@ export function usePinTemplateRevisions(templateId: string) {
 /**
  * Request a revision on a template: records the feedback and moves the template
  * to `needs_revision` in one step. Invalidates the whole `['pin-templates']`
- * prefix so the detail history, the tab counters and the left-column open counts
+ * prefix so the detail history, the tab counters and the left-column counts
  * all refresh without a reload. Failures surface as a toast.
  */
 export function useRequestPinTemplateRevision() {

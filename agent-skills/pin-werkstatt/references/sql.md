@@ -35,20 +35,24 @@ FROM public.blog_projects
 WHERE id = '<project_id>';
 ```
 
-## A3: Artikel ohne vollständige 30 Vorlagen
+## A3: Gewünschte Artikel ohne vollständige 30 Vorlagen
 
-Neueste zuerst, archivierte Artikel ausgelassen.
+Nur Artikel, für die der Mensch in Pinfinity Pins gewünscht hat
+(`workshop_status = 'wanted'`), älteste Anfrage zuerst. `workshop_note` ist sein
+optionaler Hinweis für genau diesen Artikel. Unentschiedene und ausgeschlossene
+Artikel bekommen nie Vorlagen, auch wenn du sie siehst.
 
 ```sql
-SELECT a.id AS article_id, a.title, a.url, a.published_at,
+SELECT a.id AS article_id, a.title, a.url, a.published_at, a.workshop_note,
        count(t.id) AS template_count
 FROM public.blog_articles a
 LEFT JOIN public.pin_templates t ON t.blog_article_id = a.id
 WHERE a.blog_project_id = '<project_id>'
   AND a.archived_at IS NULL
+  AND a.workshop_status = 'wanted'
 GROUP BY a.id
 HAVING count(t.id) < 30
-ORDER BY a.published_at DESC NULLS LAST
+ORDER BY a.workshop_status_changed_at ASC NULLS LAST
 LIMIT 20;
 ```
 
@@ -68,7 +72,7 @@ ORDER BY gs.position;
 ## A5: Artikel lesen
 
 ```sql
-SELECT id AS article_id, title, url, published_at, content
+SELECT id AS article_id, title, url, published_at, workshop_note, content
 FROM public.blog_articles
 WHERE id = '<article_id>';
 ```

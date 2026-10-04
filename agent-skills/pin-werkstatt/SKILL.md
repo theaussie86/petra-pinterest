@@ -55,8 +55,14 @@ unsichtbar oder wird abgelehnt. Das ist gewollt, kein Fehler.
 1. Freigegebene Projekte abfragen (`sql.md` → **A1**).
 2. Für das gewählte Projekt den Projektkontext lesen (**A2**): `ai_context`,
    Zielgruppe, Tonalität, Sprache, Keywords. Das ist die Grundlage für alle Texte.
-3. Artikel finden, die noch keine 30 Vorlagen haben (**A3**). Archivierte Artikel
-   sind bereits ausgeschlossen.
+3. Artikel finden, für die der Mensch Pins gewünscht hat und die noch keine 30
+   Vorlagen haben (**A3**). Er markiert sie in Pinfinity, die älteste Anfrage
+   kommt zuerst. Für alle anderen Artikel schreibst du **nie** Vorlagen, auch
+   wenn du sie lesen kannst. Liefert A3 nichts, gibt es nichts zu tun: melde das
+   und erfinde keine Auswahl.
+   - `workshop_note` ist ein optionaler Hinweis des Menschen für genau diesen
+     Artikel (zum Beispiel ein saisonaler Fokus). Ist er gesetzt, hat er Vorrang
+     vor dem allgemeinen Projektkontext.
 4. Vor dem Schreiben den Positionsstand des Artikels prüfen (**A4**) und den
    Artikeltext lesen (**A5**).
 
