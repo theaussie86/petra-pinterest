@@ -89,7 +89,9 @@ WHERE id = '<article_id>';
   neu angelegte von aktualisierten Zeilen unterscheidet.
 
 Das JSON ist eine Liste von Vorlagen. Jede Vorlage hat diese Schlüssel
-(`position`, `main_keyword`, `overlay`, `image_prompt` sind Pflicht):
+(`position`, `main_keyword`, `overlay`, `image_prompt` sind Pflicht).
+`description` bleibt `null`: die Pinterest-Beschreibung entsteht später in
+Pinfinity, nachdem das Bild erstellt ist.
 
 ```json
 [
@@ -97,7 +99,7 @@ Das JSON ist eine Liste von Vorlagen. Jede Vorlage hat diese Schlüssel
     "position": 1,
     "pin_type": "Checkliste",
     "title": "…",
-    "description": "<beginnt mit main_keyword, max. 500 Zeichen>",
+    "description": null,
     "board_name_raw": "…",
     "overlay": "Zeile 1 mit main_keyword\nZeile 2",
     "main_keyword": "…",

@@ -538,8 +538,8 @@ export function WorkshopTemplateDetail({
                   </p>
                 </>
               ) : (
-                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                  {t('workshop.detail.descriptionMissing')}
+                <p className="text-sm text-muted-foreground">
+                  {t('workshop.detail.descriptionLater')}
                 </p>
               )}
             </div>

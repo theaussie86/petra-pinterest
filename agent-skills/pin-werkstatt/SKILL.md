@@ -86,8 +86,12 @@ Arbeite erst die offenen Änderungswünsche ab (Schritt C), dann neue Vorlagen.
 | `position` zwischen 1 und 30, pro Artikel eindeutig | `pin_templates_position_range` |
 | `main_keyword` und `image_prompt` gesetzt | `not-null constraint` |
 | `overlay` gesetzt und enthält `main_keyword` wörtlich | `pin_templates_keyword_in_overlay` |
-| `description` höchstens 500 Zeichen | `pin_templates_description_max_length` |
-| `description` beginnt mit `main_keyword` | `pin_templates_description_starts_with_keyword` |
+| `description`, falls gesetzt, höchstens 500 Zeichen | `pin_templates_description_max_length` |
+| `description`, falls gesetzt, beginnt mit `main_keyword` | `pin_templates_description_starts_with_keyword` |
+
+`description` bleibt in der Werkstatt leer (`null`). Die Pinterest-Beschreibung
+entsteht später in Pinfinity, nachdem das Bild erstellt ist. Eine Beschreibung
+in der Vorlage wird nicht übernommen.
 
 Der Keyword-Vergleich ignoriert Groß- und Kleinschreibung sowie mehrfache
 Leerzeichen und Zeilenumbrüche, sonst ist er wörtlich. „Trauer bewältigen“ passt

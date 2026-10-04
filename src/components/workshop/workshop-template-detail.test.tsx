@@ -53,11 +53,11 @@ describe('WorkshopTemplateDetail', () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('A cozy scene'))
   })
 
-  it('marks a missing description as missing rather than leaving it blank', () => {
+  it('explains that the pin description comes after the image', () => {
     const template = buildPinTemplate({ description: null })
     render(<WorkshopTemplateDetail template={template} blogUrl="https://www.example.com" />)
 
-    expect(screen.getByText(/Beschreibung fehlt/i)).toBeTruthy()
+    expect(screen.getByText(/entsteht später in Pinfinity/i)).toBeTruthy()
   })
 
   it('renders the design colors as swatches', () => {
