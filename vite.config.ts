@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
+import viteReact from '@vitejs/plugin-react'
 import { devtools } from '@tanstack/devtools-vite'
 import tailwindcss from '@tailwindcss/vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
@@ -18,6 +19,7 @@ export default defineConfig(({ mode }) => {
       tsConfigPaths(),
       devtools(),
       tanstackStart(),
+      viteReact(),
       nitro({ preset: (process.env.NITRO_PRESET as 'vercel' | 'node-server') || 'node-server' }),
       tailwindcss(),
     ],
