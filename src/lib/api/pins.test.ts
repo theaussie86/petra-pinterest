@@ -50,6 +50,14 @@ vi.mock('@/lib/auth', () => ({
   ensureProfile: vi.fn().mockResolvedValue({ tenant_id: 'test-tenant-id' }),
 }))
 
+// Write paths reconcile the MQ publish job through this server fn (issue #104).
+const { mockSyncPublishJobsFn } = vi.hoisted(() => ({
+  mockSyncPublishJobsFn: vi.fn().mockResolvedValue({ synced: 0, failed: 0 }),
+}))
+vi.mock('@/lib/server/publish-sync', () => ({
+  syncPublishJobsFn: mockSyncPublishJobsFn,
+}))
+
 const mockStorageFrom = vi.mocked(supabase.storage.from)
 
 describe('SSR-authenticated reads (ADR 0003)', () => {
@@ -423,6 +431,80 @@ describe('updatePinsStatus()', () => {
 
     expect(qb.update).toHaveBeenCalledWith({ status: 'draft' })
     expect(qb.in).toHaveBeenCalledWith('id', ['p1', 'p2'])
+  })
+})
+
+describe('MQ publish-job sync on write paths (issue #104)', () => {
+  beforeEach(() => {
+    mockSyncPublishJobsFn.mockClear()
+    mockSyncPublishJobsFn.mockResolvedValue({ synced: 0, failed: 0 })
+  })
+
+  it('updatePin reconciles the touched pin', async () => {
+    const qb = createMockQueryBuilder({ data: buildPin({ id: 'pin-1' }) })
+    mockFrom.mockReturnValue(qb as any)
+
+    await updatePin({ id: 'pin-1', scheduled_at: '2026-10-20T09:00:00.000Z' })
+
+    expect(mockSyncPublishJobsFn).toHaveBeenCalledWith({ data: { pinIds: ['pin-1'] } })
+  })
+
+  it('updatePinStatus reconciles the touched pin', async () => {
+    const qb = createMockQueryBuilder({ data: buildPin({ id: 'pin-1', status: 'draft' }) })
+    mockFrom.mockReturnValue(qb as any)
+
+    await updatePinStatus('pin-1', 'draft')
+
+    expect(mockSyncPublishJobsFn).toHaveBeenCalledWith({ data: { pinIds: ['pin-1'] } })
+  })
+
+  it('updatePinsStatus reconciles every touched pin', async () => {
+    const qb = createMockQueryBuilder({ data: null })
+    mockFrom.mockReturnValue(qb as any)
+
+    await updatePinsStatus(['p1', 'p2'], 'draft')
+
+    expect(mockSyncPublishJobsFn).toHaveBeenCalledWith({ data: { pinIds: ['p1', 'p2'] } })
+  })
+
+  it('deletePin reconciles the removed pin', async () => {
+    mockStorageFrom.mockReturnValue(createMockStorageBucket() as any)
+    const fetchQb = createMockQueryBuilder({ data: { image_path: null } })
+    const deleteQb = createMockQueryBuilder({ data: null })
+    mockFrom.mockReturnValueOnce(fetchQb as any).mockReturnValueOnce(deleteQb as any)
+
+    await deletePin('pin-1')
+
+    expect(mockSyncPublishJobsFn).toHaveBeenCalledWith({ data: { pinIds: ['pin-1'] } })
+  })
+
+  it('deletePins reconciles every removed pin', async () => {
+    mockStorageFrom.mockReturnValue(createMockStorageBucket() as any)
+    const fetchQb = createMockQueryBuilder({ data: [{ image_path: null }] })
+    const deleteQb = createMockQueryBuilder({ data: null })
+    mockFrom.mockReturnValueOnce(fetchQb as any).mockReturnValueOnce(deleteQb as any)
+
+    await deletePins(['p1', 'p2'])
+
+    expect(mockSyncPublishJobsFn).toHaveBeenCalledWith({ data: { pinIds: ['p1', 'p2'] } })
+  })
+
+  it('does not break the mutation when the sync fails', async () => {
+    mockSyncPublishJobsFn.mockRejectedValueOnce(new Error('mq down'))
+    const qb = createMockQueryBuilder({ data: buildPin({ id: 'pin-1' }) })
+    mockFrom.mockReturnValue(qb as any)
+
+    await expect(
+      updatePin({ id: 'pin-1', scheduled_at: '2026-10-20T09:00:00.000Z' }),
+    ).resolves.toBeDefined()
+  })
+
+  it('does not sync when the write itself fails', async () => {
+    const qb = createMockQueryBuilder({ data: null, error: { message: 'denied' } })
+    mockFrom.mockReturnValue(qb as any)
+
+    await expect(updatePin({ id: 'pin-1', title: 'x' })).rejects.toBeDefined()
+    expect(mockSyncPublishJobsFn).not.toHaveBeenCalled()
   })
 })
 

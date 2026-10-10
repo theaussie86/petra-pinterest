@@ -1,7 +1,24 @@
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
+import { syncPublishJobsFn } from '@/lib/server/publish-sync'
 import type { Pin, PinInsert, PinUpdate, PinStatus } from '@/types/pins'
+
+/**
+ * Reconcile the MQ publish jobs for the pins a write just touched (issue #104).
+ * Runs server-side via `syncPublishJobsFn`, which (re)enqueues or cancels each
+ * pin's delayed publish job to match its current eligibility. Best-effort: an
+ * MQ or server hiccup must never break the originating mutation, so failures
+ * are swallowed here — the MQ reconcile job (MQ #14) catches anything dropped.
+ */
+async function syncPublishJobsSafe(pinIds: string[]): Promise<void> {
+  if (pinIds.length === 0) return
+  try {
+    await syncPublishJobsFn({ data: { pinIds } })
+  } catch (err) {
+    console.error('[pins] syncPublishJobs failed', err)
+  }
+}
 
 export interface PaginatedPinsResult {
   pins: Pin[]
@@ -188,6 +205,7 @@ export async function updatePin({ id, ...updates }: PinUpdate): Promise<Pin> {
     .single()
 
   if (error) throw error
+  await syncPublishJobsSafe([id])
   return data
 }
 
@@ -210,6 +228,7 @@ export async function deletePin(id: string): Promise<void> {
   const { error } = await supabase.from('pins').delete().eq('id', id)
 
   if (error) throw error
+  await syncPublishJobsSafe([id])
 }
 
 export async function deletePins(ids: string[]): Promise<void> {
@@ -233,6 +252,7 @@ export async function deletePins(ids: string[]): Promise<void> {
   const { error } = await supabase.from('pins').delete().in('id', ids)
 
   if (error) throw error
+  await syncPublishJobsSafe(ids)
 }
 
 export async function updatePinStatus(
@@ -247,6 +267,7 @@ export async function updatePinStatus(
     .single()
 
   if (error) throw error
+  await syncPublishJobsSafe([id])
   return data
 }
 
@@ -260,6 +281,7 @@ export async function updatePinsStatus(
     .in('id', ids)
 
   if (error) throw error
+  await syncPublishJobsSafe(ids)
 }
 
 export async function uploadPinMedia(
