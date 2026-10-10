@@ -1,23 +1,14 @@
 import { useTranslation } from 'react-i18next'
 import { Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 import { usePinPublishEvents } from '@/lib/hooks/use-pin-publish-events'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
-import type { PinPublishEvent, PinPublishEventType } from '@/types/pins'
+import { PublishEventBadge } from '@/components/pins/publish-event-badge'
+import { formatDateTime } from '@/lib/format'
+import type { PinPublishEvent } from '@/types/pins'
 
 interface PublishHistoryProps {
   pinId: string
-}
-
-// Badge colour per event type (issue #110): attempt_started neutral,
-// succeeded green, retry_scheduled yellow, failed_final red, mail_sent blue.
-const EVENT_BADGE_CLASSES: Record<PinPublishEventType, string> = {
-  attempt_started: 'bg-slate-100 text-slate-700',
-  succeeded: 'bg-emerald-100 text-emerald-700',
-  retry_scheduled: 'bg-amber-100 text-amber-800',
-  failed_final: 'bg-red-100 text-red-700',
-  mail_sent: 'bg-blue-100 text-blue-700',
 }
 
 export function PublishHistory({ pinId }: PublishHistoryProps) {
@@ -70,14 +61,7 @@ function PublishEventItem({
   return (
     <li className="border-l-2 border-slate-200 pl-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span
-          className={cn(
-            'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-            EVENT_BADGE_CLASSES[event.event_type],
-          )}
-        >
-          {t(`publishHistory.eventType.${event.event_type}`)}
-        </span>
+        <PublishEventBadge type={event.event_type} />
         <time className="text-xs text-slate-500" dateTime={event.created_at}>
           {formatDateTime(event.created_at, language)}
         </time>
@@ -128,16 +112,6 @@ function getNextRetryAt(event: PinPublishEvent): string | null {
 
 function hasDetails(details: Record<string, unknown> | null | undefined): boolean {
   return !!details && Object.keys(details).length > 0
-}
-
-function formatDateTime(dateString: string, language: string): string {
-  return new Date(dateString).toLocaleString(language === 'de' ? 'de-DE' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 // Relative time ("in 5 Minuten" / "vor 2 Stunden") via Intl.RelativeTimeFormat.

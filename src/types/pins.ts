@@ -115,6 +115,20 @@ export interface PinPublishEvent {
   created_at: string
 }
 
+// A publish event for the global log (issue #111), enriched with the pin's
+// title via the pin_id FK embed so the table can link to the pin detail. The
+// pin may be null if the referenced row is not visible (should not happen under
+// RLS, since the event's tenant owns the pin).
+export interface PublishLogEvent extends PinPublishEvent {
+  pin: { id: string; title: string | null } | null
+}
+
+// Error event types for the "only errors" filter on the global log (issue #111).
+export const PUBLISH_ERROR_EVENT_TYPES: PinPublishEventType[] = [
+  'retry_scheduled',
+  'failed_final',
+]
+
 // Sort and view mode types for pin list UI
 export type PinSortField = 'title' | 'status' | 'created_at' | 'updated_at' | 'scheduled_at' | 'published_at'
 export type PinViewMode = 'table' | 'grid'

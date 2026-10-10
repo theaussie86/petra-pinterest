@@ -50,7 +50,8 @@
     "calendar": "Kalender",
     "selectProject": "Projekt wählen",
     "noProjects": "Noch keine Projekte",
-    "manageProjects": "Projekte verwalten"
+    "manageProjects": "Projekte verwalten",
+    "publishLog": "Veröffentlichungs-Log"
   },
   "language": {
     "label": "Sprache",
@@ -367,6 +368,32 @@
     "fieldTitle": "Titel: ",
     "fieldDescription": "Beschreibung: ",
     "fieldAltText": "Alternativtext: "
+  },
+  "publishLog": {
+    "title": "Veröffentlichungs-Log",
+    "description": "Alle Veröffentlichungsereignisse über alle Projekte, live.",
+    "empty": "Noch keine Veröffentlichungsereignisse",
+    "loadMore": "Mehr laden",
+    "untitledPin": "Pin ohne Titel",
+    "columns": {
+      "time": "Zeit",
+      "project": "Projekt",
+      "pin": "Pin",
+      "event": "Ereignis",
+      "attempt": "Versuch",
+      "message": "Meldung"
+    },
+    "filters": {
+      "allProjects": "Alle Projekte",
+      "onlyErrors": "Nur Fehler",
+      "timeRange": {
+        "24h": "Letzte 24 Stunden",
+        "7d": "Letzte 7 Tage",
+        "30d": "Letzte 30 Tage",
+        "90d": "Letzte 90 Tage",
+        "all": "Gesamter Zeitraum"
+      }
+    }
   },
   "publishHistory": {
     "title": "Veröffentlichungsverlauf",
