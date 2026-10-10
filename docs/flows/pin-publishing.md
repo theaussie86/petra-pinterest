@@ -6,6 +6,8 @@ For the full pin status state machine, see [Pin Status Flow](../pin-status-flow.
 
 ## Manual Publish
 
+Manual publish goes through the MQ like scheduled publish (issue #106, Variant B). The click only queues an immediate job; the MQ worker publishes, retries (429, 5xx, network) and sends the error mail after the final failure.
+
 ```mermaid
 flowchart TD
     A[Pin detail or sidebar:<br/>PublishPinButton] --> B{Prerequisites check}
@@ -14,21 +16,22 @@ flowchart TD
     B -->|Ready| E[Click 'Publish']
 
     E --> F[publishPinFn server function]
-    F --> G[Authenticate + verify tenant]
-    G --> H[publishSinglePin]
-    H --> I[Fetch pin + article URL + connection ID]
-    I --> J[Get access token from Vault]
-    J --> K[Build Pinterest API payload]
-    K --> L[createPinterestPin with retry]
+    F --> G[Authenticate + RLS read of pin]
+    G --> H{Board, connection,<br/>image, not published?}
+    H -->|No| I[Throw: toast with reason]
+    H -->|Yes| J[Update pin:<br/>status = metadata_created<br/>scheduled_at = now<br/>error_message = null]
+    J --> K[enqueueManualPublishPin<br/>jobId publish-pin-id-manual-timestamp, delay 0]
+    K -->|MQ error| L[Restore previous status,<br/>scheduled_at, error_message + toast]
+    K -->|Enqueued| M[Toast: Publishing...<br/>client polls pins.status]
 
-    L -->|Success| M[Update pin:<br/>status = published<br/>published_at = now<br/>pinterest_pin_id + URL]
-    L -->|Rate limited 429| N[Retry with exponential backoff<br/>up to 3 attempts]
-    N --> L
-    L -->|Other error| O[Update pin:<br/>status = error<br/>error_message = details]
-
-    M --> P[Toast: Published successfully]
-    O --> Q[Toast: Publish failed]
+    M -->|status = published| N[Toast: Published]
+    M -->|status = error| O[Toast: Publish failed + error_message]
 ```
+
+- The pin is prepared as a regular publish candidate because the worker checks `status = metadata_created`, `scheduled_at` set and its stale guard compares `scheduled_at`. A pending scheduled job for the same pin becomes stale and is skipped.
+- The unique `-manual-<timestamp>` jobId keeps the manual job from replacing the scheduled one.
+- There is no intermediate `publishing` status. While the job waits (including retry backoff of up to ~35 min), the pin shows `metadata_created`; the hook polls every 5 s for up to 40 min.
+- Error mail applies to manual publishes too (after the final failure).
 
 ## Auto-Publish (Scheduled)
 
@@ -80,7 +83,7 @@ flowchart TD
     D -->|Reset Status| E[Restore previous_status<br/>or fallback to draft]
     D -->|Retry Publish| F[Click Publish again]
     E --> G[Pin recoverable]
-    F --> H[publishPinFn retries]
+    F --> H[publishPinFn queues a new job]
 ```
 
 When a publish fails:
@@ -95,10 +98,12 @@ When a publish fails:
 flowchart TD
     A[Select multiple pins] --> B[publishPinsBulkFn]
     B --> C[Verify all pins belong to tenant]
-    C --> D[Process sequentially<br/>10s delay between pins]
-    D --> E[Return summary:<br/>total, published, failed]
-    E --> F[Toast: Published N of M]
+    C --> D[Per pin: same prepare + enqueue<br/>as manual publish, no app-side delay]
+    D --> E[Return summary:<br/>total, queued, failed, results]
+    E --> F[Toast: Queued N of M<br/>+ one error toast per rejected pin]
 ```
+
+The 10 s spacing per Pinterest connection is enforced by the MQ worker.
 
 ## Pinterest API Payload
 
@@ -134,7 +139,8 @@ The pin is published with:
 | File | Purpose |
 |------|---------|
 | `src/components/pins/publish-pin-button.tsx` | Publish button with prerequisite checks |
-| `src/lib/server/pinterest-publishing.ts` | Server functions: `publishPinFn`, `publishPinsBulkFn`, `publishSinglePin` |
+| `src/lib/server/pinterest-publishing.ts` | Server functions `publishPinFn`, `publishPinsBulkFn` (queue via MQ); `publishSinglePin` (synchronous, used by the Edge Function path until cutover) |
+| `src/lib/server/mq.ts` | MQ client: `enqueuePublishPin`, `enqueueManualPublishPin`, `cancelPublishPin` |
 | `src/lib/server/pinterest-api.ts` | `createPinterestPin` with exponential backoff retry |
-| `src/lib/hooks/use-pinterest-publishing.ts` | `usePublishPin`, `usePublishPinsBulk` hooks |
+| `src/lib/hooks/use-pinterest-publishing.ts` | `usePublishPin`, `usePublishPinsBulk` hooks (incl. status polling) |
 | `supabase/functions/publish-scheduled-pins/index.ts` | Auto-publish Edge Function for pg_cron |

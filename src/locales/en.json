@@ -611,7 +611,8 @@
     "publish": {
       "published": "Pin published to Pinterest!",
       "failed": "Publish failed: {{error}}",
-      "bulkSuccess": "Published {{published}}/{{total}} pins",
+      "queued": "Publishing...",
+      "bulkQueued": "Queued {{queued}}/{{total}} pins",
       "bulkFailed": "Bulk publish failed: {{error}}"
     },
     "gemini": {

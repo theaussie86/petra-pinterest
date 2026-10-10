@@ -611,7 +611,8 @@
     "publish": {
       "published": "Pin auf Pinterest veröffentlicht!",
       "failed": "Veröffentlichung fehlgeschlagen: {{error}}",
-      "bulkSuccess": "{{published}}/{{total}} Pins veröffentlicht",
+      "queued": "Wird veröffentlicht...",
+      "bulkQueued": "{{queued}}/{{total}} Pins eingereiht",
       "bulkFailed": "Bulk-Veröffentlichung fehlgeschlagen: {{error}}"
     },
     "gemini": {
