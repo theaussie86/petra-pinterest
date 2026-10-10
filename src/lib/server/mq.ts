@@ -91,8 +91,9 @@ export async function enqueuePublishPin(
   const { pinId, scheduledAt, tenantId } = input
   try {
     const { url, key } = readConfig()
-    const scheduledAtIso = new Date(scheduledAt).toISOString()
-    const delay = Math.max(0, new Date(scheduledAtIso).getTime() - Date.now())
+    const scheduledAtDate = new Date(scheduledAt)
+    const scheduledAtIso = scheduledAtDate.toISOString()
+    const delay = Math.max(0, scheduledAtDate.getTime() - Date.now())
 
     const response = await fetch(`${url}/jobs`, {
       method: 'POST',
