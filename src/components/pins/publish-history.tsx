@@ -65,12 +65,7 @@ function PublishEventItem({
   language: string
 }) {
   const { t } = useTranslation()
-  const nextRetryAt =
-    event.event_type === 'retry_scheduled'
-      ? typeof event.details?.next_retry_at === 'string'
-        ? event.details.next_retry_at
-        : null
-      : null
+  const nextRetryAt = getNextRetryAt(event)
 
   return (
     <li className="border-l-2 border-slate-200 pl-3">
@@ -81,7 +76,7 @@ function PublishEventItem({
             EVENT_BADGE_CLASSES[event.event_type],
           )}
         >
-          {t('publishHistory.eventType.' + event.event_type)}
+          {t(`publishHistory.eventType.${event.event_type}`)}
         </span>
         <time className="text-xs text-slate-500" dateTime={event.created_at}>
           {formatDateTime(event.created_at, language)}
@@ -123,6 +118,14 @@ function PublishEventItem({
   )
 }
 
+// The next-retry timestamp only exists on retry_scheduled events, and only
+// when the worker recorded it as an ISO string in details.
+function getNextRetryAt(event: PinPublishEvent): string | null {
+  if (event.event_type !== 'retry_scheduled') return null
+  const value = event.details?.next_retry_at
+  return typeof value === 'string' ? value : null
+}
+
 function hasDetails(details: Record<string, unknown> | null | undefined): boolean {
   return !!details && Object.keys(details).length > 0
 }
@@ -149,9 +152,10 @@ function formatRelative(dateString: string, language: string): string {
     ['minute', 60000],
   ]
   for (const [unit, ms] of units) {
-    if (Math.abs(diffMs) >= ms || unit === 'minute') {
+    if (Math.abs(diffMs) >= ms) {
       return rtf.format(Math.round(diffMs / ms), unit)
     }
   }
+  // Less than a minute away: fall back to minute granularity ("in 0 Minuten").
   return rtf.format(Math.round(diffMs / 60000), 'minute')
 }
