@@ -70,6 +70,14 @@ sequenceDiagram
 
 **Rate limiting:** 10-second delay between pins per Pinterest account to respect API limits.
 
+## Enqueueing after AI metadata generation (MQ)
+
+Decision (issue #105): **Variant B**. The Edge Functions `generate-metadata-single` and `generate-metadata-worker` do **not** call MQ when a pin reaches `metadata_created`. A pin that already has a `scheduled_at` is picked up by the MQ reconcile job (every 15 min).
+
+- Delay: up to 15 min until enqueued. Irrelevant for future schedules, a short lateness for schedules in the past.
+- The other Edge Functions are expected to migrate to MQ soon as well.
+- Revisit Variant A (Deno MQ client in `supabase/functions/_shared/`, secrets `MQ_API_URL` and `MQ_API_KEY`) only if the delay becomes a problem.
+
 ## Error Recovery
 
 ```mermaid

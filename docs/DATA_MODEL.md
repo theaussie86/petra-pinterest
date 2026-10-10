@@ -91,6 +91,18 @@ erDiagram
         timestamptz created_at "NOT NULL, DEFAULT NOW()"
     }
 
+    pin_publish_events {
+        uuid id PK "DEFAULT gen_random_uuid()"
+        uuid pin_id FK "NOT NULL, ON DELETE CASCADE"
+        uuid blog_project_id "NOT NULL, denormalised for RLS/filter"
+        text event_type "NOT NULL, CHECK (attempt_started|succeeded|retry_scheduled|failed_final|mail_sent)"
+        int attempt "NULL for mail_sent"
+        int max_attempts "NULL for mail_sent"
+        text message "Short human-readable line"
+        jsonb details "NOT NULL, DEFAULT '{}'"
+        timestamptz created_at "NOT NULL, DEFAULT NOW()"
+    }
+
     pinterest_connections {
         uuid id PK "DEFAULT gen_random_uuid()"
         uuid tenant_id "NOT NULL"
@@ -155,6 +167,7 @@ erDiagram
     blog_projects ||--o{ oauth_state_mapping : "blog_project_id"
     blog_articles |o--o{ pins : "blog_article_id (nullable)"
     pins ||--o{ pin_metadata_generations : "pin_id"
+    pins ||--o{ pin_publish_events : "pin_id"
     blog_articles ||--o{ pin_templates : "blog_article_id"
     pin_templates ||--o{ pin_template_revisions : "template_id"
 ```
@@ -255,6 +268,26 @@ AI generation history per pin. Application layer retains last 3 generations. Imm
 | Users can view own tenant metadata generations | SELECT | tenant isolation |
 | Users can insert metadata generations in own tenant | INSERT | tenant isolation |
 | Users can delete own tenant metadata generations | DELETE | tenant isolation |
+
+---
+
+### pin_publish_events
+
+Append-only log of Pinterest publish attempts, one row per event. **Writer:** the MQ worker only (BullMQ queue `integrations`), using the Supabase service-role key (credential `pinfinity-supabase`, ADR-0009), which bypasses RLS. The app never writes — it reads the per-pin history and the global log and subscribes over Realtime for live updates. `blog_project_id` is denormalised so tenant scoping and project filters avoid a join through `pins`. `attempt`/`max_attempts` are NULL for `mail_sent`; `details` carries structured context (`http_status`, `error_class` = `retryable|unrecoverable`, `next_retry_at`, `job_id`, `pinterest_pin_id`, `recipient`). **Retention:** 90 days, deleted by an MQ cleanup job (ticket in the MQ repo) — nothing scheduled in Pinfinity; the `created_at` index keeps the age-based delete fast. Added to the `supabase_realtime` publication.
+
+| Index | Columns | Type |
+|---|---|---|
+| `pin_publish_events_pkey` | `id` | PRIMARY KEY |
+| `idx_pin_publish_events_pin_created` | `(pin_id, created_at DESC)` | btree |
+| `idx_pin_publish_events_project_created` | `(blog_project_id, created_at DESC)` | btree |
+| `idx_pin_publish_events_created` | `(created_at DESC)` | btree |
+
+| RLS Policy | Operation | Rule |
+|---|---|---|
+| Users can view own tenant pin publish events | SELECT | project's tenant isolation (via `blog_project_id`) |
+| Service role full access pin publish events | ALL | `service_role` bypass (MQ worker writes) |
+
+No INSERT/UPDATE/DELETE policy for `authenticated` — the table is read-only for app users.
 
 ---
 
@@ -586,5 +619,6 @@ tenant_id IN (
 - **Storage buckets** use folder-based isolation: `{tenant_id}/...` with `storage.foldername(name)[1]` checks
 - **Vault secrets** are keyed by entity ID (connection or project), accessed only via `SECURITY DEFINER` functions
 - **`oauth_state_mapping`** uses `user_id = auth.uid()` instead of tenant isolation (user-scoped, not tenant-scoped)
-- **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, and `pin_template_revisions` for background jobs
+- **`pin_publish_events`** carries no own `tenant_id`; its SELECT policy scopes through the denormalised `blog_project_id` to the project's tenant
+- **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, `pin_template_revisions`, and `pin_publish_events` for background jobs
 - **`pin_werkstatt_agent`** is the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. Setup and revocation: [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md)
