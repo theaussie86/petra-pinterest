@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { usePinPublishEvents } from '@/lib/hooks/use-pin-publish-events'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { PublishEventBadge } from '@/components/pins/publish-event-badge'
+import { formatDateTime } from '@/lib/format'
 import type { PinPublishEvent } from '@/types/pins'
 
 interface PublishHistoryProps {
@@ -111,16 +112,6 @@ function getNextRetryAt(event: PinPublishEvent): string | null {
 
 function hasDetails(details: Record<string, unknown> | null | undefined): boolean {
   return !!details && Object.keys(details).length > 0
-}
-
-function formatDateTime(dateString: string, language: string): string {
-  return new Date(dateString).toLocaleString(language === 'de' ? 'de-DE' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 // Relative time ("in 5 Minuten" / "vor 2 Stunden") via Intl.RelativeTimeFormat.

@@ -20,16 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/format'
 import { PublishEventBadge } from '@/components/pins/publish-event-badge'
 import { useBlogProjects } from '@/lib/hooks/use-blog-projects'
-import { usePublishEvents } from '@/lib/hooks/use-publish-events'
+import { usePublishEvents, type PublishEventsFilters } from '@/lib/hooks/use-publish-events'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
-import type {
-  PinPublishEventType,
-  PublishLogEvent,
-} from '@/types/pins'
+import type { PinPublishEventType, PublishLogEvent } from '@/types/pins'
 import { PUBLISH_ERROR_EVENT_TYPES } from '@/types/pins'
-import type { PublishEventsFilters } from '@/lib/hooks/use-publish-events'
 
 export type PublishLogTimeRange = '24h' | '7d' | '30d' | '90d' | 'all'
 
@@ -298,14 +295,4 @@ function PublishLogRow({
       <TableCell className="text-sm text-slate-700">{event.message || '—'}</TableCell>
     </TableRow>
   )
-}
-
-function formatDateTime(dateString: string, language: string): string {
-  return new Date(dateString).toLocaleString(language === 'de' ? 'de-DE' : 'en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
