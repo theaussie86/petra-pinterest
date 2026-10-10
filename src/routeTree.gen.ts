@@ -9,45 +9,45 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed/projects/index'
 import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pinterest.callback'
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
-import { Route as AuthedProjectsProjectIdCreatePinRouteImport } from './routes/_authed/projects/$projectId/create-pin'
 import { Route as AuthedProjectsProjectIdCalendarRouteImport } from './routes/_authed/projects/$projectId/calendar'
-import { Route as AuthedProjectsProjectIdWorkshopIndexRouteImport } from './routes/_authed/projects/$projectId/workshop/index'
-import { Route as AuthedProjectsProjectIdPinsIndexRouteImport } from './routes/_authed/projects/$projectId/pins/index'
+import { Route as AuthedProjectsProjectIdCreatePinRouteImport } from './routes/_authed/projects/$projectId/create-pin'
 import { Route as AuthedProjectsProjectIdArticlesIndexRouteImport } from './routes/_authed/projects/$projectId/articles/index'
-import { Route as AuthedProjectsProjectIdPinsPinIdRouteImport } from './routes/_authed/projects/$projectId/pins/$pinId'
 import { Route as AuthedProjectsProjectIdArticlesArticleIdRouteImport } from './routes/_authed/projects/$projectId/articles/$articleId'
+import { Route as AuthedProjectsProjectIdPinsIndexRouteImport } from './routes/_authed/projects/$projectId/pins/index'
+import { Route as AuthedProjectsProjectIdPinsPinIdRouteImport } from './routes/_authed/projects/$projectId/pins/$pinId'
+import { Route as AuthedProjectsProjectIdWorkshopIndexRouteImport } from './routes/_authed/projects/$projectId/workshop/index'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedProjectsIndexRoute = AuthedProjectsIndexRouteImport.update({
   id: '/projects/',
@@ -65,28 +65,16 @@ const AuthedProjectsProjectIdIndexRoute =
     path: '/projects/$projectId/',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedProjectsProjectIdCreatePinRoute =
-  AuthedProjectsProjectIdCreatePinRouteImport.update({
-    id: '/projects/$projectId/create-pin',
-    path: '/projects/$projectId/create-pin',
-    getParentRoute: () => AuthedRoute,
-  } as any)
 const AuthedProjectsProjectIdCalendarRoute =
   AuthedProjectsProjectIdCalendarRouteImport.update({
     id: '/projects/$projectId/calendar',
     path: '/projects/$projectId/calendar',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedProjectsProjectIdWorkshopIndexRoute =
-  AuthedProjectsProjectIdWorkshopIndexRouteImport.update({
-    id: '/projects/$projectId/workshop/',
-    path: '/projects/$projectId/workshop/',
-    getParentRoute: () => AuthedRoute,
-  } as any)
-const AuthedProjectsProjectIdPinsIndexRoute =
-  AuthedProjectsProjectIdPinsIndexRouteImport.update({
-    id: '/projects/$projectId/pins/',
-    path: '/projects/$projectId/pins/',
+const AuthedProjectsProjectIdCreatePinRoute =
+  AuthedProjectsProjectIdCreatePinRouteImport.update({
+    id: '/projects/$projectId/create-pin',
+    path: '/projects/$projectId/create-pin',
     getParentRoute: () => AuthedRoute,
   } as any)
 const AuthedProjectsProjectIdArticlesIndexRoute =
@@ -95,16 +83,28 @@ const AuthedProjectsProjectIdArticlesIndexRoute =
     path: '/projects/$projectId/articles/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedProjectsProjectIdArticlesArticleIdRoute =
+  AuthedProjectsProjectIdArticlesArticleIdRouteImport.update({
+    id: '/projects/$projectId/articles/$articleId',
+    path: '/projects/$projectId/articles/$articleId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
+const AuthedProjectsProjectIdPinsIndexRoute =
+  AuthedProjectsProjectIdPinsIndexRouteImport.update({
+    id: '/projects/$projectId/pins/',
+    path: '/projects/$projectId/pins/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const AuthedProjectsProjectIdPinsPinIdRoute =
   AuthedProjectsProjectIdPinsPinIdRouteImport.update({
     id: '/projects/$projectId/pins/$pinId',
     path: '/projects/$projectId/pins/$pinId',
     getParentRoute: () => AuthedRoute,
   } as any)
-const AuthedProjectsProjectIdArticlesArticleIdRoute =
-  AuthedProjectsProjectIdArticlesArticleIdRouteImport.update({
-    id: '/projects/$projectId/articles/$articleId',
-    path: '/projects/$projectId/articles/$articleId',
+const AuthedProjectsProjectIdWorkshopIndexRoute =
+  AuthedProjectsProjectIdWorkshopIndexRouteImport.update({
+    id: '/projects/$projectId/workshop/',
+    path: '/projects/$projectId/workshop/',
     getParentRoute: () => AuthedRoute,
   } as any)
 
@@ -220,11 +220,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
@@ -234,18 +234,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/dashboard': {
@@ -254,6 +247,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthedDashboardRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authed/projects/': {
       id: '/_authed/projects/'
@@ -276,13 +276,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsProjectIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/projects/$projectId/create-pin': {
-      id: '/_authed/projects/$projectId/create-pin'
-      path: '/projects/$projectId/create-pin'
-      fullPath: '/projects/$projectId/create-pin'
-      preLoaderRoute: typeof AuthedProjectsProjectIdCreatePinRouteImport
-      parentRoute: typeof AuthedRoute
-    }
     '/_authed/projects/$projectId/calendar': {
       id: '/_authed/projects/$projectId/calendar'
       path: '/projects/$projectId/calendar'
@@ -290,18 +283,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsProjectIdCalendarRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/projects/$projectId/workshop/': {
-      id: '/_authed/projects/$projectId/workshop/'
-      path: '/projects/$projectId/workshop'
-      fullPath: '/projects/$projectId/workshop/'
-      preLoaderRoute: typeof AuthedProjectsProjectIdWorkshopIndexRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/projects/$projectId/pins/': {
-      id: '/_authed/projects/$projectId/pins/'
-      path: '/projects/$projectId/pins'
-      fullPath: '/projects/$projectId/pins/'
-      preLoaderRoute: typeof AuthedProjectsProjectIdPinsIndexRouteImport
+    '/_authed/projects/$projectId/create-pin': {
+      id: '/_authed/projects/$projectId/create-pin'
+      path: '/projects/$projectId/create-pin'
+      fullPath: '/projects/$projectId/create-pin'
+      preLoaderRoute: typeof AuthedProjectsProjectIdCreatePinRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/projects/$projectId/articles/': {
@@ -311,6 +297,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsProjectIdArticlesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/projects/$projectId/articles/$articleId': {
+      id: '/_authed/projects/$projectId/articles/$articleId'
+      path: '/projects/$projectId/articles/$articleId'
+      fullPath: '/projects/$projectId/articles/$articleId'
+      preLoaderRoute: typeof AuthedProjectsProjectIdArticlesArticleIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/projects/$projectId/pins/': {
+      id: '/_authed/projects/$projectId/pins/'
+      path: '/projects/$projectId/pins'
+      fullPath: '/projects/$projectId/pins/'
+      preLoaderRoute: typeof AuthedProjectsProjectIdPinsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/projects/$projectId/pins/$pinId': {
       id: '/_authed/projects/$projectId/pins/$pinId'
       path: '/projects/$projectId/pins/$pinId'
@@ -318,11 +318,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedProjectsProjectIdPinsPinIdRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/projects/$projectId/articles/$articleId': {
-      id: '/_authed/projects/$projectId/articles/$articleId'
-      path: '/projects/$projectId/articles/$articleId'
-      fullPath: '/projects/$projectId/articles/$articleId'
-      preLoaderRoute: typeof AuthedProjectsProjectIdArticlesArticleIdRouteImport
+    '/_authed/projects/$projectId/workshop/': {
+      id: '/_authed/projects/$projectId/workshop/'
+      path: '/projects/$projectId/workshop'
+      fullPath: '/projects/$projectId/workshop/'
+      preLoaderRoute: typeof AuthedProjectsProjectIdWorkshopIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
   }

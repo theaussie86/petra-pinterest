@@ -139,7 +139,7 @@ The pin is published with:
 | File | Purpose |
 |------|---------|
 | `src/components/pins/publish-pin-button.tsx` | Publish button with prerequisite checks |
-| `src/lib/server/pinterest-publishing.ts` | Server functions `publishPinFn`, `publishPinsBulkFn` (queue via MQ); `publishSinglePin` (synchronous, used by the Edge Function path until cutover) |
+| `src/lib/server/pinterest-publishing.ts` | Server functions `publishPinFn`, `publishPinsBulkFn` (queue via MQ) |
 | `src/lib/server/mq.ts` | MQ client: `enqueuePublishPin`, `enqueueManualPublishPin`, `cancelPublishPin` |
 | `src/lib/server/pinterest-api.ts` | `createPinterestPin` with exponential backoff retry |
 | `src/lib/hooks/use-pinterest-publishing.ts` | `usePublishPin`, `usePublishPinsBulk` hooks (incl. status polling) |
