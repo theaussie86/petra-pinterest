@@ -69,9 +69,6 @@ async function syncPublishJobs(
   if (pinIds.length === 0) return { synced: 0, failed: 0 }
 
   let failed = 0
-  const bump = (ok: boolean) => {
-    if (!ok) failed += 1
-  }
 
   try {
     const client = getSupabaseServerClient()
@@ -89,26 +86,20 @@ async function syncPublishJobs(
 
     for (const pinId of pinIds) {
       const row = byId.get(pinId)
+      const hasConnection = !!row?.blog_projects?.pinterest_connection_id
 
-      // Missing row = deleted or no longer visible: make sure no job lingers.
-      if (!row) {
-        const result = await cancelPublishPin(pinId)
-        bump(result.status !== 'error')
-        continue
-      }
+      // Enqueue genuine candidates; cancel everything else. A non-candidate or a
+      // missing row (deleted / no longer visible) must hold no pending job.
+      const result =
+        row && isPublishCandidate(row, hasConnection)
+          ? await enqueuePublishPin({
+              pinId: row.id,
+              scheduledAt: row.scheduled_at!,
+              tenantId: row.tenant_id,
+            })
+          : await cancelPublishPin(pinId)
 
-      const hasConnection = !!row.blog_projects?.pinterest_connection_id
-      if (isPublishCandidate(row, hasConnection)) {
-        const result = await enqueuePublishPin({
-          pinId: row.id,
-          scheduledAt: row.scheduled_at!,
-          tenantId: row.tenant_id,
-        })
-        bump(result.status !== 'error')
-      } else {
-        const result = await cancelPublishPin(row.id)
-        bump(result.status !== 'error')
-      }
+      if (result.status === 'error') failed += 1
     }
   } catch (err) {
     // A failed read means we could not reconcile anything — treat the whole
