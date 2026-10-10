@@ -368,6 +368,20 @@
     "fieldDescription": "Description: ",
     "fieldAltText": "Alt Text: "
   },
+  "publishHistory": {
+    "title": "Publish History",
+    "empty": "No publish attempts yet",
+    "attempt": "Attempt {{attempt}} of {{max}}",
+    "nextRetry": "Next attempt {{relative}} ({{absolute}})",
+    "showDetails": "Show details",
+    "eventType": {
+      "attempt_started": "Attempt started",
+      "succeeded": "Succeeded",
+      "retry_scheduled": "Retry scheduled",
+      "failed_final": "Failed permanently",
+      "mail_sent": "Email sent"
+    }
+  },
   "regenerateFeedback": {
     "title": "Regenerate Metadata",
     "fieldFeedback": "How should the metadata be improved?",

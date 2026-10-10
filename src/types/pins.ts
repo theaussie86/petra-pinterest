@@ -93,6 +93,28 @@ export interface PinMetadataGeneration {
   created_at: string
 }
 
+// Publish event types written by the MQ worker (see migration 00036). The app
+// only reads these rows (per-pin history + global log); writes happen with the
+// service-role key in the MQ worker.
+export type PinPublishEventType =
+  | 'attempt_started'
+  | 'succeeded'
+  | 'retry_scheduled'
+  | 'failed_final'
+  | 'mail_sent'
+
+export interface PinPublishEvent {
+  id: string
+  pin_id: string
+  blog_project_id: string
+  event_type: PinPublishEventType
+  attempt: number | null
+  max_attempts: number | null
+  message: string | null
+  details: Record<string, unknown>
+  created_at: string
+}
+
 // Sort and view mode types for pin list UI
 export type PinSortField = 'title' | 'status' | 'created_at' | 'updated_at' | 'scheduled_at' | 'published_at'
 export type PinViewMode = 'table' | 'grid'

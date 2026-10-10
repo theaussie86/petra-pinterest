@@ -368,6 +368,20 @@
     "fieldDescription": "Beschreibung: ",
     "fieldAltText": "Alternativtext: "
   },
+  "publishHistory": {
+    "title": "Veröffentlichungsverlauf",
+    "empty": "Noch keine Veröffentlichungsversuche",
+    "attempt": "Versuch {{attempt}} von {{max}}",
+    "nextRetry": "Nächster Versuch {{relative}} ({{absolute}})",
+    "showDetails": "Details anzeigen",
+    "eventType": {
+      "attempt_started": "Versuch gestartet",
+      "succeeded": "Erfolgreich",
+      "retry_scheduled": "Wiederholung geplant",
+      "failed_final": "Endgültig fehlgeschlagen",
+      "mail_sent": "E-Mail gesendet"
+    }
+  },
   "regenerateFeedback": {
     "title": "Metadaten neu generieren",
     "fieldFeedback": "Wie sollen die Metadaten verbessert werden?",
