@@ -1,6 +1,6 @@
 # Pin Publishing Flow
 
-Manual publish via the UI, automatic publish via pg_cron, and error recovery. Publishing creates a pin on Pinterest via the v5 API.
+Manual publish via the UI, automatic publish via MQ, and error recovery. Publishing creates a pin on Pinterest via the v5 API.
 
 For the full pin status state machine, see [Pin Status Flow](../pin-status-flow.md).
 
@@ -33,45 +33,36 @@ flowchart TD
 - There is no intermediate `publishing` status. While the job waits (including retry backoff of up to ~35 min), the pin shows `metadata_created`; the hook polls every 5 s for up to 40 min.
 - Error mail applies to manual publishes too (after the final failure).
 
-## Auto-Publish (Scheduled)
+## Auto-Publish (Scheduled, via MQ)
+
+Since the cutover (issue #107, ADR-0005) scheduled pins are published by MQ (weissteiner-automation-mq), not by pg_cron. The pg_cron job `publish-scheduled-pins` is deactivated (`cron.alter_job(4, active := false)`, reversible).
 
 ```mermaid
 sequenceDiagram
-    participant Cron as pg_cron (every 10 min, 7-23 UTC)
-    participant Edge as publish-scheduled-pins Edge Function
+    participant App as Pinfinity (syncPublishJob)
+    participant Rec as MQ reconcile job (every 15 min)
+    participant MQ as MQ publish job
     participant DB as pins table
-    participant Vault as Supabase Vault
     participant Pinterest as Pinterest API
+    participant Mail as Error mail job (Resend)
 
-    Cron->>Edge: Invoke
-    Edge->>DB: SELECT pins WHERE status = 'metadata_created'<br/>AND scheduled_at <= NOW()<br/>AND pinterest_pin_id IS NULL
-    DB-->>Edge: Eligible pins
-
-    Edge->>Edge: Group pins by pinterest_connection_id
-
-    loop Each connection group
-        Edge->>Vault: get_pinterest_access_token(connection_id)
-        Vault-->>Edge: Access token
-
-        loop Each pin (10s delay between)
-            Edge->>Pinterest: POST /v5/pins (with retry)
-            alt Success
-                Pinterest-->>Edge: { id }
-                Edge->>DB: UPDATE pin SET status='published',<br/>pinterest_pin_id, pinterest_pin_url<br/>WHERE id = ? AND status = 'metadata_created'
-            else 401 Unauthorized
-                Edge->>DB: Mark connection as inactive
-            else Other error
-                Edge->>DB: UPDATE pin SET status='error', error_message
-            end
-        end
+    App->>MQ: enqueuePublishPin (on schedule set/change/remove)
+    Rec->>MQ: enqueue eligible pins missing a job
+    MQ->>Pinterest: POST /v5/pins
+    alt Success
+        MQ->>DB: UPDATE pin SET status='published'<br/>WHERE id = ? AND status = 'metadata_created'
+    else Error
+        MQ->>MQ: Retry
+        MQ->>Mail: only after final failure
+        MQ->>DB: status='error', error_message
     end
-
-    Edge-->>Cron: { total, published, failed }
 ```
 
-**Atomic updates:** The WHERE clause includes `status = 'metadata_created'` to prevent double-publishing if the status changed between query and update.
-
-**Rate limiting:** 10-second delay between pins per Pinterest account to respect API limits.
+- **Eligible pin:** `status = metadata_created`, `scheduled_at` set, `pinterest_pin_id` empty, project has Pinterest connection and board.
+- **Retry:** MQ retries failed publishes; retries are visible on the MQ board.
+- **Error mail:** sent only after the last retry failed (final failure), as a follow-up job. No mail per attempt.
+- **Atomic update:** `status = 'metadata_created'` in the WHERE clause prevents double-publishing. The check runs after the Pinterest call, so the old cron and MQ must never run in parallel (hence cron off before reconcile).
+- **Fallback:** the Edge Function `publish-scheduled-pins` stays deployed for a few clean days, then it is removed together with its `notifyPinError` calls and the cron job (migration).
 
 ## Enqueueing after AI metadata generation (MQ)
 
@@ -151,4 +142,4 @@ The pin is published with:
 | `src/lib/server/mq.ts` | MQ client: `enqueuePublishPin`, `enqueueManualPublishPin`, `cancelPublishPin` |
 | `src/lib/server/pinterest-api.ts` | `createPinterestPin` with exponential backoff retry |
 | `src/lib/hooks/use-pinterest-publishing.ts` | `usePublishPin`, `usePublishPinsBulk` hooks (incl. status polling) |
-| `supabase/functions/publish-scheduled-pins/index.ts` | Auto-publish Edge Function for pg_cron |
+| `supabase/functions/publish-scheduled-pins/index.ts` | Legacy auto-publish Edge Function (cron deactivated, fallback until removal) |
