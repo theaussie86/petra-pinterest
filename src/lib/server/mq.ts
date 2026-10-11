@@ -79,6 +79,45 @@ function toMqError(err: unknown): MqError {
   return new MqError('network', err instanceof Error ? err.message : String(err))
 }
 
+async function postPublishJob(args: {
+  jobId: string
+  tenantId: string
+  pinId: string
+  scheduledAt: Date
+  delay: number
+}): Promise<void> {
+  const { url, key } = readConfig()
+
+  const response = await fetch(`${url}/jobs`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      type: JOB_TYPE,
+      tenant: args.tenantId,
+      jobId: args.jobId,
+      onExisting: 'replace',
+      delay: args.delay,
+      payload: {
+        supabaseCredential: SUPABASE_CREDENTIAL,
+        pinId: args.pinId,
+        scheduledAt: args.scheduledAt.toISOString(),
+      },
+    }),
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+  })
+
+  if (!response.ok) {
+    throw new MqError(
+      'http',
+      `MQ POST /jobs failed with ${response.status}`,
+      response.status,
+    )
+  }
+}
+
 /**
  * Enqueue (or replace) the delayed publish job for a pin.
  *
@@ -90,45 +129,49 @@ export async function enqueuePublishPin(
 ): Promise<EnqueuePublishPinResult> {
   const { pinId, scheduledAt, tenantId } = input
   try {
-    const { url, key } = readConfig()
     const scheduledAtDate = new Date(scheduledAt)
-    const scheduledAtIso = scheduledAtDate.toISOString()
-    const delay = Math.max(0, scheduledAtDate.getTime() - Date.now())
-
-    const response = await fetch(`${url}/jobs`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        type: JOB_TYPE,
-        tenant: tenantId,
-        jobId: publishJobId(pinId),
-        onExisting: 'replace',
-        delay,
-        payload: {
-          supabaseCredential: SUPABASE_CREDENTIAL,
-          pinId,
-          scheduledAt: scheduledAtIso,
-        },
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+    await postPublishJob({
+      jobId: publishJobId(pinId),
+      tenantId,
+      pinId,
+      scheduledAt: scheduledAtDate,
+      delay: Math.max(0, scheduledAtDate.getTime() - Date.now()),
     })
-
-    if (!response.ok) {
-      throw new MqError(
-        'http',
-        `MQ POST /jobs failed with ${response.status}`,
-        response.status,
-      )
-    }
-
     return { status: 'enqueued' }
   } catch (err) {
     const error = toMqError(err)
     console.error(
       `[mq] enqueuePublishPin(${pinId}) failed: ${error.kind} — ${error.message}`,
+    )
+    return { status: 'error', error }
+  }
+}
+
+/**
+ * Enqueue an immediate publish job for a manual "Publish now" click.
+ *
+ * Uses a unique `jobId` (`publish-pin-<pinId>-manual-<timestamp>`) so it never
+ * replaces a pending scheduled job. The caller must have set the pin's
+ * `scheduled_at` to `scheduledAt` and status to `metadata_created` first: the
+ * worker's candidate check and stale guard read exactly those fields.
+ */
+export async function enqueueManualPublishPin(
+  input: EnqueuePublishPinInput,
+): Promise<EnqueuePublishPinResult> {
+  const { pinId, scheduledAt, tenantId } = input
+  try {
+    await postPublishJob({
+      jobId: `${publishJobId(pinId)}-manual-${Date.now()}`,
+      tenantId,
+      pinId,
+      scheduledAt: new Date(scheduledAt),
+      delay: 0,
+    })
+    return { status: 'enqueued' }
+  } catch (err) {
+    const error = toMqError(err)
+    console.error(
+      `[mq] enqueueManualPublishPin(${pinId}) failed: ${error.kind} — ${error.message}`,
     )
     return { status: 'error', error }
   }

@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { enqueuePublishPin, cancelPublishPin, MqError } from './mq'
+import {
+  enqueuePublishPin,
+  enqueueManualPublishPin,
+  cancelPublishPin,
+  MqError,
+} from './mq'
 
 const originalEnv = { ...process.env }
 
@@ -140,6 +145,41 @@ describe('enqueuePublishPin', () => {
     if (result.status !== 'error') throw new Error('unreachable')
     expect(result.error.kind).toBe('config')
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('enqueueManualPublishPin', () => {
+  it('POSTs an immediate job with a unique manual jobId', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-10-10T12:00:00.000Z'))
+    const fetchMock = vi.spyOn(global, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 201 }),
+    )
+
+    const result = await enqueueManualPublishPin({
+      pinId: 'abc',
+      scheduledAt: '2026-10-10T12:00:00.000Z',
+      tenantId: 'tenant-1',
+    })
+
+    expect(result).toEqual({ status: 'enqueued' })
+    const [, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(options.body as string)
+    expect(body.jobId).toBe(`publish-pin-abc-manual-${Date.now()}`)
+    expect(body.delay).toBe(0)
+    expect(body.payload.scheduledAt).toBe('2026-10-10T12:00:00.000Z')
+  })
+
+  it('returns a typed error instead of throwing', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue(new Response('x', { status: 500 }))
+
+    const result = await enqueueManualPublishPin({
+      pinId: 'abc',
+      scheduledAt: new Date().toISOString(),
+      tenantId: 'tenant-1',
+    })
+
+    expect(result.status).toBe('error')
   })
 })
 
