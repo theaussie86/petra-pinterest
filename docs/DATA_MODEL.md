@@ -582,7 +582,7 @@ All functions use `SECURITY DEFINER` to bypass RLS and access Vault.
 | Job name | Schedule | Target | Purpose |
 |---|---|---|---|
 | `enqueue-due-blog-scrapes-daily` | `0 6 * * *` (daily 06:00 UTC) | `enqueue_due_blog_scrapes()` | Enqueue `scrape_blog` for projects due today (daily always, weekly on Sunday UTC) |
-| `publish-scheduled-pins` | `*/10 7-23 * * *` (every 10 min, 07-23 UTC) | Edge Function `publish-scheduled-pins` | Publish pins where `scheduled_at <= NOW()` |
+| `publish-scheduled-pins` | `*/10 7-23 * * *` (every 10 min, 07-23 UTC) | Edge Function `publish-scheduled-pins` | Publish pins where `scheduled_at <= NOW()`. **Deactivated** (`active = false`) since #107, replaced by MQ |
 | `cleanup-published-images` | `0 3 * * *` (daily 03:00 UTC) | Edge Function `cleanup-published-images` | Delete storage images of pins published more than 7 days ago |
 | `kick-generate-metadata-worker` | `15 seconds` | `kick_queue_worker('generate_metadata', 'generate-metadata-worker')` | Start the metadata queue worker when messages wait and no run holds the lock |
 | `kick-scrape-article-worker` | `15 seconds` | `kick_queue_worker('scrape_article', 'scrape-article-worker')` | Start the article queue worker when messages wait and no run holds the lock |

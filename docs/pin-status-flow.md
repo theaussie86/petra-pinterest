@@ -44,5 +44,5 @@ stateDiagram-v2
 
 - **System-managed statuses** (`generating_metadata`, `published`) cannot be set by users in the UI
 - **Error recovery** restores `previous_status` if available, otherwise falls back to `draft`
-- **Auto-publishing** is triggered by pg_cron every 10 minutes (7-23 UTC) for pins with `metadata_created` status and `scheduled_at <= NOW()`
+- **Auto-publishing** runs through MQ (retry, error mail only after final failure) for pins with `metadata_created` status and `scheduled_at` set; the old pg_cron job is deactivated. See `docs/flows/pin-publishing.md`
 - **Manual publishing** via the UI button prepares the pin (`metadata_created`, `scheduled_at = now`) and enqueues an immediate MQ job; the worker sets `published` or `error` (see flows/pin-publishing.md)
