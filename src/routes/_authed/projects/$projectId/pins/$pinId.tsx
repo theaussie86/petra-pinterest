@@ -21,6 +21,7 @@ import { MetadataHistoryDialog } from '@/components/pins/metadata-history-dialog
 import { RegenerateFeedbackDialog } from '@/components/pins/regenerate-feedback-dialog'
 import { PublishPinButton } from '@/components/pins/publish-pin-button'
 import { SchedulePinSection } from '@/components/pins/schedule-pin-section'
+import { PublishHistory } from '@/components/pins/publish-history'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -229,6 +230,9 @@ function PinDetail() {
                 </a>
               )}
             </div>
+
+            {/* Publish event history */}
+            <PublishHistory pinId={pin.id} />
           </div>
 
           {/* Right column - Image + AI Metadata */}

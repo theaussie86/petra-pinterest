@@ -50,7 +50,8 @@
     "calendar": "Calendar",
     "selectProject": "Select project",
     "noProjects": "No projects yet",
-    "manageProjects": "Manage Projects"
+    "manageProjects": "Manage Projects",
+    "publishLog": "Publish Log"
   },
   "language": {
     "label": "Language",
@@ -367,6 +368,46 @@
     "fieldTitle": "Title: ",
     "fieldDescription": "Description: ",
     "fieldAltText": "Alt Text: "
+  },
+  "publishLog": {
+    "title": "Publish Log",
+    "description": "Every publish event across all projects, live.",
+    "empty": "No publish events yet",
+    "loadMore": "Load more",
+    "untitledPin": "Untitled pin",
+    "columns": {
+      "time": "Time",
+      "project": "Project",
+      "pin": "Pin",
+      "event": "Event",
+      "attempt": "Attempt",
+      "message": "Message"
+    },
+    "filters": {
+      "allProjects": "All projects",
+      "onlyErrors": "Errors only",
+      "timeRange": {
+        "24h": "Last 24 hours",
+        "7d": "Last 7 days",
+        "30d": "Last 30 days",
+        "90d": "Last 90 days",
+        "all": "All time"
+      }
+    }
+  },
+  "publishHistory": {
+    "title": "Publish History",
+    "empty": "No publish attempts yet",
+    "attempt": "Attempt {{attempt}} of {{max}}",
+    "nextRetry": "Next attempt {{relative}} ({{absolute}})",
+    "showDetails": "Show details",
+    "eventType": {
+      "attempt_started": "Attempt started",
+      "succeeded": "Succeeded",
+      "retry_scheduled": "Retry scheduled",
+      "failed_final": "Failed permanently",
+      "mail_sent": "Email sent"
+    }
   },
   "regenerateFeedback": {
     "title": "Regenerate Metadata",

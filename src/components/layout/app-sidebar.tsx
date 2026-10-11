@@ -1,6 +1,6 @@
 import { version } from '../../../package.json';
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, PlusCircle, Hammer } from "lucide-react";
+import { LayoutDashboard, FolderOpen, FileText, Pin, Calendar, LogOut, ChevronsUpDown, Globe, PlusCircle, Hammer, ScrollText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { AuthUser } from "@/lib/auth";
 import { signOut } from "@/lib/auth";
@@ -42,6 +42,7 @@ export function AppSidebar({ user }: AppSidebarProps) {
   const globalNavItems = [
     { title: t("nav.dashboard"), url: "/dashboard", icon: LayoutDashboard },
     { title: t("nav.projects"), url: "/projects", icon: FolderOpen },
+    { title: t("nav.publishLog"), url: "/publish-log", icon: ScrollText },
   ];
 
   const projectNavItems = activeProjectId
