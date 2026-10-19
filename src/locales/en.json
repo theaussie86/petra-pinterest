@@ -34,6 +34,14 @@
     "redirecting": "Redirecting...",
     "errorSignIn": "Failed to sign in with Google"
   },
+  "legal": {
+    "footerLabel": "Legal",
+    "impressum": "Legal notice",
+    "datenschutz": "Privacy",
+    "agb": "Terms",
+    "backToLogin": "Back to sign in",
+    "draftNotice": "Draft: These texts have not yet been legally reviewed. Have them checked before going live and fill in all placeholders."
+  },
   "authCallback": {
     "loading": "Signing in..."
   },
