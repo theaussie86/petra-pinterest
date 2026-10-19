@@ -36,3 +36,11 @@ Decision rule for people shown in a Pin:
 | AI deepfake of a real identifiable person | yes | no - this is a "digital replica" category with no Pinterest API value, and likely a Community Guidelines violation; avoid |
 
 Core: SYNTHETIC_PERFORMER only when the person is AI-made AND fictional. Real person = never synthetic, even if AI-edited. No person = never synthetic.
+
+## Connected Agent
+
+An AI client (Claude, ChatGPT, Codex) that a user has granted access to Pinfinity via OAuth consent. Always acts on behalf of exactly that user and sees only what that user sees. The user can revoke it at any time. UI label: "Verbundene Agenten".
+
+Proposes, never decides: a Connected Agent may draft and revise pin templates but never approves or archives them. Approval stays a human action.
+
+_Avoid_: agent user, DB agent, bot
