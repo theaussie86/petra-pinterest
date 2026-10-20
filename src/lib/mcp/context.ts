@@ -28,12 +28,27 @@ export interface McpUserContext {
    * testable over the seam and the service read never leaks into other tools.
    */
   listBoards?: (projectId: string) => Promise<McpBoard[]>
+  /**
+   * Fetches a remote image for `create_pin`. Injected because the actual HTTPS
+   * request belongs outside tool code — the tool keeps the guardrails (HTTPS
+   * only, `image/*`, size cap) and stays testable over this seam. Returns the
+   * server-reported content type and the raw bytes.
+   */
+  fetchRemoteImage?: (url: string) => Promise<FetchedImage>
 }
 
 /** A Pinterest board as surfaced to a Connected Agent. */
 export interface McpBoard {
   pinterest_board_id: string
   name: string
+}
+
+/** The result of fetching a remote image for `create_pin`. */
+export interface FetchedImage {
+  /** `Content-Type` as reported by the server, or null when absent. */
+  contentType: string | null
+  /** The raw image bytes. */
+  bytes: ArrayBuffer
 }
 
 /**

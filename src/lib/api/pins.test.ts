@@ -16,6 +16,10 @@ import {
   updatePinStatus,
   updatePinsStatus,
   uploadPinMedia,
+  uploadPinImageBytes,
+  imageExtensionFor,
+  insertAgentPin,
+  updateAgentPin,
   getPinImageUrl,
 } from './pins'
 import { createMockQueryBuilder, createMockStorageBucket } from '@/test/mocks/supabase'
@@ -600,5 +604,97 @@ describe('listPins() — shared UI/MCP filtered list', () => {
 
     expect(result.hasMore).toBe(true)
     expect(result.pins).toHaveLength(2)
+  })
+})
+
+describe('imageExtensionFor()', () => {
+  it('maps common image types and ignores charset suffixes', () => {
+    expect(imageExtensionFor('image/png')).toBe('png')
+    expect(imageExtensionFor('image/jpeg')).toBe('jpg')
+    expect(imageExtensionFor('image/webp')).toBe('webp')
+    expect(imageExtensionFor('IMAGE/PNG; charset=binary')).toBe('png')
+  })
+
+  it('falls back to jpg for an unmapped image type', () => {
+    expect(imageExtensionFor('image/x-weird')).toBe('jpg')
+  })
+})
+
+describe('uploadPinImageBytes() — MCP create_pin', () => {
+  it('uploads bytes to the tenant folder with the content type and returns the path', async () => {
+    const storageBucket = createMockStorageBucket()
+    const explicitStorageFrom = vi.fn().mockReturnValue(storageBucket)
+    const client = { storage: { from: explicitStorageFrom } } as any
+
+    const path = await uploadPinImageBytes(
+      new ArrayBuffer(8),
+      'image/png',
+      'tenant-1',
+      client,
+    )
+
+    expect(explicitStorageFrom).toHaveBeenCalledWith('pin-images')
+    expect(path).toMatch(/^tenant-1\/.*\.png$/)
+    const [uploadedPath, body, options] = storageBucket.upload.mock.calls[0]
+    expect(uploadedPath).toBe(path)
+    expect(body).toBeInstanceOf(Uint8Array)
+    expect(options).toEqual({ contentType: 'image/png' })
+  })
+
+  it('throws when the storage upload fails', async () => {
+    const storageBucket = createMockStorageBucket({ uploadError: { message: 'nope' } })
+    const client = { storage: { from: vi.fn().mockReturnValue(storageBucket) } } as any
+
+    await expect(
+      uploadPinImageBytes(new ArrayBuffer(8), 'image/png', 't', client),
+    ).rejects.toEqual({ message: 'nope' })
+  })
+})
+
+describe('insertAgentPin() — MCP provenance insert', () => {
+  it('inserts the pin through the passed client and returns the row', async () => {
+    const row = buildPin({ id: 'pin-new', source: 'mcp' })
+    const qb = createMockQueryBuilder({ data: row })
+    const explicitFrom = vi.fn().mockReturnValue(qb)
+    const client = { from: explicitFrom } as any
+
+    const result = await insertAgentPin(
+      {
+        tenant_id: 'tenant-1',
+        blog_project_id: 'p1',
+        image_path: 'tenant-1/x.png',
+        source: 'mcp',
+        oauth_client_id: 'client-abc',
+      },
+      client,
+    )
+
+    expect(explicitFrom).toHaveBeenCalledWith('pins')
+    expect(qb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'mcp', oauth_client_id: 'client-abc' }),
+    )
+    expect(result).toEqual(row)
+  })
+})
+
+describe('updateAgentPin() — MCP provenance update', () => {
+  it('updates the pin by id through the passed client', async () => {
+    const row = buildPin({ id: 'pin-1', title: 'Neu' })
+    const qb = createMockQueryBuilder({ data: row })
+    const explicitFrom = vi.fn().mockReturnValue(qb)
+    const client = { from: explicitFrom } as any
+
+    const result = await updateAgentPin(
+      'pin-1',
+      { title: 'Neu', source: 'mcp', oauth_client_id: 'client-abc' },
+      client,
+    )
+
+    expect(explicitFrom).toHaveBeenCalledWith('pins')
+    expect(qb.update).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Neu', source: 'mcp' }),
+    )
+    expect(qb.eq).toHaveBeenCalledWith('id', 'pin-1')
+    expect(result).toEqual(row)
   })
 })

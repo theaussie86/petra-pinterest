@@ -34,6 +34,8 @@ export function buildPin(overrides: Partial<Pin> = {}): Pin {
     published_at: null,
     pinterest_pin_id: null,
     pinterest_pin_url: null,
+    source: 'ui',
+    oauth_client_id: null,
     created_at: '2025-01-01T00:00:00Z',
     updated_at: '2025-01-01T00:00:00Z',
     ...overrides,

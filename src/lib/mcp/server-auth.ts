@@ -54,7 +54,26 @@ export function createSupabaseAuthenticate(): Authenticate {
       oauthClientId,
       supabase,
       listBoards: createBoardLister(supabase),
+      fetchRemoteImage: fetchRemoteImage,
     }
+  }
+}
+
+/**
+ * Production image fetch for `create_pin`: a plain HTTPS GET returning the
+ * server-reported content type and the raw bytes. The tool enforces the
+ * guardrails (HTTPS only, `image/*`, size cap); this just does the request.
+ */
+async function fetchRemoteImage(
+  url: string,
+): Promise<{ contentType: string | null; bytes: ArrayBuffer }> {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Bild-Download fehlgeschlagen (HTTP ${res.status}).`)
+  }
+  return {
+    contentType: res.headers.get('content-type'),
+    bytes: await res.arrayBuffer(),
   }
 }
 

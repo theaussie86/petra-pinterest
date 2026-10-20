@@ -356,6 +356,111 @@ export async function uploadPinMedia(
   return path
 }
 
+/**
+ * File extension for a storage object, derived from an image MIME type. Mirrors
+ * what a browser upload would carry (`uploadPinMedia` keeps the file's own
+ * extension); the MCP `create_pin` path has only the server-reported content
+ * type to go on. Falls back to a sensible default for unmapped image types.
+ */
+const IMAGE_EXTENSION_BY_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/avif': 'avif',
+}
+
+export function imageExtensionFor(contentType: string): string {
+  const base = contentType.split(';')[0].trim().toLowerCase()
+  return IMAGE_EXTENSION_BY_TYPE[base] ?? 'jpg'
+}
+
+/**
+ * Upload raw image bytes to the pin-images bucket under the tenant folder,
+ * exactly where a UI upload lands (`{tenant_id}/{uuid}.{ext}`), and return the
+ * storage path. Used by the MCP `create_pin` tool, which fetches an image from a
+ * URL rather than a file. Takes the client so it runs under the caller's RLS
+ * session (a Connected Agent's user-token client).
+ */
+export async function uploadPinImageBytes(
+  bytes: ArrayBuffer | Uint8Array,
+  contentType: string,
+  tenantId: string,
+  client: SupabaseClient
+): Promise<string> {
+  const path = `${tenantId}/${crypto.randomUUID()}.${imageExtensionFor(contentType)}`
+
+  const body = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
+  const { error } = await client.storage
+    .from('pin-images')
+    .upload(path, body, { contentType })
+
+  if (error) throw error
+  return path
+}
+
+/** Provenance stamped on every pin a Connected Agent writes (ADR-0006). */
+export interface PinProvenance {
+  source: 'mcp'
+  oauth_client_id: string | null
+}
+
+/** Fields a Connected Agent may set when creating a pin via MCP. */
+export interface AgentPinInsert extends PinProvenance {
+  tenant_id: string
+  blog_project_id: string
+  blog_article_id?: string | null
+  image_path: string
+  media_type?: 'image' | 'video'
+  pinterest_board_id?: string | null
+  pinterest_board_name?: string | null
+  title?: string | null
+  description?: string | null
+  alt_text?: string | null
+  alternate_url?: string | null
+  ai_modified?: boolean
+  synthetic_performer?: boolean
+  status?: PinStatus
+}
+
+/**
+ * Insert a pin on behalf of a Connected Agent (MCP). Unlike {@link createPin} it
+ * takes an explicit client, tenant and provenance, and never enqueues Gemini
+ * metadata generation — writing over MCP is deliberately Gemini-free (ADR-0006).
+ */
+export async function insertAgentPin(
+  pin: AgentPinInsert,
+  client: SupabaseClient
+): Promise<Pin> {
+  const { data, error } = await client.from('pins').insert(pin).select().single()
+  if (error) throw error
+  return data
+}
+
+/** Fields a Connected Agent may change on an existing pin via MCP. */
+export type AgentPinUpdate = Omit<PinUpdate, 'id'> & PinProvenance
+
+/**
+ * Update a pin on behalf of a Connected Agent (MCP). Stamps provenance so the
+ * user can see an agent touched it. No publish-job reconcile here: the MCP write
+ * tools in this slice only change metadata, never scheduling (issue #122).
+ */
+export async function updateAgentPin(
+  id: string,
+  updates: AgentPinUpdate,
+  client: SupabaseClient
+): Promise<Pin> {
+  const { data, error } = await client
+    .from('pins')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
 export function getPinImageUrl(path: string | null): string {
   if (!path) return ''
   const {

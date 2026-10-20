@@ -48,6 +48,10 @@ export interface Pin {
   published_at: string | null
   pinterest_pin_id: string | null
   pinterest_pin_url: string | null
+  /** Where the pin was written: 'ui' (the app) or 'mcp' (a Connected Agent). */
+  source: 'ui' | 'mcp'
+  /** OAuth client_id of the Connected Agent that wrote it, null for UI writes. */
+  oauth_client_id: string | null
   created_at: string
   updated_at: string
 }
