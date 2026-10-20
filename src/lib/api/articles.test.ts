@@ -113,6 +113,18 @@ describe('restoreArticle()', () => {
     expect(qb.update).toHaveBeenCalledWith({ archived_at: null })
     expect(result).toEqual(restored)
   })
+
+  it('runs the update through an explicitly passed client (MCP seam)', async () => {
+    const restored = buildArticle({ archived_at: null })
+    const qb = createMockQueryBuilder({ data: restored })
+    const otherFrom = vi.fn().mockReturnValue(qb as any)
+    const otherClient = { from: otherFrom } as any
+
+    await restoreArticle('art-1', otherClient)
+
+    expect(otherFrom).toHaveBeenCalledWith('blog_articles')
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
 })
 
 describe('getArchivedArticles()', () => {
