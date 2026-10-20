@@ -10,10 +10,11 @@ MCP tools (`create_pin_template`, `update_pin_template`,
 `answer_revision_request`) enforce this contract before every write
 (`src/lib/mcp/tools/werkstatt.ts`). The older path, a direct login as the
 least-privilege Postgres role **`pin_werkstatt_agent`** (epic #74, issues #77,
-#83), is retired: the role is locked `NOLOGIN` (migration
-`00038_lock_pin_werkstatt_agent_role.sql`) and dropped later (#127). The
-rejection rules below are unchanged — they are what matters to repo readers
-regardless of the write path.
+#83), has been removed: the role was locked `NOLOGIN`
+(`00038_lock_pin_werkstatt_agent_role.sql`, #126) and then dropped together with
+`agent_project_access` and its guard trigger
+(`00039_drop_pin_werkstatt_agent_role.sql`, #127). The rejection rules below are
+unchanged — they are what matters to repo readers regardless of the write path.
 
 This document is the contract for repo readers. The database enforces the
 rejection rules (see migration `00027_pin_template_validation.sql`); the same
@@ -27,10 +28,10 @@ Related:
   now describes the MCP tool workflow; the old SQL queries lived in
   `references/sql.md` before #126 (in the Git history).
 - **MCP Werkstatt tools** (the live write path): `src/lib/mcp/tools/werkstatt.ts`.
-- **DB user setup** (retired DB role, kept as rollback reference):
-  [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md).
-- **Skill query test** (the old DB-role path, kept until the role is dropped in #127):
-  `supabase/tests/pin_werkstatt_agent_skill.sql`.
+
+The retired DB role setup (`pin-werkstatt-agent-db-user.md`) and its SQL skill
+probe (`pin_werkstatt_agent_skill.sql`) were removed with the role in #127; they
+live in the Git history if the MCP approach ever has to be undone.
 
 If this document and the code disagree, `src/lib/mcp/tools/werkstatt.ts` and the
 DB constraints (migration `00027`) are the source of truth.
@@ -43,7 +44,8 @@ DB constraints (migration `00027`) are the source of truth.
   `pin_templates` (no delete) and update only a revision's `previous_snapshot`.
   (Historically this was the Postgres role `pin_werkstatt_agent` scoped per
   project via `public.agent_project_access`, migration
-  `00029_pin_werkstatt_agent_role.sql`; retired per ADR-0006.)
+  `00029_pin_werkstatt_agent_role.sql`; dropped per ADR-0006 in migration
+  `00039_drop_pin_werkstatt_agent_role.sql`.)
 - `tenant_id` is set automatically from the article by a trigger — the agent
   does not set it.
 - **Upsert on the natural key `(blog_article_id, position)`.** Re-running an
@@ -51,13 +53,14 @@ DB constraints (migration `00027`) are the source of truth.
   than insert a duplicate (the unique index `idx_pin_templates_article_position`
   rejects duplicates).
 - **Do not overwrite reviewed templates.** A row whose `status` is `approved`
-  (or `archived`) reflects human review inside Pinfinity; the trigger
-  `pin_templates_guard_agent_writes` rejects any agent change to it. The batch
-  upsert only updates rows that are still `draft`
-  (`ON CONFLICT ... DO UPDATE ... WHERE pin_templates.status = 'draft'`), so a
-  re-ingest skips `approved`, `archived` **and** `needs_revision` positions.
-  `needs_revision` rows are changed only through the revision flow below, so the
-  pre-rework snapshot is never lost.
+  (or `archived`) reflects human review inside Pinfinity; the MCP Werkstatt tools
+  (`update_pin_template`, `answer_revision_request`) refuse to change it and
+  never set the status to `approved`/`archived`. (The old DB-role path enforced
+  the same rule with the `pin_templates_guard_agent_writes` trigger, dropped in
+  migration `00039` together with the role.) A re-ingest only touches rows that
+  are still `draft`, so `approved`, `archived` **and** `needs_revision` positions
+  are left alone. `needs_revision` rows are changed only through the revision
+  flow below, so the pre-rework snapshot is never lost.
 
 ## Which articles get templates
 
@@ -119,8 +122,8 @@ Submitting a request records a row in `public.pin_template_revisions` (see
   re-enters the review queue. Do **not** set `approved`/`archived` — that is a
   human action in the UI.
 
-The skill's query C2 does all three atomically and is a no-op once the template
-is no longer `needs_revision`.
+The `answer_revision_request` MCP tool does all three and is a no-op once the
+template is no longer `needs_revision`.
 
 The application layer keeps only the **last 3** revisions per template; older
 rows are pruned when a new request is recorded.
