@@ -21,6 +21,19 @@ export interface McpUserContext {
   oauthClientId: string | null
   /** Supabase client bound to the user's token; all tool reads/writes go here. */
   supabase: SupabaseClient
+  /**
+   * Lists the Pinterest boards of one of the user's projects. Injected because
+   * fetching boards needs a service-role Vault read for the access token plus a
+   * live Pinterest API call — kept out of tool code so `list_boards` stays
+   * testable over the seam and the service read never leaks into other tools.
+   */
+  listBoards?: (projectId: string) => Promise<McpBoard[]>
+}
+
+/** A Pinterest board as surfaced to a Connected Agent. */
+export interface McpBoard {
+  pinterest_board_id: string
+  name: string
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 
 /**
@@ -35,8 +36,10 @@ export interface DashboardStats {
  * logged-in user, instead of the unauthenticated browser client returning
  * all-zero counts on first paint.
  */
-export async function getDashboardStats(): Promise<DashboardStats> {
-  const { data, error } = await getSupabaseClient().rpc('get_dashboard_stats')
+export async function getDashboardStats(
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<DashboardStats> {
+  const { data, error } = await client.rpc('get_dashboard_stats')
   if (error) throw error
   return data as DashboardStats
 }

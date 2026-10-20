@@ -54,6 +54,11 @@ export function jsonResult(value: unknown): ToolResult {
   return { content: [{ type: 'text', text: JSON.stringify(value, null, 2) }] }
 }
 
+/** A tool error: a German message flagged with `isError` so the client sees it failed. */
+export function errorResult(message: string): ToolResult {
+  return { content: [{ type: 'text', text: message }], isError: true }
+}
+
 const DRY_RUN_FIELD = 'dry_run'
 
 /**

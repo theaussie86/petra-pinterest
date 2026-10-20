@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
@@ -97,12 +98,13 @@ export async function getPinsPaginated(
  * the SSR-auth read pattern (ADR 0003).
  */
 export async function getPinStatusCounts(
-  projectId: string
+  projectId?: string,
+  client: SupabaseClient = getSupabaseClient()
 ): Promise<Record<string, number>> {
-  const { data, error } = await getSupabaseClient()
-    .from('pins')
-    .select('status')
-    .eq('blog_project_id', projectId)
+  let query = client.from('pins').select('status')
+  if (projectId) query = query.eq('blog_project_id', projectId)
+
+  const { data, error } = await query
 
   if (error) throw error
 
@@ -155,8 +157,11 @@ export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
   return data
 }
 
-export async function getPin(id: string): Promise<Pin> {
-  const { data, error } = await getSupabaseClient()
+export async function getPin(
+  id: string,
+  client: SupabaseClient = getSupabaseClient()
+): Promise<Pin> {
+  const { data, error } = await client
     .from('pins')
     .select('*')
     .eq('id', id)
@@ -164,6 +169,57 @@ export async function getPin(id: string): Promise<Pin> {
 
   if (error) throw error
   return data
+}
+
+export interface ListPinsOptions {
+  /** Restrict to one project. Omit for every project the caller can see. */
+  projectId?: string
+  /** Restrict to these pin statuses. */
+  status?: string[]
+  /** Lower bound on `scheduled_at` (inclusive), ISO string. */
+  scheduledFrom?: string
+  /** Upper bound on `scheduled_at` (inclusive), ISO string. */
+  scheduledTo?: string
+  limit?: number
+}
+
+export interface ListPinsResult {
+  pins: Pin[]
+  hasMore: boolean
+}
+
+/**
+ * Filtered pin list shared by the UI and the MCP server (Spec #115, user story
+ * 22: "Was geht nächste Woche raus?"). Filters by project, status set and a
+ * `scheduled_at` range; capped by `limit`. Takes an optional Supabase client so
+ * a Connected Agent's token-bound client runs the same query under RLS.
+ */
+export async function listPins(
+  options: ListPinsOptions = {},
+  client: SupabaseClient = getSupabaseClient()
+): Promise<ListPinsResult> {
+  const { projectId, status, scheduledFrom, scheduledTo, limit = 20 } = options
+
+  let query = client.from('pins').select('*')
+
+  if (projectId) query = query.eq('blog_project_id', projectId)
+  if (status && status.length > 0) query = query.in('status', status)
+  if (scheduledFrom) query = query.gte('scheduled_at', scheduledFrom)
+  if (scheduledTo) query = query.lte('scheduled_at', scheduledTo)
+
+  // Fetch limit + 1 to tell whether a further page follows.
+  const { data, error } = await query
+    .order('scheduled_at', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit + 1)
+
+  if (error) throw error
+
+  const rows = (data as Pin[] | null) ?? []
+  const hasMore = rows.length > limit
+  const pins = hasMore ? rows.slice(0, limit) : rows
+
+  return { pins, hasMore }
 }
 
 export async function createPin(pin: PinInsert): Promise<Pin> {

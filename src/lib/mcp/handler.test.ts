@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { handleMcpRequest } from './handler'
+
+// The default tool registry now pulls in the API layer, which imports the
+// browser Supabase client at module load. These tests inject their own tools or
+// read only context, so stub the clients to avoid demanding real env vars.
+vi.mock('@/lib/supabase', () => ({ supabase: {} }))
+vi.mock('@/lib/supabase-iso', () => ({ getSupabaseClient: () => ({}) }))
 import type { McpHandlerDeps, McpUserContext } from './context'
 import { defineTool, jsonResult } from './tool'
 import type { McpToolDefinition } from './tool'

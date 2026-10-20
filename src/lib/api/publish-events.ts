@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { PinPublishEventType, PublishLogEvent } from '@/types/pins'
 
@@ -26,14 +27,15 @@ export interface PaginatedPublishEventsResult {
  * title is embedded via the pin_id FK so the table can link to the pin detail.
  */
 export async function getPublishEvents(
-  options: GetPublishEventsOptions = {}
+  options: GetPublishEventsOptions = {},
+  client: SupabaseClient = supabase
 ): Promise<PaginatedPublishEventsResult> {
   const { cursor, limit = 50, projectId, eventTypes, createdAfter } = options
 
   // Fetch one extra row so we can tell whether a further page follows.
   const take = limit + 1
 
-  let query = supabase
+  let query = client
     .from('pin_publish_events')
     .select('*, pin:pins(id, title)')
 

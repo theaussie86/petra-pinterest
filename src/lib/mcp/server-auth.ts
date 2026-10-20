@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import type { Authenticate, McpHandlerDeps, McpUserContext } from './context'
 import type { FeatureKey } from '@/lib/features'
 import { protectedResourceMetadata } from './metadata'
+import { createBoardLister } from './boards-server'
 
 /**
  * Production {@link Authenticate}: verify a Bearer token against Supabase and
@@ -52,6 +53,7 @@ export function createSupabaseAuthenticate(): Authenticate {
       features: (featureRows ?? []).map((row) => row.feature as FeatureKey),
       oauthClientId,
       supabase,
+      listBoards: createBoardLister(supabase),
     }
   }
 }

@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { scrapeBlogFn, scrapeSingleFn } from '@/lib/server/scraping'
@@ -41,8 +42,11 @@ export async function getArticlesByProject(projectId: string): Promise<Article[]
   return data
 }
 
-export async function getArticle(id: string): Promise<Article> {
-  const { data, error } = await getSupabaseClient()
+export async function getArticle(
+  id: string,
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<Article> {
+  const { data, error } = await client
     .from('blog_articles')
     .select('*')
     .eq('id', id)
@@ -50,6 +54,51 @@ export async function getArticle(id: string): Promise<Article> {
 
   if (error) throw error
   return data
+}
+
+export interface ListArticlesOptions {
+  /** Restrict to one project. Omit for every project the caller can see. */
+  projectId?: string
+  /** `false`/omitted (default) active only; `true` archived only. */
+  archived?: boolean
+  /** Case-insensitive substring match on the title. */
+  search?: string
+  offset?: number
+  limit?: number
+}
+
+/**
+ * Filtered, paginated article list shared by the UI and the MCP server
+ * (Spec #115, user story 20). Filters by project, archive state and a title
+ * search; pages offset-based. Takes an optional Supabase client so a Connected
+ * Agent's token-bound client runs the same query under RLS (ADR-0006).
+ */
+export async function listArticles(
+  options: ListArticlesOptions = {},
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<PaginatedArticlesResult> {
+  const { projectId, archived = false, search, offset = 0, limit = 20 } = options
+
+  let query = client.from('blog_articles').select('*')
+
+  if (projectId) query = query.eq('blog_project_id', projectId)
+  if (archived === false) query = query.is('archived_at', null)
+  else if (archived === true) query = query.not('archived_at', 'is', null)
+  if (search && search.trim()) query = query.ilike('title', `%${search.trim()}%`)
+
+  // Fetch limit + 1 to tell whether a further page follows.
+  const { data, error } = await query
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
+    .range(offset, offset + limit)
+
+  if (error) throw error
+
+  const rows = (data as Article[] | null) ?? []
+  const hasMore = rows.length > limit
+  const articles = hasMore ? rows.slice(0, limit) : rows
+
+  return { articles, hasMore }
 }
 
 export async function archiveArticle(id: string): Promise<Article> {

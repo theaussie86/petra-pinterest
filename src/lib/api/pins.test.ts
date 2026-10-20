@@ -4,6 +4,7 @@ import {
   getPinsPaginated,
   getPinStatusCounts,
   getPinStatusesById,
+  listPins,
   getPinsByProject,
   getPinsByArticle,
   getPin,
@@ -540,5 +541,64 @@ describe('getPinImageUrl()', () => {
 
     expect(mockStorageFrom).toHaveBeenCalledWith('pin-images')
     expect(url).toContain('tenant/image.png')
+  })
+})
+
+describe('getPinStatusCounts() — optional project (MCP account-wide)', () => {
+  it('counts across all projects when no projectId is given', async () => {
+    const qb = createMockQueryBuilder({
+      data: [{ status: 'draft' }, { status: 'published' }, { status: 'draft' }],
+    })
+    mockFrom.mockReturnValue(qb as any)
+
+    const result = await getPinStatusCounts()
+
+    expect(mockFrom).toHaveBeenCalledWith('pins')
+    expect(qb.select).toHaveBeenCalledWith('status')
+    // No project filter applied for the tenant-wide count.
+    expect(qb.eq).not.toHaveBeenCalled()
+    expect(result).toEqual({ draft: 2, published: 1 })
+  })
+
+  it('runs against an explicitly passed client (the MCP seam)', async () => {
+    const qb = createMockQueryBuilder({ data: [] })
+    const explicitFrom = vi.fn().mockReturnValue(qb)
+    mockFrom.mockClear()
+
+    await getPinStatusCounts('proj-1', { from: explicitFrom } as any)
+
+    expect(explicitFrom).toHaveBeenCalledWith('pins')
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
+})
+
+describe('listPins() — shared UI/MCP filtered list', () => {
+  it('filters by project, status set and scheduled_at range, capped by limit', async () => {
+    const qb = createMockQueryBuilder({ data: [buildPin()] })
+    mockFrom.mockReturnValue(qb as any)
+
+    await listPins({
+      projectId: 'proj-1',
+      status: ['metadata_created', 'published'],
+      scheduledFrom: '2026-10-20T00:00:00.000Z',
+      scheduledTo: '2026-10-27T00:00:00.000Z',
+    })
+
+    expect(mockFrom).toHaveBeenCalledWith('pins')
+    expect(qb.eq).toHaveBeenCalledWith('blog_project_id', 'proj-1')
+    expect(qb.in).toHaveBeenCalledWith('status', ['metadata_created', 'published'])
+    expect(qb.gte).toHaveBeenCalledWith('scheduled_at', '2026-10-20T00:00:00.000Z')
+    expect(qb.lte).toHaveBeenCalledWith('scheduled_at', '2026-10-27T00:00:00.000Z')
+  })
+
+  it('flags has_more when the extra row comes back', async () => {
+    const rows = [buildPin({ id: 'p1' }), buildPin({ id: 'p2' }), buildPin({ id: 'p3' })]
+    const qb = createMockQueryBuilder({ data: rows })
+    mockFrom.mockReturnValue(qb as any)
+
+    const result = await listPins({ limit: 2 })
+
+    expect(result.hasMore).toBe(true)
+    expect(result.pins).toHaveLength(2)
   })
 })
