@@ -102,8 +102,17 @@ export async function listArticles(
   return { articles, hasMore }
 }
 
-export async function archiveArticle(id: string): Promise<Article> {
-  const { data, error } = await supabase
+/**
+ * Archive an article (reversible, see {@link restoreArticle}). The UI uses the
+ * browser client; the MCP server passes a Connected Agent's token-bound client
+ * so the same update runs under RLS (ADR-0006). Archiving instead of deleting
+ * keeps the article's pins intact (Spec #115, user story 44).
+ */
+export async function archiveArticle(
+  id: string,
+  client: SupabaseClient = supabase,
+): Promise<Article> {
+  const { data, error } = await client
     .from('blog_articles')
     .update({ archived_at: new Date().toISOString() })
     .eq('id', id)
@@ -114,8 +123,16 @@ export async function archiveArticle(id: string): Promise<Article> {
   return data
 }
 
-export async function restoreArticle(id: string): Promise<Article> {
-  const { data, error } = await supabase
+/**
+ * Restore a previously archived article. Takes an optional Supabase client so a
+ * Connected Agent's token-bound client runs the same update under RLS (ADR-0006,
+ * Spec #115, user story 44).
+ */
+export async function restoreArticle(
+  id: string,
+  client: SupabaseClient = supabase,
+): Promise<Article> {
+  const { data, error } = await client
     .from('blog_articles')
     .update({ archived_at: null })
     .eq('id', id)

@@ -92,7 +92,7 @@ export function useArchiveArticle() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: archiveArticle,
+    mutationFn: (id: string) => archiveArticle(id),
     onSuccess: () => {
       toast.success(i18n.t('toast.article.archived'))
       queryClient.invalidateQueries({ queryKey: ['articles'] })
@@ -153,7 +153,7 @@ export function useRestoreArticle() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: restoreArticle,
+    mutationFn: (id: string) => restoreArticle(id),
     onSuccess: () => {
       toast.success(i18n.t('toast.article.restored'))
       queryClient.invalidateQueries({ queryKey: ['articles'] })
