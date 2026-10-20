@@ -7,17 +7,21 @@ import { LegalFooter } from '@/components/layout/legal-footer'
 import { signInWithGoogle } from '@/lib/auth'
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>) => ({
+    next: typeof search.next === 'string' ? search.next : undefined,
+  }),
   component: LoginPage,
 })
 
 function LoginPage() {
   const { t } = useTranslation()
+  const { next } = Route.useSearch()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true)
-      await signInWithGoogle()
+      await signInWithGoogle(next)
       // OAuth redirect happens automatically
     } catch (error) {
       setIsLoading(false)

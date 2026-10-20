@@ -1,12 +1,14 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { exchangeCodeFn } from '@/lib/server/auth'
+import { safeNextPath } from '@/lib/oauth-consent'
 
 export const Route = createFileRoute('/auth/callback')({
   validateSearch: (search: Record<string, unknown>) => ({
     code: (search.code as string) || undefined,
     error: (search.error as string) || undefined,
     error_description: (search.error_description as string) || undefined,
+    next: typeof search.next === 'string' ? search.next : undefined,
   }),
   beforeLoad: async ({ search }) => {
     // Handle OAuth errors returned in the URL
@@ -18,7 +20,9 @@ export const Route = createFileRoute('/auth/callback')({
     if (search.code) {
       const result = await exchangeCodeFn({ data: { code: search.code } })
       if (!result.error) {
-        throw redirect({ to: '/dashboard' })
+        // `next` carried the user here through Google login; sanitise it so the
+        // login can never become an open redirect (Spec #115, ADR-0006).
+        throw redirect({ href: safeNextPath(search.next) })
       }
     }
 

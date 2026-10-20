@@ -6,12 +6,21 @@ export type { AuthUser } from '@/lib/server/auth'
 /**
  * Initiates Google OAuth sign-in flow
  * Redirects to Google, then back to /auth/callback
+ *
+ * An optional `next` path (e.g. the MCP consent page) is appended to the
+ * callback URL so it survives the Google round trip; the callback sanitises it
+ * with `safeNextPath` before redirecting (Spec #115, ADR-0006).
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(next?: string | null) {
+  const callback = new URL('/auth/callback', window.location.origin)
+  if (next) {
+    callback.searchParams.set('next', next)
+  }
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
+      redirectTo: callback.toString(),
     },
   })
 

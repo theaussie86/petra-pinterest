@@ -45,6 +45,19 @@
   "authCallback": {
     "loading": "Signing in..."
   },
+  "consent": {
+    "title": "Allow access?",
+    "description": "{{client}} wants to access Pinfinity on your behalf and can do exactly what you can.",
+    "redirectLabel": "Redirects back to",
+    "scopeLabel": "Requested permissions",
+    "unknownHostWarning": "We don't recognise this address. Only allow access if you are connecting this client yourself right now.",
+    "approve": "Allow access",
+    "deny": "Deny",
+    "loading": "Loading request …",
+    "redirecting": "Redirecting …",
+    "error": "The authorization request could not be loaded.",
+    "missingRequest": "There is no authorization request."
+  },
   "pinterestCallback": {
     "loading": "Connecting Pinterest..."
   },
