@@ -72,7 +72,24 @@
     "selectProject": "Projekt wählen",
     "noProjects": "Noch keine Projekte",
     "manageProjects": "Projekte verwalten",
-    "publishLog": "Veröffentlichungs-Log"
+    "publishLog": "Veröffentlichungs-Log",
+    "settings": "Einstellungen"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "description": "Verbundene Agenten verwalten",
+    "connectedAgents": {
+      "title": "Verbundene Agenten",
+      "description": "KI-Assistenten, die über MCP in deinem Namen auf Pinfinity zugreifen dürfen. Entziehe den Zugriff jederzeit.",
+      "loading": "Verbundene Agenten werden geladen …",
+      "error": "Verbundene Agenten konnten nicht geladen werden.",
+      "empty": "Noch kein Agent verbunden. Füge Pinfinity in deinem KI-Client (z. B. Claude, ChatGPT, Codex) als Connector hinzu.",
+      "grantedAt": "Verbunden am {{date}}",
+      "revoke": "Entziehen",
+      "revokeTitle": "Zugriff entziehen?",
+      "revokeMessage": "{{client}} verliert sofort den Zugriff. Beim nächsten Versuch wird der Agent abgewiesen und muss sich neu verbinden.",
+      "confirmRevoke": "Zugriff entziehen"
+    }
   },
   "language": {
     "label": "Sprache",
@@ -686,6 +703,10 @@
     "pinterest": {
       "connected": "Pinterest erfolgreich verbunden!",
       "disconnected": "Pinterest getrennt"
+    },
+    "connectedAgents": {
+      "revoked": "Zugriff entzogen",
+      "revokeFailed": "Zugriff konnte nicht entzogen werden"
     }
   },
   "pinTemplateStatus": {
