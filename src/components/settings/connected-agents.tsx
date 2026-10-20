@@ -34,7 +34,6 @@ import {
  */
 export function ConnectedAgents() {
   const { t } = useTranslation()
-  const { data: agents, isLoading, isError } = useConnectedAgents()
   const revoke = useRevokeConnectedAgent()
   const [pendingRevoke, setPendingRevoke] = useState<ConnectedAgent | null>(null)
 
@@ -47,36 +46,7 @@ export function ConnectedAgents() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading && (
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            <span>{t('settings.connectedAgents.loading')}</span>
-          </div>
-        )}
-
-        {isError && (
-          <p className="text-destructive">
-            {t('settings.connectedAgents.error')}
-          </p>
-        )}
-
-        {!isLoading && !isError && agents?.length === 0 && (
-          <p className="text-muted-foreground">
-            {t('settings.connectedAgents.empty')}
-          </p>
-        )}
-
-        {!isLoading && !isError && agents && agents.length > 0 && (
-          <ul className="divide-y divide-border">
-            {agents.map((agent) => (
-              <AgentRow
-                key={agent.clientId}
-                agent={agent}
-                onRevoke={() => setPendingRevoke(agent)}
-              />
-            ))}
-          </ul>
-        )}
+        <AgentList onRevoke={setPendingRevoke} />
       </CardContent>
 
       <Dialog
@@ -118,6 +88,50 @@ export function ConnectedAgents() {
         </DialogContent>
       </Dialog>
     </Card>
+  )
+}
+
+function AgentList({
+  onRevoke,
+}: {
+  onRevoke: (agent: ConnectedAgent) => void
+}) {
+  const { t } = useTranslation()
+  const { data: agents, isLoading, isError } = useConnectedAgents()
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>{t('settings.connectedAgents.loading')}</span>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <p className="text-destructive">{t('settings.connectedAgents.error')}</p>
+    )
+  }
+
+  if (!agents || agents.length === 0) {
+    return (
+      <p className="text-muted-foreground">
+        {t('settings.connectedAgents.empty')}
+      </p>
+    )
+  }
+
+  return (
+    <ul className="divide-y divide-border">
+      {agents.map((agent) => (
+        <AgentRow
+          key={agent.clientId}
+          agent={agent}
+          onRevoke={() => onRevoke(agent)}
+        />
+      ))}
+    </ul>
   )
 }
 
