@@ -19,6 +19,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedPublishLogRouteImport } from './routes/_authed/publish-log'
+import { Route as AuthedSettingsRouteImport } from './routes/_authed/settings'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as DotwellKnownOauthProtectedResourceMcpRouteImport } from './routes/[.]well-known.oauth-protected-resource.mcp'
@@ -81,6 +82,11 @@ const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
 const AuthedPublishLogRoute = AuthedPublishLogRouteImport.update({
   id: '/publish-log',
   path: '/publish-log',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSettingsRoute = AuthedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
   '/publish-log': typeof AuthedPublishLogRoute
+  '/settings': typeof AuthedSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
   '/publish-log': typeof AuthedPublishLogRoute
+  '/settings': typeof AuthedSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/publish-log': typeof AuthedPublishLogRoute
+  '/_authed/settings': typeof AuthedSettingsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/oauth/consent': typeof OauthConsentRoute
   '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/publish-log'
+    | '/settings'
     | '/auth/callback'
     | '/oauth/consent'
     | '/.well-known/oauth-protected-resource/mcp'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/publish-log'
+    | '/settings'
     | '/auth/callback'
     | '/oauth/consent'
     | '/.well-known/oauth-protected-resource/mcp'
@@ -293,6 +304,7 @@ export interface FileRouteTypes {
     | '/.well-known/oauth-protected-resource'
     | '/_authed/dashboard'
     | '/_authed/publish-log'
+    | '/_authed/settings'
     | '/auth/callback'
     | '/oauth/consent'
     | '/.well-known/oauth-protected-resource/mcp'
@@ -394,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPublishLogRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/settings': {
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/auth/callback': {
       id: '/auth/callback'
       path: '/auth/callback'
@@ -491,6 +510,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedDashboardRoute: typeof AuthedDashboardRoute
   AuthedPublishLogRoute: typeof AuthedPublishLogRoute
+  AuthedSettingsRoute: typeof AuthedSettingsRoute
   AuthedProjectsIndexRoute: typeof AuthedProjectsIndexRoute
   AuthedProjectsProjectIdCalendarRoute: typeof AuthedProjectsProjectIdCalendarRoute
   AuthedProjectsProjectIdCreatePinRoute: typeof AuthedProjectsProjectIdCreatePinRoute
@@ -505,6 +525,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedDashboardRoute: AuthedDashboardRoute,
   AuthedPublishLogRoute: AuthedPublishLogRoute,
+  AuthedSettingsRoute: AuthedSettingsRoute,
   AuthedProjectsIndexRoute: AuthedProjectsIndexRoute,
   AuthedProjectsProjectIdCalendarRoute: AuthedProjectsProjectIdCalendarRoute,
   AuthedProjectsProjectIdCreatePinRoute: AuthedProjectsProjectIdCreatePinRoute,

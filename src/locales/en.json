@@ -72,7 +72,24 @@
     "selectProject": "Select project",
     "noProjects": "No projects yet",
     "manageProjects": "Manage Projects",
-    "publishLog": "Publish Log"
+    "publishLog": "Publish Log",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage connected agents",
+    "connectedAgents": {
+      "title": "Connected Agents",
+      "description": "AI assistants allowed to access Pinfinity on your behalf via MCP. Revoke access at any time.",
+      "loading": "Loading connected agents …",
+      "error": "Could not load connected agents.",
+      "empty": "No agent connected yet. Add Pinfinity as a connector in your AI client (e.g. Claude, ChatGPT, Codex).",
+      "grantedAt": "Connected on {{date}}",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke access?",
+      "revokeMessage": "{{client}} loses access immediately. On its next attempt the agent is rejected and must reconnect.",
+      "confirmRevoke": "Revoke access"
+    }
   },
   "language": {
     "label": "Language",
@@ -686,6 +703,10 @@
     "pinterest": {
       "connected": "Pinterest connected successfully!",
       "disconnected": "Pinterest disconnected"
+    },
+    "connectedAgents": {
+      "revoked": "Access revoked",
+      "revokeFailed": "Could not revoke access"
     }
   },
   "pinTemplateStatus": {
