@@ -16,7 +16,7 @@ import { reconcilePublishJobs } from '@/lib/server/publish-sync'
  * the Authorization header, so every subsequent query runs under RLS as that
  * user — never the service role (ADR-0006).
  *
- * The token is verified with `getClaims()` (local verification when asymmetric
+ * The token is verified with `getClaims(token)` (local verification when asymmetric
  * signing keys are enabled, otherwise a network call to Auth). Profile and
  * tenant features are then read through the same RLS-scoped client.
  */
@@ -31,7 +31,7 @@ export function createSupabaseAuthenticate(): Authenticate {
       },
     )
 
-    const { data, error } = await supabase.auth.getClaims()
+    const { data, error } = await supabase.auth.getClaims(token)
     if (error || !data?.claims) {
       // Without this a rejected token is an anonymous 401 in the logs.
       // Only non-secret claims are logged, never the token itself.
