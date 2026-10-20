@@ -6,7 +6,7 @@ import type {
   McpUserContext,
 } from './context'
 import type { FeatureKey } from '@/lib/features'
-import { protectedResourceMetadata } from './metadata'
+import { protectedResourceMetadata, supabaseAuthIssuer } from './metadata'
 import { createBoardLister } from './boards-server'
 import { reconcilePublishJobs } from '@/lib/server/publish-sync'
 
@@ -104,7 +104,7 @@ export function resolveMcpHandlerDeps(): McpHandlerDeps {
   return {
     authenticate: createSupabaseAuthenticate(),
     baseUrl: resolveBaseUrl(),
-    authServerUrl: process.env.SUPABASE_URL!,
+    authServerUrl: supabaseAuthIssuer(process.env.SUPABASE_URL!),
   }
 }
 
@@ -115,7 +115,7 @@ export function resolveMcpHandlerDeps(): McpHandlerDeps {
 export function protectedResourceMetadataResponse(): Response {
   const body = protectedResourceMetadata(
     resolveBaseUrl(),
-    process.env.SUPABASE_URL!,
+    supabaseAuthIssuer(process.env.SUPABASE_URL!),
   )
   return new Response(JSON.stringify(body), {
     status: 200,

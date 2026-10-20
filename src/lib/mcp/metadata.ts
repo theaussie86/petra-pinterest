@@ -23,6 +23,14 @@ export function protectedResourceMetadata(
   }
 }
 
+/**
+ * Issuer of Supabase Auth for a project URL. Supabase serves its authorization
+ * server metadata under `/auth/v1`, so the bare project URL fails discovery.
+ */
+export function supabaseAuthIssuer(supabaseUrl: string): string {
+  return `${supabaseUrl.replace(/\/$/, '')}/auth/v1`
+}
+
 /** Path of the resource-specific metadata document for `/mcp` (RFC 9728 §3.1). */
 export const PROTECTED_RESOURCE_METADATA_PATH =
   '/.well-known/oauth-protected-resource/mcp'
