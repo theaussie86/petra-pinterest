@@ -24,6 +24,8 @@ additional_redirect_urls = [
 # in production; locally, set them via env (SUPABASE_AUTH_EXTERNAL_GOOGLE_*).
 [auth.external.google]
 enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
 
 # OAuth 2.1 authorization server — lets Claude, ChatGPT, Claude Code and Codex
 # connect Pinfinity as an MCP client. Must be enabled by hand in the Dashboard
