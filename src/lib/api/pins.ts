@@ -90,12 +90,13 @@ export async function getPinsPaginated(
 }
 
 /**
- * Per-status pin totals for a project, keyed by `PinStatus`. Powers the status
- * filter-tab badges (issue #67): a lightweight `status`-only read that counts the
- * project's full pin set regardless of how many pages the paginated list has
- * loaded, so the badges show true totals (e.g. "Alle 100") rather than just the
- * loaded rows. Runs through the isomorphic client so it respects tenant RLS under
- * the SSR-auth read pattern (ADR 0003).
+ * Per-status pin totals keyed by `PinStatus`, for one project or — when
+ * `projectId` is omitted — account-wide (the MCP `get_pin_status_counts` tool).
+ * Powers the status filter-tab badges (issue #67): a lightweight `status`-only
+ * read that counts the full pin set regardless of how many pages the paginated
+ * list has loaded, so the badges show true totals (e.g. "Alle 100") rather than
+ * just the loaded rows. Runs through the isomorphic client so it respects tenant
+ * RLS under the SSR-auth read pattern (ADR 0003).
  */
 export async function getPinStatusCounts(
   projectId?: string,

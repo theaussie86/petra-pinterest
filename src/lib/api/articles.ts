@@ -78,13 +78,14 @@ export async function listArticles(
   client: SupabaseClient = getSupabaseClient(),
 ): Promise<PaginatedArticlesResult> {
   const { projectId, archived = false, search, offset = 0, limit = 20 } = options
+  const title = search?.trim()
 
   let query = client.from('blog_articles').select('*')
 
   if (projectId) query = query.eq('blog_project_id', projectId)
-  if (archived === false) query = query.is('archived_at', null)
-  else if (archived === true) query = query.not('archived_at', 'is', null)
-  if (search && search.trim()) query = query.ilike('title', `%${search.trim()}%`)
+  if (archived) query = query.not('archived_at', 'is', null)
+  else query = query.is('archived_at', null)
+  if (title) query = query.ilike('title', `%${title}%`)
 
   // Fetch limit + 1 to tell whether a further page follows.
   const { data, error } = await query
