@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { getPin, updateAgentPin } from '@/lib/api/pins'
 import { defineTool, errorResult, jsonResult } from '../tool'
 import { pinToResult } from './pins'
@@ -39,7 +40,7 @@ async function evaluateEntry(
   pinId: string,
   scheduledAt: string,
   nowMs: number,
-  client: Parameters<typeof getPin>[1],
+  client: SupabaseClient,
 ): Promise<PlanEntry> {
   const base = { pin_id: pinId, scheduled_at: scheduledAt }
 
@@ -110,8 +111,9 @@ export const schedulePinsTool = defineTool({
     }
 
     const accepted = plan.filter((entry) => entry.accepted)
+    const saved = !dryRun && accepted.length > 0
 
-    if (!dryRun && accepted.length > 0) {
+    if (saved) {
       for (const entry of accepted) {
         await updateAgentPin(
           entry.pin_id,
@@ -124,7 +126,7 @@ export const schedulePinsTool = defineTool({
 
     return jsonResult({
       dry_run: dryRun,
-      saved: !dryRun && accepted.length > 0,
+      saved,
       scheduled: accepted.length,
       rejected: plan.length - accepted.length,
       plan,

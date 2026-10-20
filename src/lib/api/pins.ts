@@ -443,8 +443,9 @@ export type AgentPinUpdate = Omit<PinUpdate, 'id'> & PinProvenance
 
 /**
  * Update a pin on behalf of a Connected Agent (MCP). Stamps provenance so the
- * user can see an agent touched it. No publish-job reconcile here: the MCP write
- * tools in this slice only change metadata, never scheduling (issue #122).
+ * user can see an agent touched it. Does not reconcile the MQ publish job:
+ * callers that change scheduling (the schedule tools, #123) do that separately
+ * via `syncPublishJobs` (ADR-0005).
  */
 export async function updateAgentPin(
   id: string,
