@@ -77,18 +77,50 @@
   },
   "settings": {
     "title": "Settings",
-    "description": "Manage connected agents",
+    "description": "Manage and connect agents",
     "connectedAgents": {
       "title": "Connected Agents",
       "description": "AI assistants allowed to access Pinfinity on your behalf via MCP. Revoke access at any time.",
       "loading": "Loading connected agents …",
       "error": "Could not load connected agents.",
-      "empty": "No agent connected yet. Add Pinfinity as a connector in your AI client (e.g. Claude, ChatGPT, Codex).",
+      "empty": "No agent connected yet. See “Connect an agent” below.",
       "grantedAt": "Connected on {{date}}",
       "revoke": "Revoke",
       "revokeTitle": "Revoke access?",
       "revokeMessage": "{{client}} loses access immediately. On its next attempt the agent is rejected and must reconnect.",
       "confirmRevoke": "Revoke access"
+    },
+    "connectGuide": {
+      "title": "Connect an agent",
+      "description": "How to connect Claude, ChatGPT or Codex to Pinfinity. The agent then sees and may do exactly what you see and may do in Pinfinity.",
+      "urlLabel": "MCP URL",
+      "copy": "Copy",
+      "copied": "Copied to clipboard",
+      "afterConnect": "Once you approve, the agent shows up above under “Connected Agents”. You can revoke its access there at any time.",
+      "clients": {
+        "claude": {
+          "name": "Claude",
+          "step1": "Open claude.ai or the Claude app and go to Settings > Connectors.",
+          "step2": "Click “Add custom connector”, name it “Pinfinity” and paste the MCP URL.",
+          "step3": "Click “Connect”, sign in with Google and approve access on the Pinfinity page."
+        },
+        "claudeCode": {
+          "name": "Claude Code",
+          "step1": "Run the command above in your terminal.",
+          "step2": "Start Claude Code, type /mcp, pick “pinfinity” and sign in with Google. Then approve access on the Pinfinity page."
+        },
+        "chatgpt": {
+          "name": "ChatGPT",
+          "step1": "In ChatGPT open Settings > Apps & Connectors > Advanced and turn on developer mode (depends on your plan).",
+          "step2": "Create a new connector: name “Pinfinity”, paste the MCP URL, authentication “OAuth”.",
+          "step3": "Sign in with Google and approve access on the Pinfinity page."
+        },
+        "codex": {
+          "name": "Codex",
+          "step1": "Run both commands above in your terminal, one after the other.",
+          "step2": "The second command opens your browser: sign in with Google and approve access on the Pinfinity page."
+        }
+      }
     }
   },
   "language": {

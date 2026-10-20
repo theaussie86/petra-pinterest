@@ -77,18 +77,50 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "description": "Verbundene Agenten verwalten",
+    "description": "Verbundene Agenten verwalten und neue verbinden",
     "connectedAgents": {
       "title": "Verbundene Agenten",
       "description": "KI-Assistenten, die über MCP in deinem Namen auf Pinfinity zugreifen dürfen. Entziehe den Zugriff jederzeit.",
       "loading": "Verbundene Agenten werden geladen …",
       "error": "Verbundene Agenten konnten nicht geladen werden.",
-      "empty": "Noch kein Agent verbunden. Füge Pinfinity in deinem KI-Client (z. B. Claude, ChatGPT, Codex) als Connector hinzu.",
+      "empty": "Noch kein Agent verbunden. Wie das geht, steht unten unter „Agent verbinden“.",
       "grantedAt": "Verbunden am {{date}}",
       "revoke": "Entziehen",
       "revokeTitle": "Zugriff entziehen?",
       "revokeMessage": "{{client}} verliert sofort den Zugriff. Beim nächsten Versuch wird der Agent abgewiesen und muss sich neu verbinden.",
       "confirmRevoke": "Zugriff entziehen"
+    },
+    "connectGuide": {
+      "title": "Agent verbinden",
+      "description": "So verbindest du Claude, ChatGPT oder Codex mit Pinfinity. Der Agent sieht und darf danach genau das, was du in Pinfinity siehst und darfst.",
+      "urlLabel": "MCP-Adresse",
+      "copy": "Kopieren",
+      "copied": "In die Zwischenablage kopiert",
+      "afterConnect": "Nach der Bestätigung erscheint der Agent oben unter „Verbundene Agenten“. Dort kannst du den Zugriff jederzeit wieder entziehen.",
+      "clients": {
+        "claude": {
+          "name": "Claude",
+          "step1": "Öffne claude.ai oder die Claude-App und gehe zu Einstellungen > Connectors.",
+          "step2": "Klicke auf „Add custom connector“, gib als Namen „Pinfinity“ ein und füge die MCP-Adresse ein.",
+          "step3": "Klicke auf „Connect“, melde dich mit Google an und bestätige den Zugriff auf der Pinfinity-Seite."
+        },
+        "claudeCode": {
+          "name": "Claude Code",
+          "step1": "Führe den Befehl oben im Terminal aus.",
+          "step2": "Starte Claude Code, tippe /mcp, wähle „pinfinity“ und melde dich mit Google an. Bestätige danach den Zugriff auf der Pinfinity-Seite."
+        },
+        "chatgpt": {
+          "name": "ChatGPT",
+          "step1": "Öffne in ChatGPT die Einstellungen > Apps & Connectors > Erweitert und schalte den Entwicklermodus ein (je nach Tarif verfügbar).",
+          "step2": "Lege einen neuen Connector an: Name „Pinfinity“, MCP-Adresse einfügen, Authentifizierung „OAuth“.",
+          "step3": "Melde dich mit Google an und bestätige den Zugriff auf der Pinfinity-Seite."
+        },
+        "codex": {
+          "name": "Codex",
+          "step1": "Führe die beiden Befehle oben nacheinander im Terminal aus.",
+          "step2": "Der zweite Befehl öffnet den Browser: Melde dich mit Google an und bestätige den Zugriff auf der Pinfinity-Seite."
+        }
+      }
     }
   },
   "language": {
