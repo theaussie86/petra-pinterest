@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { archiveArticle, getArticle, restoreArticle } from '@/lib/api/articles'
 import { normalizeUrl } from '@/lib/utils'
+import type { Article } from '@/types/articles'
 import { defineTool, errorResult, jsonResult } from '../tool'
 
 /**
@@ -21,12 +22,6 @@ import { defineTool, errorResult, jsonResult } from '../tool'
  * tenant ownership — no service role (ADR-0006).
  */
 
-/** Resolve a relative/absolute URL to a trimmed HTTPS-or-HTTP string, or null. */
-function cleanUrl(value: string): string | null {
-  const trimmed = value.trim()
-  return trimmed.length > 0 ? trimmed : null
-}
-
 /**
  * `add_article` — add an article to a project by URL (Spec #115, user story 43).
  * Enqueues one `scrape_article` message via the tenant-checked RPC; the worker
@@ -42,19 +37,19 @@ export const addArticleTool = defineTool({
     url: z.string().describe('URL des Artikels (wird normalisiert).'),
   },
   handler: async ({ input, ctx }) => {
-    const raw = cleanUrl(input.url)
-    if (!raw) return errorResult('url darf nicht leer sein.')
+    if (!input.url.trim()) return errorResult('url darf nicht leer sein.')
+    const url = normalizeUrl(input.url)
 
     const { error } = await ctx.supabase.rpc('enqueue_scrape_article', {
       p_blog_project_id: input.project_id,
-      p_url: normalizeUrl(raw),
+      p_url: url,
     })
     if (error) return errorResult(`Artikel konnte nicht hinzugefügt werden: ${error.message}`)
 
     return jsonResult({
       enqueued: 'scrape_article',
       project_id: input.project_id,
-      url: normalizeUrl(raw),
+      url,
     })
   },
 })
@@ -72,7 +67,7 @@ export const archiveArticleTool = defineTool({
     article_id: z.string().describe('ID des Artikels.'),
   },
   handler: async ({ input, ctx }) => {
-    let article
+    let article: Article
     try {
       article = await archiveArticle(input.article_id, ctx.supabase)
     } catch {
@@ -94,7 +89,7 @@ export const restoreArticleTool = defineTool({
     article_id: z.string().describe('ID des Artikels.'),
   },
   handler: async ({ input, ctx }) => {
-    let article
+    let article: Article
     try {
       article = await restoreArticle(input.article_id, ctx.supabase)
     } catch {
@@ -151,7 +146,7 @@ export const scrapeArticleTool = defineTool({
     article_id: z.string().describe('ID des neu zu scrapenden Artikels.'),
   },
   handler: async ({ input, ctx, dryRun }) => {
-    let article
+    let article: Article
     try {
       article = await getArticle(input.article_id, ctx.supabase)
     } catch {
