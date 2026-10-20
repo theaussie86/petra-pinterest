@@ -15,9 +15,12 @@ import { Route as AgbRouteImport } from './routes/agb'
 import { Route as DatenschutzRouteImport } from './routes/datenschutz'
 import { Route as ImpressumRouteImport } from './routes/impressum'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as DotwellKnownOauthProtectedResourceRouteImport } from './routes/[.]well-known.oauth-protected-resource'
 import { Route as AuthedDashboardRouteImport } from './routes/_authed/dashboard'
 import { Route as AuthedPublishLogRouteImport } from './routes/_authed/publish-log'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as DotwellKnownOauthProtectedResourceMcpRouteImport } from './routes/[.]well-known.oauth-protected-resource.mcp'
 import { Route as AuthedProjectsIndexRouteImport } from './routes/_authed/projects/index'
 import { Route as AuthPinterestCallbackRouteImport } from './routes/auth.pinterest.callback'
 import { Route as AuthedProjectsProjectIdIndexRouteImport } from './routes/_authed/projects/$projectId/index'
@@ -58,6 +61,17 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownOauthProtectedResourceRoute =
+  DotwellKnownOauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthedDashboardRoute = AuthedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -73,6 +87,12 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DotwellKnownOauthProtectedResourceMcpRoute =
+  DotwellKnownOauthProtectedResourceMcpRouteImport.update({
+    id: '/mcp',
+    path: '/mcp',
+    getParentRoute: () => DotwellKnownOauthProtectedResourceRoute,
+  } as any)
 const AuthedProjectsIndexRoute = AuthedProjectsIndexRouteImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -138,9 +158,12 @@ export interface FileRoutesByFullPath {
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
   '/publish-log': typeof AuthedPublishLogRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
   '/projects/': typeof AuthedProjectsIndexRoute
   '/projects/$projectId/calendar': typeof AuthedProjectsProjectIdCalendarRoute
@@ -158,9 +181,12 @@ export interface FileRoutesByTo {
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/dashboard': typeof AuthedDashboardRoute
   '/publish-log': typeof AuthedPublishLogRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
   '/projects': typeof AuthedProjectsIndexRoute
   '/projects/$projectId/calendar': typeof AuthedProjectsProjectIdCalendarRoute
@@ -180,9 +206,12 @@ export interface FileRoutesById {
   '/datenschutz': typeof DatenschutzRoute
   '/impressum': typeof ImpressumRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
+  '/.well-known/oauth-protected-resource': typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRoute
   '/_authed/publish-log': typeof AuthedPublishLogRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/.well-known/oauth-protected-resource/mcp': typeof DotwellKnownOauthProtectedResourceMcpRoute
   '/auth/pinterest/callback': typeof AuthPinterestCallbackRoute
   '/_authed/projects/': typeof AuthedProjectsIndexRoute
   '/_authed/projects/$projectId/calendar': typeof AuthedProjectsProjectIdCalendarRoute
@@ -202,9 +231,12 @@ export interface FileRouteTypes {
     | '/datenschutz'
     | '/impressum'
     | '/login'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/publish-log'
     | '/auth/callback'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/auth/pinterest/callback'
     | '/projects/'
     | '/projects/$projectId/calendar'
@@ -222,9 +254,12 @@ export interface FileRouteTypes {
     | '/datenschutz'
     | '/impressum'
     | '/login'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/dashboard'
     | '/publish-log'
     | '/auth/callback'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/auth/pinterest/callback'
     | '/projects'
     | '/projects/$projectId/calendar'
@@ -243,9 +278,12 @@ export interface FileRouteTypes {
     | '/datenschutz'
     | '/impressum'
     | '/login'
+    | '/mcp'
+    | '/.well-known/oauth-protected-resource'
     | '/_authed/dashboard'
     | '/_authed/publish-log'
     | '/auth/callback'
+    | '/.well-known/oauth-protected-resource/mcp'
     | '/auth/pinterest/callback'
     | '/_authed/projects/'
     | '/_authed/projects/$projectId/calendar'
@@ -265,6 +303,8 @@ export interface RootRouteChildren {
   DatenschutzRoute: typeof DatenschutzRoute
   ImpressumRoute: typeof ImpressumRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
+  DotwellKnownOauthProtectedResourceRoute: typeof DotwellKnownOauthProtectedResourceRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthPinterestCallbackRoute: typeof AuthPinterestCallbackRoute
 }
@@ -313,6 +353,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/dashboard': {
       id: '/_authed/dashboard'
       path: '/dashboard'
@@ -333,6 +387,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/oauth-protected-resource/mcp': {
+      id: '/.well-known/oauth-protected-resource/mcp'
+      path: '/mcp'
+      fullPath: '/.well-known/oauth-protected-resource/mcp'
+      preLoaderRoute: typeof DotwellKnownOauthProtectedResourceMcpRouteImport
+      parentRoute: typeof DotwellKnownOauthProtectedResourceRoute
     }
     '/_authed/projects/': {
       id: '/_authed/projects/'
@@ -441,6 +502,21 @@ const AuthedRouteChildren: AuthedRouteChildren = {
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
+interface DotwellKnownOauthProtectedResourceRouteChildren {
+  DotwellKnownOauthProtectedResourceMcpRoute: typeof DotwellKnownOauthProtectedResourceMcpRoute
+}
+
+const DotwellKnownOauthProtectedResourceRouteChildren: DotwellKnownOauthProtectedResourceRouteChildren =
+  {
+    DotwellKnownOauthProtectedResourceMcpRoute:
+      DotwellKnownOauthProtectedResourceMcpRoute,
+  }
+
+const DotwellKnownOauthProtectedResourceRouteWithChildren =
+  DotwellKnownOauthProtectedResourceRoute._addFileChildren(
+    DotwellKnownOauthProtectedResourceRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
@@ -448,6 +524,9 @@ const rootRouteChildren: RootRouteChildren = {
   DatenschutzRoute: DatenschutzRoute,
   ImpressumRoute: ImpressumRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
+  DotwellKnownOauthProtectedResourceRoute:
+    DotwellKnownOauthProtectedResourceRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthPinterestCallbackRoute: AuthPinterestCallbackRoute,
 }
