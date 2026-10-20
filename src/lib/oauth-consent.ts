@@ -51,10 +51,10 @@ export interface RedirectHostInfo {
 }
 
 /** Hosts we trust over https, including their subdomains. */
-const KNOWN_HTTPS_HOSTS = ['claude.ai', 'chatgpt.com'] as const
+const KNOWN_HTTPS_HOSTS: readonly string[] = ['claude.ai', 'chatgpt.com']
 
 /** Loopback hosts we trust over http for local dev (Claude Code, Codex). */
-const KNOWN_LOCAL_HOSTS = ['localhost', '127.0.0.1'] as const
+const KNOWN_LOCAL_HOSTS: readonly string[] = ['localhost', '127.0.0.1']
 
 /**
  * Describe the redirect host of an OAuth client for the consent page, flagging
@@ -76,13 +76,13 @@ export function describeRedirectHost(redirectUri: string): RedirectHostInfo {
 
   if (url.protocol === 'https:') {
     const known = KNOWN_HTTPS_HOSTS.some(
-      (known) => host === known || host.endsWith(`.${known}`),
+      (trusted) => host === trusted || host.endsWith(`.${trusted}`),
     )
     return { host, known }
   }
 
   if (url.protocol === 'http:') {
-    return { host, known: (KNOWN_LOCAL_HOSTS as readonly string[]).includes(host) }
+    return { host, known: KNOWN_LOCAL_HOSTS.includes(host) }
   }
 
   return { host, known: false }
