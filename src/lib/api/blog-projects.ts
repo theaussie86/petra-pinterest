@@ -1,10 +1,18 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
 import type { BlogProject, BlogProjectInsert, BlogProjectUpdate } from '@/types/blog-projects'
 
-export async function getBlogProjects(): Promise<BlogProject[]> {
-  const { data, error } = await getSupabaseClient()
+/**
+ * List all blog projects, newest first. Takes an optional Supabase client so the
+ * UI (isomorphic RLS client, default) and the MCP server (a Connected Agent's
+ * token-bound client) share the same query (ADR-0006, Spec #115).
+ */
+export async function getBlogProjects(
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<BlogProject[]> {
+  const { data, error } = await client
     .from('blog_projects')
     .select('*')
     .order('created_at', { ascending: false })
@@ -13,8 +21,11 @@ export async function getBlogProjects(): Promise<BlogProject[]> {
   return data
 }
 
-export async function getBlogProject(id: string): Promise<BlogProject> {
-  const { data, error } = await getSupabaseClient()
+export async function getBlogProject(
+  id: string,
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<BlogProject> {
+  const { data, error } = await client
     .from('blog_projects')
     .select('*')
     .eq('id', id)

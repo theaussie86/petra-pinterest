@@ -332,12 +332,15 @@ Ephemeral OAuth CSRF/PKCE state. Entries auto-expire after 10 minutes.
 
 Pin-Werkstatt templates ("Vorlagen"). Each template hangs directly off a blog
 article (no campaign table in v1) via `blog_article_id` (`ON DELETE CASCADE`).
-Templates are **created exclusively by an external agent** logged in as the
+Templates are **created exclusively by an external agent**, now a Connected
+Agent through the MCP server under the user's OAuth token and RLS (ADR-0006,
+`src/lib/mcp/tools/werkstatt.ts`). The older path — a direct login as the
 least-privilege role `pin_werkstatt_agent` (migration 00029, scoped per project
-via `agent_project_access`);
-the app only displays them, changes their `status`, and records revision
-requests — template texts are never edited in the UI. Migrations
-00026 (table), 00027 (validation), 00028 (revisions relationship).
+via `agent_project_access`) — has been removed: locked `NOLOGIN` in migration
+00038 (#126) and dropped with its policies, guard trigger and
+`agent_project_access` in migration 00039 (#127). The app only displays templates, changes their
+`status`, and records revision requests — template texts are never edited in the
+UI. Migrations 00026 (table), 00027 (validation), 00028 (revisions relationship).
 
 The CHECK constraints from migration 00027 (`position BETWEEN 1 AND 30`,
 `description <= 500` chars, `overlay` present and containing `main_keyword`,
@@ -375,13 +378,16 @@ constraint).
 | Users can update own tenant pin templates | UPDATE | tenant isolation |
 | Users can delete own tenant pin templates | DELETE | tenant isolation |
 | Service role full access pin_templates | ALL | `true` (background jobs, admin) |
-| Agent reads templates of granted projects | SELECT | `pin_werkstatt_agent`, article in `agent_project_access` |
-| Agent inserts templates for granted projects | INSERT | `pin_werkstatt_agent`, article in `agent_project_access` |
-| Agent updates templates of granted projects | UPDATE | `pin_werkstatt_agent`, article in `agent_project_access` |
 
-Triggers `set_pin_templates_tenant_id` (derives `tenant_id` from the article) and
-`guard_pin_templates_agent_writes` (agent may not change `approved`/`archived`
-rows and may only write `draft`/`needs_revision`) come from migration 00029.
+The Connected Agent writes under the user's JWT, so the tenant-isolation
+policies above cover it; the former `TO pin_werkstatt_agent` policies were
+dropped with the role in migration 00039 (#127).
+
+Trigger `set_pin_templates_tenant_id` (derives `tenant_id` from the article)
+comes from migration 00029 and applies to every writer. The agent-only
+`guard_pin_templates_agent_writes` trigger (status guardrail) was dropped in
+migration 00039 (#127); the MCP Werkstatt tools (`src/lib/mcp/tools/werkstatt.ts`)
+enforce that guardrail now.
 
 Trigger `set_pin_templates_updated_at` (BEFORE UPDATE) keeps `updated_at` current.
 
@@ -410,8 +416,10 @@ the rework and is written by the agent, not the app.
 | Users can insert pin template revisions in own tenant | INSERT | tenant isolation |
 | Users can delete own tenant pin template revisions | DELETE | tenant isolation (retention pruning) |
 | Service role full access pin_template_revisions | ALL | `true` (background jobs, admin) |
-| Agent reads revisions of granted projects | SELECT | `pin_werkstatt_agent`, template in a granted project |
-| Agent updates revisions of granted projects | UPDATE | `pin_werkstatt_agent`, column grant on `previous_snapshot` only |
+
+The Connected Agent reads and writes `previous_snapshot` under the user's JWT via
+the tenant-isolation policies above; the former `TO pin_werkstatt_agent` policies
+were dropped with the role in migration 00039 (#127).
 
 ## Pin Status Workflow
 
@@ -621,4 +629,4 @@ tenant_id IN (
 - **`oauth_state_mapping`** uses `user_id = auth.uid()` instead of tenant isolation (user-scoped, not tenant-scoped)
 - **`pin_publish_events`** carries no own `tenant_id`; its SELECT policy scopes through the denormalised `blog_project_id` to the project's tenant
 - **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, `pin_template_revisions`, and `pin_publish_events` for background jobs
-- **`pin_werkstatt_agent`** is the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. Setup and revocation: [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md)
+- **`pin_werkstatt_agent`** was the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. **Removed per ADR-0006** — the agent now writes via the MCP server under the user's OAuth token and RLS. The role was locked `NOLOGIN` (migration 00038, #126) and then dropped together with `agent_project_access`, its `TO pin_werkstatt_agent` policies and the `guard_pin_templates_agent_writes` guard trigger (migration 00039, #127). The old role setup and SQL skill live in the Git history if the MCP approach ever has to be undone.

@@ -1,0 +1,40 @@
+# Supabase local config for Pinfinity.
+#
+# This file documents the Auth settings the MCP OAuth flow depends on and lets
+# `supabase start` run them locally (Spec #115, ADR-0006). Production values are
+# set by hand in the Supabase Dashboard: the GitHub/config integration has been
+# seen to drop `[auth.oauth_server]` on push (see supabase/cli#6367), so the
+# dashboard is the source of truth there — this file keeps local dev in sync and
+# records the intended configuration.
+#
+# `project_id` is the local project name; set the linked project ref via the CLI.
+project_id = "pinfinity"
+
+[auth]
+# Pinfinity's own origin. The consent page URL is this Site URL joined with
+# `[auth.oauth_server].authorization_url_path`, so it must match the deployment.
+site_url = "http://localhost:3000"
+# Where OAuth clients and the auth callback are allowed to return the user.
+additional_redirect_urls = [
+  "http://localhost:3000/auth/callback",
+  "http://localhost:3000/oauth/consent",
+]
+
+# Google is the only login method (Spec #115). Secrets come from the dashboard
+# in production; locally, set them via env (SUPABASE_AUTH_EXTERNAL_GOOGLE_*).
+[auth.external.google]
+enabled = true
+
+# OAuth 2.1 authorization server — lets Claude, ChatGPT, Claude Code and Codex
+# connect Pinfinity as an MCP client. Must be enabled by hand in the Dashboard
+# (Authentication > OAuth Server) for production.
+[auth.oauth_server]
+enabled = true
+# Pinfinity's consent page. Supabase redirects the user here with an
+# `authorization_id`; the page shows the client and host, then approves or denies
+# through the Supabase OAuth API (src/routes/oauth.consent.tsx).
+authorization_url_path = "/oauth/consent"
+# Dynamic client registration (RFC 7591) so agents self-register without a manual
+# client per user. Keep the auth endpoint rate-limited: anyone who can reach it
+# can register a client.
+allow_dynamic_registration = true

@@ -1,24 +1,49 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
 import { workspaceForStatus, type WorkspaceCounts } from '@/lib/pin-template-workspace'
 import type {
   PinTemplate,
+  PinTemplateDesign,
   PinTemplateRevision,
   PinTemplateStatus,
 } from '@/types/pin-templates'
 
 /**
  * All templates for a single article, ordered by position ascending (1..N).
- * Runs through the isomorphic client so it respects tenant RLS under the
- * SSR-auth read pattern (ADR 0003).
+ * Takes an optional Supabase client so the UI and the MCP server share the
+ * query: the UI omits it (isomorphic client under SSR-auth, ADR 0003), a
+ * Connected Agent passes its token-bound client so the read runs under RLS.
  */
-export async function getPinTemplatesByArticle(articleId: string): Promise<PinTemplate[]> {
-  const { data, error } = await getSupabaseClient()
+export async function getPinTemplatesByArticle(
+  articleId: string,
+  client: SupabaseClient = getSupabaseClient()
+): Promise<PinTemplate[]> {
+  const { data, error } = await client
     .from('pin_templates')
     .select('*')
     .eq('blog_article_id', articleId)
     .order('position', { ascending: true })
+
+  if (error) throw error
+  return data
+}
+
+/**
+ * A single pin template by id. Takes an optional Supabase client so the MCP
+ * `get_pin_template` tool runs the read under the Connected Agent's RLS session
+ * (defaults to the isomorphic client for UI reads, ADR 0003).
+ */
+export async function getPinTemplate(
+  id: string,
+  client: SupabaseClient = getSupabaseClient()
+): Promise<PinTemplate> {
+  const { data, error } = await client
+    .from('pin_templates')
+    .select('*')
+    .eq('id', id)
+    .single()
 
   if (error) throw error
   return data
@@ -60,9 +85,10 @@ export async function getPinTemplateCountsByProject(
  * retention window (issue #79).
  */
 export async function getPinTemplateRevisions(
-  templateId: string
+  templateId: string,
+  client: SupabaseClient = getSupabaseClient()
 ): Promise<PinTemplateRevision[]> {
-  const { data, error } = await getSupabaseClient()
+  const { data, error } = await client
     .from('pin_template_revisions')
     .select('*')
     .eq('template_id', templateId)
@@ -140,6 +166,116 @@ export async function updatePinTemplateStatus(
     .select()
     .single()
 
+  if (error) throw error
+  return data
+}
+
+/** Provenance stamped on every template a Connected Agent writes (ADR-0006). */
+export interface PinTemplateProvenance {
+  source: 'mcp'
+  oauth_client_id: string | null
+}
+
+/** The content fields a Connected Agent may set on a template (never status). */
+export interface PinTemplateContent {
+  position: number
+  main_keyword: string
+  image_prompt: string
+  pin_type?: string | null
+  title?: string | null
+  description?: string | null
+  board_name_raw?: string | null
+  overlay?: string | null
+  longtails?: string[] | null
+  search_phrases?: string[] | null
+  quality_check?: string[] | null
+  search_intent?: string | null
+  image_idea?: string | null
+  design?: PinTemplateDesign | null
+  season?: string | null
+}
+
+/** Fields a Connected Agent may set when creating a template via MCP. */
+export interface AgentPinTemplateInsert extends PinTemplateContent, PinTemplateProvenance {
+  tenant_id: string
+  blog_article_id: string
+}
+
+/**
+ * Insert a pin template on behalf of a Connected Agent (MCP). Takes an explicit
+ * client and provenance; the DB CHECK constraints (migration 00027) are the
+ * enforcing authority, so a bad row surfaces as a thrown error the tool turns
+ * into a readable message. The agent can only ever write `draft` (ADR-0006).
+ */
+export async function insertAgentPinTemplate(
+  template: AgentPinTemplateInsert,
+  client: SupabaseClient
+): Promise<PinTemplate> {
+  const { data, error } = await client
+    .from('pin_templates')
+    .insert({ ...template, status: 'draft' })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+/** A partial content patch plus provenance for a template update via MCP. */
+export type AgentPinTemplateUpdate = Partial<PinTemplateContent> & PinTemplateProvenance
+
+/**
+ * Update a template's content on behalf of a Connected Agent (MCP). Never
+ * touches the status — approving/archiving stays a human action in the UI
+ * (ADR-0006). The caller enforces the draft/needs_revision guardrail.
+ */
+export async function updateAgentPinTemplate(
+  id: string,
+  patch: AgentPinTemplateUpdate,
+  client: SupabaseClient
+): Promise<PinTemplate> {
+  const { data, error } = await client
+    .from('pin_templates')
+    .update(patch)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+/**
+ * Answer a revision request on behalf of a Connected Agent (MCP). Records the
+ * template's pre-rework fields on the newest revision row (`previous_snapshot`),
+ * applies the reworked content and moves the template back to `draft` so the
+ * reviewer sees the result (migration 00028; ADR-0006). Provenance is stamped.
+ */
+export async function answerAgentRevisionRequest(
+  templateId: string,
+  patch: AgentPinTemplateUpdate,
+  previousSnapshot: Record<string, unknown>,
+  client: SupabaseClient
+): Promise<PinTemplate> {
+  const { data: latest } = await client
+    .from('pin_template_revisions')
+    .select('id')
+    .eq('template_id', templateId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+
+  const latestId = (latest as { id: string }[] | null)?.[0]?.id
+  if (latestId) {
+    await client
+      .from('pin_template_revisions')
+      .update({ previous_snapshot: previousSnapshot })
+      .eq('id', latestId)
+  }
+
+  const { data, error } = await client
+    .from('pin_templates')
+    .update({ ...patch, status: 'draft' })
+    .eq('id', templateId)
+    .select()
+    .single()
   if (error) throw error
   return data
 }

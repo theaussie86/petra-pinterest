@@ -10,6 +10,7 @@ import {
   updateArticleContent,
   scrapeBlog,
   addArticleManually,
+  listArticles,
 } from './articles'
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
 import { buildArticle } from '@/test/factories'
@@ -112,6 +113,18 @@ describe('restoreArticle()', () => {
     expect(qb.update).toHaveBeenCalledWith({ archived_at: null })
     expect(result).toEqual(restored)
   })
+
+  it('runs the update through an explicitly passed client (MCP seam)', async () => {
+    const restored = buildArticle({ archived_at: null })
+    const qb = createMockQueryBuilder({ data: restored })
+    const otherFrom = vi.fn().mockReturnValue(qb as any)
+    const otherClient = { from: otherFrom } as any
+
+    await restoreArticle('art-1', otherClient)
+
+    expect(otherFrom).toHaveBeenCalledWith('blog_articles')
+    expect(mockFrom).not.toHaveBeenCalled()
+  })
 })
 
 describe('getArchivedArticles()', () => {
@@ -192,5 +205,54 @@ describe('addArticleManually()', () => {
     const result = await addArticleManually('proj-1', 'https://example.com/post')
 
     expect(result).toMatchObject({ success: true, method: 'single' })
+  })
+})
+
+describe('listArticles() — shared UI/MCP filtered list', () => {
+  it('filters by project, active-only by default, and title search', async () => {
+    const qb = createMockQueryBuilder({ data: [buildArticle()] })
+    mockFrom.mockReturnValue(qb as any)
+
+    await listArticles({ projectId: 'proj-1', search: 'Rezept' })
+
+    expect(mockFrom).toHaveBeenCalledWith('blog_articles')
+    expect(qb.eq).toHaveBeenCalledWith('blog_project_id', 'proj-1')
+    // archived defaults to false → active only
+    expect(qb.is).toHaveBeenCalledWith('archived_at', null)
+    expect(qb.ilike).toHaveBeenCalledWith('title', '%Rezept%')
+  })
+
+  it('returns archived only when archived=true', async () => {
+    const qb = createMockQueryBuilder({ data: [] })
+    mockFrom.mockReturnValue(qb as any)
+
+    await listArticles({ archived: true })
+
+    expect(qb.not).toHaveBeenCalledWith('archived_at', 'is', null)
+    expect(qb.is).not.toHaveBeenCalled()
+  })
+
+  it('flags has_more when a full extra row comes back and slices it off', async () => {
+    const rows = [buildArticle({ id: 'a1' }), buildArticle({ id: 'a2' }), buildArticle({ id: 'a3' })]
+    const qb = createMockQueryBuilder({ data: rows })
+    mockFrom.mockReturnValue(qb as any)
+
+    const result = await listArticles({ limit: 2 })
+
+    expect(result.hasMore).toBe(true)
+    expect(result.articles).toHaveLength(2)
+  })
+
+  it('runs against an explicitly passed client (the MCP seam)', async () => {
+    const qb = createMockQueryBuilder({ data: [] })
+    const explicitFrom = vi.fn().mockReturnValue(qb)
+    const explicitClient = { from: explicitFrom } as any
+    mockFrom.mockClear()
+
+    await listArticles({ projectId: 'proj-9' }, explicitClient)
+
+    // The caller's client is used, not the isomorphic default.
+    expect(explicitFrom).toHaveBeenCalledWith('blog_articles')
+    expect(mockFrom).not.toHaveBeenCalled()
   })
 })

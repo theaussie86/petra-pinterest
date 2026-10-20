@@ -11,8 +11,8 @@
 > **Hinweis für die Einrichtung:** Diese Datei kommt aus der Umgebung des
 > Agenten und wird beim Installieren befüllt, entweder mit der bestehenden
 > Anleitung des externen Werkzeugs oder neu erstellt. Danach die Markierung
-> `NOCH NICHT BEFÜLLT` oben entfernen. Der technische Ablauf in `SKILL.md` und
-> `sql.md` bleibt davon unberührt. Die Abschnitte unten sind die Gliederung, die
+> `NOCH NICHT BEFÜLLT` oben entfernen. Der technische Ablauf in `SKILL.md`
+> (MCP-Tools) bleibt davon unberührt. Die Abschnitte unten sind die Gliederung, die
 > der Agent erwartet.
 
 ## Pin-Typen und Verteilung auf 30 Positionen

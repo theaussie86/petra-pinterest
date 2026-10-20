@@ -92,3 +92,17 @@ describe('getPublishEvents', () => {
     await expect(getPublishEvents({})).rejects.toBeTruthy()
   })
 })
+
+describe('getPublishEvents() — explicit client (MCP seam)', () => {
+  it('runs the query against a passed-in client instead of the browser singleton', async () => {
+    const qb = createMockQueryBuilder({ data: [buildLogEvent()] })
+    const explicitFrom = vi.fn().mockReturnValue(qb)
+    mockFrom.mockReset()
+
+    const result = await getPublishEvents({ limit: 20 }, { from: explicitFrom } as any)
+
+    expect(explicitFrom).toHaveBeenCalledWith('pin_publish_events')
+    expect(mockFrom).not.toHaveBeenCalled()
+    expect(result.events).toHaveLength(1)
+  })
+})

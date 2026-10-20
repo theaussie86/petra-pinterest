@@ -11,9 +11,10 @@ import { AppSidebar } from '@/components/layout/app-sidebar'
  * and passed down through route context.
  */
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, location }) => {
     if (!context.user) {
-      throw redirect({ to: '/login' })
+      // Preserve the attempted path so login can return the user here.
+      throw redirect({ to: '/login', search: { next: location.href } })
     }
 
     return { user: context.user }

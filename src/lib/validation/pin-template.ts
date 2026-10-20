@@ -4,9 +4,11 @@
  * `(blog_article_id, position)` unique index from `00026_pin_templates.sql`.
  *
  * The database is the enforcing authority: the external agent writes templates
- * directly as the Postgres role `pin_werkstatt_agent` (epic #74, issue #83) and bypasses all app
- * code, so the constraints — not these predicates — are what actually reject
- * bad rows. This module mirrors that SQL so the rules can be unit-tested
+ * through the MCP Werkstatt tools (`src/lib/mcp/tools/werkstatt.ts`) under the
+ * user's OAuth token and RLS (ADR-0006), so the constraints — not these
+ * predicates — are what actually reject bad rows. (The older path, a direct
+ * login as the Postgres role `pin_werkstatt_agent`, was dropped in migration
+ * 00039, #127.) This module mirrors that SQL so the rules can be unit-tested
  * without a live Postgres and reused by any future server-side ingest
  * (e.g. `createCampaignFn`). When you change a rule here, change the migration
  * too, and vice versa.

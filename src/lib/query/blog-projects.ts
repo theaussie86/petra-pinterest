@@ -20,7 +20,9 @@ export const BLOG_PROJECTS_QUERY_KEY = ['blog-projects'] as const
 export function blogProjectsQueryOptions() {
   return queryOptions<BlogProject[]>({
     queryKey: BLOG_PROJECTS_QUERY_KEY,
-    queryFn: getBlogProjects,
+    // Wrapped, not passed by reference: the API fn now takes an optional client
+    // and TanStack Query would otherwise call it with the query-fn context.
+    queryFn: () => getBlogProjects(),
     staleTime: 30 * 1000,
   })
 }

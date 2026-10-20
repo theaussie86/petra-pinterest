@@ -1,10 +1,20 @@
 # Pin-Template Write Contract (Agenten-Eingang)
 
-The Pin-Werkstatt templates are produced **exclusively by an external agent**
-that writes rows into `public.pin_templates` directly, logged in as the
+The Pin-Werkstatt templates are produced **by an external agent**, never by a
+human editing texts in Pinfinity. Pinfinity only displays templates, changes
+their status, and records revision requests.
+
+As of ADR-0006 (issue #126) that agent is a **Connected Agent** going through
+the MCP server at `/mcp` under the user's OAuth token and RLS — the Werkstatt
+MCP tools (`create_pin_template`, `update_pin_template`,
+`answer_revision_request`) enforce this contract before every write
+(`src/lib/mcp/tools/werkstatt.ts`). The older path, a direct login as the
 least-privilege Postgres role **`pin_werkstatt_agent`** (epic #74, issues #77,
-#83). Pinfinity only displays templates, changes their status, and records
-revision requests. It never edits template texts and does not create templates.
+#83), has been removed: the role was locked `NOLOGIN`
+(`00038_lock_pin_werkstatt_agent_role.sql`, #126) and then dropped together with
+`agent_project_access` and its guard trigger
+(`00039_drop_pin_werkstatt_agent_role.sql`, #127). The rejection rules below are
+unchanged — they are what matters to repo readers regardless of the write path.
 
 This document is the contract for repo readers. The database enforces the
 rejection rules (see migration `00027_pin_template_validation.sql`); the same
@@ -14,25 +24,28 @@ future server-side ingest and for unit testing.
 Related:
 
 - **Agent skill** (what the agent actually reads, no repo access needed):
-  [`agent-skills/pin-werkstatt/`](../agent-skills/pin-werkstatt/SKILL.md), with
-  the finished SQL queries in `references/sql.md`.
-- **DB user setup** (enable login, grant projects, extend, rotate, revoke):
-  [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md).
-- **Skill query test** (runs every skill query as the role, rolled back):
-  `supabase/tests/pin_werkstatt_agent_skill.sql`.
+  [`agent-skills/pin-werkstatt/`](../agent-skills/pin-werkstatt/SKILL.md). It
+  now describes the MCP tool workflow; the old SQL queries lived in
+  `references/sql.md` before #126 (in the Git history).
+- **MCP Werkstatt tools** (the live write path): `src/lib/mcp/tools/werkstatt.ts`.
 
-If this document and the skill disagree, the skill's SQL in `references/sql.md`
-is the source of truth (it is what the test runs against the DB). Change it
-there first, then update the test copy and this document.
+The retired DB role setup (`pin-werkstatt-agent-db-user.md`) and its SQL skill
+probe (`pin_werkstatt_agent_skill.sql`) were removed with the role in #127; they
+live in the Git history if the MCP approach ever has to be undone.
+
+If this document and the code disagree, `src/lib/mcp/tools/werkstatt.ts` and the
+DB constraints (migration `00027`) are the source of truth.
 
 ## Write path
 
-- Connect as the dedicated Postgres role **`pin_werkstatt_agent`** (migration
-  `00029_pin_werkstatt_agent_role.sql`), not with the service role key. The role
-  does not bypass RLS: it only sees and writes data for the blog projects listed
-  for it in `public.agent_project_access`. It can read `blog_projects` and
-  `blog_articles`, read/insert/update `pin_templates` (no delete), read
-  `pin_template_revisions` and update only their `previous_snapshot`.
+- Write through the MCP Werkstatt tools under the user's OAuth token and RLS, not
+  with the service role key — the agent sees and writes only its own tenant's
+  data and can read `blog_projects`/`blog_articles`, read/insert/update
+  `pin_templates` (no delete) and update only a revision's `previous_snapshot`.
+  (Historically this was the Postgres role `pin_werkstatt_agent` scoped per
+  project via `public.agent_project_access`, migration
+  `00029_pin_werkstatt_agent_role.sql`; dropped per ADR-0006 in migration
+  `00039_drop_pin_werkstatt_agent_role.sql`.)
 - `tenant_id` is set automatically from the article by a trigger — the agent
   does not set it.
 - **Upsert on the natural key `(blog_article_id, position)`.** Re-running an
@@ -40,13 +53,14 @@ there first, then update the test copy and this document.
   than insert a duplicate (the unique index `idx_pin_templates_article_position`
   rejects duplicates).
 - **Do not overwrite reviewed templates.** A row whose `status` is `approved`
-  (or `archived`) reflects human review inside Pinfinity; the trigger
-  `pin_templates_guard_agent_writes` rejects any agent change to it. The batch
-  upsert only updates rows that are still `draft`
-  (`ON CONFLICT ... DO UPDATE ... WHERE pin_templates.status = 'draft'`), so a
-  re-ingest skips `approved`, `archived` **and** `needs_revision` positions.
-  `needs_revision` rows are changed only through the revision flow below, so the
-  pre-rework snapshot is never lost.
+  (or `archived`) reflects human review inside Pinfinity; the MCP Werkstatt tools
+  (`update_pin_template`, `answer_revision_request`) refuse to change it and
+  never set the status to `approved`/`archived`. (The old DB-role path enforced
+  the same rule with the `guard_pin_templates_agent_writes` trigger, dropped in
+  migration `00039` together with the role.) A re-ingest only touches rows that
+  are still `draft`, so `approved`, `archived` **and** `needs_revision` positions
+  are left alone. `needs_revision` rows are changed only through the revision
+  flow below, so the pre-rework snapshot is never lost.
 
 ## Which articles get templates
 
@@ -108,8 +122,8 @@ Submitting a request records a row in `public.pin_template_revisions` (see
   re-enters the review queue. Do **not** set `approved`/`archived` — that is a
   human action in the UI.
 
-The skill's query C2 does all three atomically and is a no-op once the template
-is no longer `needs_revision`.
+The `answer_revision_request` MCP tool does all three and is a no-op once the
+template is no longer `needs_revision`.
 
 The application layer keeps only the **last 3** revisions per template; older
 rows are pruned when a new request is recorded.

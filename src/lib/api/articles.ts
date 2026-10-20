@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { scrapeBlogFn, scrapeSingleFn } from '@/lib/server/scraping'
@@ -41,8 +42,11 @@ export async function getArticlesByProject(projectId: string): Promise<Article[]
   return data
 }
 
-export async function getArticle(id: string): Promise<Article> {
-  const { data, error } = await getSupabaseClient()
+export async function getArticle(
+  id: string,
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<Article> {
+  const { data, error } = await client
     .from('blog_articles')
     .select('*')
     .eq('id', id)
@@ -52,8 +56,63 @@ export async function getArticle(id: string): Promise<Article> {
   return data
 }
 
-export async function archiveArticle(id: string): Promise<Article> {
-  const { data, error } = await supabase
+export interface ListArticlesOptions {
+  /** Restrict to one project. Omit for every project the caller can see. */
+  projectId?: string
+  /** `false`/omitted (default) active only; `true` archived only. */
+  archived?: boolean
+  /** Case-insensitive substring match on the title. */
+  search?: string
+  offset?: number
+  limit?: number
+}
+
+/**
+ * Filtered, paginated article list shared by the UI and the MCP server
+ * (Spec #115, user story 20). Filters by project, archive state and a title
+ * search; pages offset-based. Takes an optional Supabase client so a Connected
+ * Agent's token-bound client runs the same query under RLS (ADR-0006).
+ */
+export async function listArticles(
+  options: ListArticlesOptions = {},
+  client: SupabaseClient = getSupabaseClient(),
+): Promise<PaginatedArticlesResult> {
+  const { projectId, archived = false, search, offset = 0, limit = 20 } = options
+  const title = search?.trim()
+
+  let query = client.from('blog_articles').select('*')
+
+  if (projectId) query = query.eq('blog_project_id', projectId)
+  if (archived) query = query.not('archived_at', 'is', null)
+  else query = query.is('archived_at', null)
+  if (title) query = query.ilike('title', `%${title}%`)
+
+  // Fetch limit + 1 to tell whether a further page follows.
+  const { data, error } = await query
+    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('id', { ascending: false })
+    .range(offset, offset + limit)
+
+  if (error) throw error
+
+  const rows = (data as Article[] | null) ?? []
+  const hasMore = rows.length > limit
+  const articles = hasMore ? rows.slice(0, limit) : rows
+
+  return { articles, hasMore }
+}
+
+/**
+ * Archive an article (reversible, see {@link restoreArticle}). The UI uses the
+ * browser client; the MCP server passes a Connected Agent's token-bound client
+ * so the same update runs under RLS (ADR-0006). Archiving instead of deleting
+ * keeps the article's pins intact (Spec #115, user story 44).
+ */
+export async function archiveArticle(
+  id: string,
+  client: SupabaseClient = supabase,
+): Promise<Article> {
+  const { data, error } = await client
     .from('blog_articles')
     .update({ archived_at: new Date().toISOString() })
     .eq('id', id)
@@ -64,8 +123,16 @@ export async function archiveArticle(id: string): Promise<Article> {
   return data
 }
 
-export async function restoreArticle(id: string): Promise<Article> {
-  const { data, error } = await supabase
+/**
+ * Restore a previously archived article. Takes an optional Supabase client so a
+ * Connected Agent's token-bound client runs the same update under RLS (ADR-0006,
+ * Spec #115, user story 44).
+ */
+export async function restoreArticle(
+  id: string,
+  client: SupabaseClient = supabase,
+): Promise<Article> {
+  const { data, error } = await client
     .from('blog_articles')
     .update({ archived_at: null })
     .eq('id', id)

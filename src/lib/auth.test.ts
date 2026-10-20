@@ -39,6 +39,26 @@ describe('signInWithGoogle', () => {
     expect(result).toEqual({ url: 'https://accounts.google.com/...' })
   })
 
+  it('carries a safe next path into the callback redirect', async () => {
+    await signInWithGoogle('/oauth/consent?authorization_id=abc')
+
+    expect(mockSupabase.auth.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: expect.stringContaining(
+          '/auth/callback?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dabc',
+        ),
+      },
+    })
+  })
+
+  it('omits the next param when none is given', async () => {
+    await signInWithGoogle()
+
+    const call = mockSupabase.auth.signInWithOAuth.mock.calls.at(-1)![0]
+    expect(call.options.redirectTo).not.toContain('next=')
+  })
+
   it('throws when OAuth fails', async () => {
     mockSupabase.auth.signInWithOAuth.mockResolvedValueOnce({
       data: null,

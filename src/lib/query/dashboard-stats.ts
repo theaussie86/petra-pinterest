@@ -20,7 +20,9 @@ export const DASHBOARD_STATS_QUERY_KEY = ['dashboard-stats'] as const
 export function dashboardStatsQueryOptions() {
   return queryOptions<DashboardStats>({
     queryKey: DASHBOARD_STATS_QUERY_KEY,
-    queryFn: getDashboardStats,
+    // Wrapped, not passed by reference: the API fn now takes an optional client
+    // and TanStack Query would otherwise call it with the query-fn context.
+    queryFn: () => getDashboardStats(),
     staleTime: 30 * 1000,
   })
 }

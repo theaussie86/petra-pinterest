@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { getSupabaseClient } from '@/lib/supabase-iso'
 import { ensureProfile } from '@/lib/auth'
@@ -89,20 +90,22 @@ export async function getPinsPaginated(
 }
 
 /**
- * Per-status pin totals for a project, keyed by `PinStatus`. Powers the status
- * filter-tab badges (issue #67): a lightweight `status`-only read that counts the
- * project's full pin set regardless of how many pages the paginated list has
- * loaded, so the badges show true totals (e.g. "Alle 100") rather than just the
- * loaded rows. Runs through the isomorphic client so it respects tenant RLS under
- * the SSR-auth read pattern (ADR 0003).
+ * Per-status pin totals keyed by `PinStatus`, for one project or — when
+ * `projectId` is omitted — account-wide (the MCP `get_pin_status_counts` tool).
+ * Powers the status filter-tab badges (issue #67): a lightweight `status`-only
+ * read that counts the full pin set regardless of how many pages the paginated
+ * list has loaded, so the badges show true totals (e.g. "Alle 100") rather than
+ * just the loaded rows. Runs through the isomorphic client so it respects tenant
+ * RLS under the SSR-auth read pattern (ADR 0003).
  */
 export async function getPinStatusCounts(
-  projectId: string
+  projectId?: string,
+  client: SupabaseClient = getSupabaseClient()
 ): Promise<Record<string, number>> {
-  const { data, error } = await getSupabaseClient()
-    .from('pins')
-    .select('status')
-    .eq('blog_project_id', projectId)
+  let query = client.from('pins').select('status')
+  if (projectId) query = query.eq('blog_project_id', projectId)
+
+  const { data, error } = await query
 
   if (error) throw error
 
@@ -155,8 +158,11 @@ export async function getPinsByArticle(articleId: string): Promise<Pin[]> {
   return data
 }
 
-export async function getPin(id: string): Promise<Pin> {
-  const { data, error } = await getSupabaseClient()
+export async function getPin(
+  id: string,
+  client: SupabaseClient = getSupabaseClient()
+): Promise<Pin> {
+  const { data, error } = await client
     .from('pins')
     .select('*')
     .eq('id', id)
@@ -164,6 +170,57 @@ export async function getPin(id: string): Promise<Pin> {
 
   if (error) throw error
   return data
+}
+
+export interface ListPinsOptions {
+  /** Restrict to one project. Omit for every project the caller can see. */
+  projectId?: string
+  /** Restrict to these pin statuses. */
+  status?: string[]
+  /** Lower bound on `scheduled_at` (inclusive), ISO string. */
+  scheduledFrom?: string
+  /** Upper bound on `scheduled_at` (inclusive), ISO string. */
+  scheduledTo?: string
+  limit?: number
+}
+
+export interface ListPinsResult {
+  pins: Pin[]
+  hasMore: boolean
+}
+
+/**
+ * Filtered pin list shared by the UI and the MCP server (Spec #115, user story
+ * 22: "Was geht nächste Woche raus?"). Filters by project, status set and a
+ * `scheduled_at` range; capped by `limit`. Takes an optional Supabase client so
+ * a Connected Agent's token-bound client runs the same query under RLS.
+ */
+export async function listPins(
+  options: ListPinsOptions = {},
+  client: SupabaseClient = getSupabaseClient()
+): Promise<ListPinsResult> {
+  const { projectId, status, scheduledFrom, scheduledTo, limit = 20 } = options
+
+  let query = client.from('pins').select('*')
+
+  if (projectId) query = query.eq('blog_project_id', projectId)
+  if (status && status.length > 0) query = query.in('status', status)
+  if (scheduledFrom) query = query.gte('scheduled_at', scheduledFrom)
+  if (scheduledTo) query = query.lte('scheduled_at', scheduledTo)
+
+  // Fetch limit + 1 to tell whether a further page follows.
+  const { data, error } = await query
+    .order('scheduled_at', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false })
+    .limit(limit + 1)
+
+  if (error) throw error
+
+  const rows = (data as Pin[] | null) ?? []
+  const hasMore = rows.length > limit
+  const pins = hasMore ? rows.slice(0, limit) : rows
+
+  return { pins, hasMore }
 }
 
 export async function createPin(pin: PinInsert): Promise<Pin> {
@@ -297,6 +354,112 @@ export async function uploadPinMedia(
 
   if (error) throw error
   return path
+}
+
+/**
+ * File extension for a storage object, derived from an image MIME type. Mirrors
+ * what a browser upload would carry (`uploadPinMedia` keeps the file's own
+ * extension); the MCP `create_pin` path has only the server-reported content
+ * type to go on. Falls back to a sensible default for unmapped image types.
+ */
+const IMAGE_EXTENSION_BY_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+  'image/avif': 'avif',
+}
+
+export function imageExtensionFor(contentType: string): string {
+  const base = contentType.split(';')[0].trim().toLowerCase()
+  return IMAGE_EXTENSION_BY_TYPE[base] ?? 'jpg'
+}
+
+/**
+ * Upload raw image bytes to the pin-images bucket under the tenant folder,
+ * exactly where a UI upload lands (`{tenant_id}/{uuid}.{ext}`), and return the
+ * storage path. Used by the MCP `create_pin` tool, which fetches an image from a
+ * URL rather than a file. Takes the client so it runs under the caller's RLS
+ * session (a Connected Agent's user-token client).
+ */
+export async function uploadPinImageBytes(
+  bytes: ArrayBuffer | Uint8Array,
+  contentType: string,
+  tenantId: string,
+  client: SupabaseClient
+): Promise<string> {
+  const path = `${tenantId}/${crypto.randomUUID()}.${imageExtensionFor(contentType)}`
+
+  const body = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
+  const { error } = await client.storage
+    .from('pin-images')
+    .upload(path, body, { contentType })
+
+  if (error) throw error
+  return path
+}
+
+/** Provenance stamped on every pin a Connected Agent writes (ADR-0006). */
+export interface PinProvenance {
+  source: 'mcp'
+  oauth_client_id: string | null
+}
+
+/** Fields a Connected Agent may set when creating a pin via MCP. */
+export interface AgentPinInsert extends PinProvenance {
+  tenant_id: string
+  blog_project_id: string
+  blog_article_id?: string | null
+  image_path: string
+  media_type?: 'image' | 'video'
+  pinterest_board_id?: string | null
+  pinterest_board_name?: string | null
+  title?: string | null
+  description?: string | null
+  alt_text?: string | null
+  alternate_url?: string | null
+  ai_modified?: boolean
+  synthetic_performer?: boolean
+  status?: PinStatus
+}
+
+/**
+ * Insert a pin on behalf of a Connected Agent (MCP). Unlike {@link createPin} it
+ * takes an explicit client, tenant and provenance, and never enqueues Gemini
+ * metadata generation — writing over MCP is deliberately Gemini-free (ADR-0006).
+ */
+export async function insertAgentPin(
+  pin: AgentPinInsert,
+  client: SupabaseClient
+): Promise<Pin> {
+  const { data, error } = await client.from('pins').insert(pin).select().single()
+  if (error) throw error
+  return data
+}
+
+/** Fields a Connected Agent may change on an existing pin via MCP. */
+export type AgentPinUpdate = Omit<PinUpdate, 'id'> & PinProvenance
+
+/**
+ * Update a pin on behalf of a Connected Agent (MCP). Stamps provenance so the
+ * user can see an agent touched it. Does not reconcile the MQ publish job:
+ * callers that change scheduling (the schedule tools, #123) do that separately
+ * via `syncPublishJobs` (ADR-0005).
+ */
+export async function updateAgentPin(
+  id: string,
+  updates: AgentPinUpdate,
+  client: SupabaseClient
+): Promise<Pin> {
+  const { data, error } = await client
+    .from('pins')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return data
 }
 
 export function getPinImageUrl(path: string | null): string {

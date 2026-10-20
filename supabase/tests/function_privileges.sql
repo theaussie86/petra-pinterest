@@ -1,13 +1,15 @@
--- Function & Agent-Role Privilege Checks
+-- Function Privilege Checks
 -- Run in the Supabase SQL editor after every migration that adds functions,
 -- tables or roles. Every row must show passed = true (failures sort first).
 -- Created: 2026-09-13 (epic #74, migration 00029_pin_werkstatt_agent_role.sql)
+-- Updated: 2026-10-20 (#127) — the pin_werkstatt_agent role and
+-- agent_project_access were dropped (migration 00039); their checks are gone.
+-- The agent now works through the MCP server under the user's JWT and RLS.
 --
 -- Covers:
 --   1. No SECURITY DEFINER function in public is executable via PUBLIC
 --      (Postgres grants EXECUTE to PUBLIC on every new function by default).
 --   2. The roles the app actually uses keep EXECUTE on the functions they call.
---   3. pin_werkstatt_agent stays least-privilege.
 
 WITH secdef AS (
   SELECT p.oid, p.oid::regprocedure::text AS sig, p.proacl
@@ -22,12 +24,6 @@ checks(check_name, passed) AS (
            SELECT 1 FROM aclexplode(coalesce(proacl, acldefault('f', 'postgres'::regrole)))
            WHERE grantee = 0 AND privilege_type = 'EXECUTE'
          )
-  FROM secdef
-
-  UNION ALL
-  -- 1b. The agent role cannot execute any SECURITY DEFINER function
-  SELECT 'agent cannot execute: ' || sig,
-         NOT has_function_privilege('pin_werkstatt_agent', oid, 'EXECUTE')
   FROM secdef
 
   UNION ALL
@@ -80,46 +76,15 @@ checks(check_name, passed) AS (
                  AND tgrelid = 'auth.users'::regclass)
 
   UNION ALL
-  -- 3. Agent role is least-privilege
-  SELECT 'agent role does not bypass RLS',
-         NOT rolbypassrls AND NOT rolsuper
-  FROM pg_roles WHERE rolname = 'pin_werkstatt_agent'
+  -- 3. The retired agent role is gone (migration 00039, #127)
+  SELECT 'pin_werkstatt_agent role removed',
+         NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pin_werkstatt_agent')
 
   UNION ALL
-  SELECT 'agent ' || priv || ' on ' || tbl || ' = ' || expected,
-         has_table_privilege('pin_werkstatt_agent', tbl, priv) = expected
-  FROM (VALUES
-    ('public.agent_project_access',   'SELECT', true),
-    ('public.agent_project_access',   'INSERT', false),
-    ('public.blog_projects',          'SELECT', true),
-    ('public.blog_projects',          'UPDATE', false),
-    ('public.blog_articles',          'SELECT', true),
-    ('public.blog_articles',          'UPDATE', false),
-    ('public.pin_templates',          'SELECT', true),
-    ('public.pin_templates',          'INSERT', true),
-    ('public.pin_templates',          'UPDATE', true),
-    ('public.pin_templates',          'DELETE', false),
-    ('public.pin_template_revisions', 'SELECT', true),
-    ('public.pin_template_revisions', 'INSERT', false),
-    ('public.pin_template_revisions', 'DELETE', false),
-    ('public.pins',                   'SELECT', false),
-    ('public.pinterest_connections',  'SELECT', false),
-    ('public.profiles',               'SELECT', false)
-  ) AS t(tbl, priv, expected)
-
-  UNION ALL
-  SELECT 'agent column UPDATE on pin_template_revisions.' || col || ' = ' || expected,
-         has_column_privilege('pin_werkstatt_agent', 'public.pin_template_revisions', col, 'UPDATE') = expected
-  FROM (VALUES
-    ('previous_snapshot', true),
-    ('feedback',          false),
-    ('template_id',       false)
-  ) AS c(col, expected)
-
-  UNION ALL
-  SELECT 'app roles cannot read agent_project_access: ' || rl,
-         NOT has_table_privilege(rl, 'public.agent_project_access', 'SELECT')
-  FROM unnest(ARRAY['anon', 'authenticated']) rl
+  SELECT 'agent_project_access table removed',
+         NOT EXISTS (SELECT 1 FROM pg_class
+                     WHERE relnamespace = 'public'::regnamespace
+                       AND relname = 'agent_project_access')
 
   UNION ALL
   --    tenant_features (00031): users read own flags, nobody but service_role writes
@@ -130,22 +95,27 @@ checks(check_name, passed) AS (
     ('authenticated', 'INSERT', false),
     ('authenticated', 'UPDATE', false),
     ('authenticated', 'DELETE', false),
-    ('anon',          'SELECT', false),
-    ('pin_werkstatt_agent', 'SELECT', false)
+    ('anon',          'SELECT', false)
   ) AS f(rl, priv, expected)
 
   UNION ALL
   SELECT 'RLS enabled on ' || relname, relrowsecurity
   FROM pg_class
   WHERE relnamespace = 'public'::regnamespace
-    AND relname IN ('agent_project_access', 'blog_projects', 'blog_articles',
+    AND relname IN ('blog_projects', 'blog_articles',
                     'pin_templates', 'pin_template_revisions', 'tenant_features')
 
   UNION ALL
-  SELECT 'trigger exists: ' || name,
-         EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = name
+  -- The tenant_id trigger stays (every writer); the agent status guard was
+  -- dropped with the role (migration 00039).
+  SELECT 'trigger exists: set_pin_templates_tenant_id',
+         EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_pin_templates_tenant_id'
                  AND tgrelid = 'public.pin_templates'::regclass)
-  FROM unnest(ARRAY['set_pin_templates_tenant_id', 'guard_pin_templates_agent_writes']) name
+
+  UNION ALL
+  SELECT 'trigger removed: guard_pin_templates_agent_writes',
+         NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'guard_pin_templates_agent_writes'
+                     AND tgrelid = 'public.pin_templates'::regclass)
 )
 SELECT check_name, passed
 FROM checks
