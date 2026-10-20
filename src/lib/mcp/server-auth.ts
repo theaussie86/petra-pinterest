@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
-import type { Authenticate, McpHandlerDeps, McpUserContext } from './context'
+import type {
+  Authenticate,
+  FetchedImage,
+  McpHandlerDeps,
+  McpUserContext,
+} from './context'
 import type { FeatureKey } from '@/lib/features'
 import { protectedResourceMetadata } from './metadata'
 import { createBoardLister } from './boards-server'
@@ -54,7 +59,7 @@ export function createSupabaseAuthenticate(): Authenticate {
       oauthClientId,
       supabase,
       listBoards: createBoardLister(supabase),
-      fetchRemoteImage: fetchRemoteImage,
+      fetchRemoteImage,
     }
   }
 }
@@ -64,9 +69,7 @@ export function createSupabaseAuthenticate(): Authenticate {
  * server-reported content type and the raw bytes. The tool enforces the
  * guardrails (HTTPS only, `image/*`, size cap); this just does the request.
  */
-async function fetchRemoteImage(
-  url: string,
-): Promise<{ contentType: string | null; bytes: ArrayBuffer }> {
+async function fetchRemoteImage(url: string): Promise<FetchedImage> {
   const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`Bild-Download fehlgeschlagen (HTTP ${res.status}).`)

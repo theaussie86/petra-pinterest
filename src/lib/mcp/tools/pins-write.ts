@@ -5,9 +5,10 @@ import {
   updateAgentPin,
   uploadPinImageBytes,
   type AgentPinUpdate,
+  type PinProvenance,
 } from '@/lib/api/pins'
 import type { Pin } from '@/types/pins'
-import type { McpUserContext } from '../context'
+import type { FetchedImage, McpUserContext } from '../context'
 import { defineTool, errorResult, jsonResult } from '../tool'
 import { pinToResult } from './pins'
 
@@ -69,16 +70,7 @@ const metadataShape = {
     .describe('KI-Kennzeichnung: rein KI-erfundene, fiktive Person. Impliziert ai_modified.'),
 }
 
-type MetadataInput = {
-  title?: string
-  description?: string
-  board_id?: string
-  board_name?: string
-  alt_text?: string
-  link?: string
-  ai_modified?: boolean
-  synthetic_performer?: boolean
-}
+type MetadataInput = z.infer<z.ZodObject<typeof metadataShape>>
 
 /**
  * Translate the agent-facing metadata fields into a pin update patch, keeping
@@ -106,7 +98,7 @@ function metadataPatch(input: MetadataInput): Omit<AgentPinUpdate, 'source' | 'o
 }
 
 /** Provenance stamp for every MCP write (source + the token's client id). */
-function provenance(ctx: McpUserContext): { source: 'mcp'; oauth_client_id: string | null } {
+function provenance(ctx: McpUserContext): PinProvenance {
   return { source: 'mcp', oauth_client_id: ctx.oauthClientId }
 }
 
@@ -136,7 +128,7 @@ export const createPinTool = defineTool({
       return errorResult('Bild-Download ist in dieser Umgebung nicht verfügbar.')
     }
 
-    let image: { contentType: string | null; bytes: ArrayBuffer }
+    let image: FetchedImage
     try {
       image = await ctx.fetchRemoteImage(url)
     } catch {
