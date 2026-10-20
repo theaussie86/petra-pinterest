@@ -59,10 +59,15 @@ DROP TABLE IF EXISTS public.agent_project_access;
 -- DROP OWNED BY revokes every remaining privilege granted to the role
 -- (schema usage, table grants, the pin_template_normalize EXECUTE grant) so
 -- DROP ROLE is not blocked.
+--
+-- On Postgres 16+ the migrating role (postgres) holds pin_werkstatt_agent only
+-- WITH ADMIN, not INHERIT, and DROP OWNED BY needs the role's privileges. The
+-- self-grant WITH INHERIT TRUE supplies them; it disappears with DROP ROLE.
 
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pin_werkstatt_agent') THEN
+    EXECUTE format('GRANT pin_werkstatt_agent TO %I WITH INHERIT TRUE', current_user);
     DROP OWNED BY pin_werkstatt_agent;
     DROP ROLE pin_werkstatt_agent;
   END IF;
