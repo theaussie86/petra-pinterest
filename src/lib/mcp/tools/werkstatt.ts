@@ -37,6 +37,12 @@ const VALIDATION_MESSAGES: Record<PinTemplateValidationError, string> = {
 /** Statuses a Connected Agent is allowed to write to (ADR-0006 guardrail). */
 const WRITABLE_STATUSES = new Set(['draft', 'needs_revision'])
 
+/** Join the failing write-contract rules into one German message, null if valid. */
+function validationMessage(errors: PinTemplateValidationError[]): string | null {
+  if (errors.length === 0) return null
+  return errors.map((e) => VALIDATION_MESSAGES[e]).join(' ')
+}
+
 /** Provenance stamp for every MCP template write (source + the token's client id). */
 function provenance(ctx: McpUserContext): PinTemplateProvenance {
   return { source: 'mcp', oauth_client_id: ctx.oauthClientId }
@@ -112,14 +118,14 @@ function validateMerged(
   base: Pick<PinTemplate, 'position' | 'main_keyword' | 'overlay' | 'description'>,
   patch: Partial<AgentPinTemplateUpdate>,
 ): string | null {
-  const errors = validatePinTemplate({
-    position: patch.position ?? base.position,
-    main_keyword: patch.main_keyword ?? base.main_keyword,
-    overlay: patch.overlay !== undefined ? patch.overlay : base.overlay,
-    description: patch.description !== undefined ? patch.description : base.description,
-  })
-  if (errors.length === 0) return null
-  return errors.map((e) => VALIDATION_MESSAGES[e]).join(' ')
+  return validationMessage(
+    validatePinTemplate({
+      position: patch.position ?? base.position,
+      main_keyword: patch.main_keyword ?? base.main_keyword,
+      overlay: patch.overlay !== undefined ? patch.overlay : base.overlay,
+      description: patch.description !== undefined ? patch.description : base.description,
+    }),
+  )
 }
 
 /** The template's current content fields, for a revision `previous_snapshot`. */
@@ -215,15 +221,15 @@ export const createPinTemplateTool = defineTool({
     ...contentShape,
   },
   handler: async ({ input, ctx }) => {
-    const error = validatePinTemplate({
-      position: input.position,
-      main_keyword: input.main_keyword,
-      overlay: input.overlay,
-      description: input.description ?? null,
-    })
-    if (error.length > 0) {
-      return errorResult(error.map((e) => VALIDATION_MESSAGES[e]).join(' '))
-    }
+    const error = validationMessage(
+      validatePinTemplate({
+        position: input.position,
+        main_keyword: input.main_keyword,
+        overlay: input.overlay,
+        description: input.description ?? null,
+      }),
+    )
+    if (error) return errorResult(error)
 
     try {
       const template = await insertAgentPinTemplate(
