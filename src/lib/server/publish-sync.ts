@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient } from './supabase'
 import { enqueuePublishPin, cancelPublishPin } from './mq'
@@ -53,25 +54,29 @@ interface SyncRow extends PublishEligibilityPin {
 /**
  * Reconcile the MQ publish jobs for the given pins against their current state.
  *
- * Reads the pins fresh (through the cookie-bound RLS client, so only the
- * caller's tenant is visible) together with their project's Pinterest
- * connection, then enqueues or cancels per the rule. Any requested id that no
- * longer resolves to a pin (e.g. just deleted) has its job cancelled. Never
- * throws — the result is informational for an optional "queued later" toast.
+ * Reads the pins fresh (through an RLS client, so only the caller's tenant is
+ * visible) together with their project's Pinterest connection, then enqueues or
+ * cancels per the rule. Any requested id that no longer resolves to a pin (e.g.
+ * just deleted) has its job cancelled. Never throws — the result is
+ * informational for an optional "queued later" toast.
  *
- * Kept internal (not exported) so the client build strips it together with its
- * server-only `./mq` and `./supabase` imports; call it over the wire through
- * `syncPublishJobsFn`.
+ * The client is passed in by the caller: the UI write paths use the cookie-bound
+ * server client (through `syncPublishJobsFn`), while the MCP server passes the
+ * Connected Agent's token-bound client instead (an MCP request carries no
+ * cookies) — the same reconcile logic, the same RLS tenant isolation
+ * (ADR-0005/0006). Taking it as an argument (rather than defaulting to the
+ * cookie client) keeps the server-only `./supabase` import out of the client
+ * bundle: it is referenced only inside the stripped server-function handler.
  */
-async function syncPublishJobs(
+export async function reconcilePublishJobs(
   pinIds: string[],
+  client: SupabaseClient,
 ): Promise<{ synced: number; failed: number }> {
   if (pinIds.length === 0) return { synced: 0, failed: 0 }
 
   let failed = 0
 
   try {
-    const client = getSupabaseServerClient()
     const { data, error } = await client
       .from('pins')
       .select(
@@ -105,7 +110,7 @@ async function syncPublishJobs(
     // A failed read means we could not reconcile anything — treat the whole
     // batch as deferred to the reconcile job rather than failing the mutation.
     console.error(
-      `[publish-sync] syncPublishJobs failed: ${err instanceof Error ? err.message : String(err)}`,
+      `[publish-sync] reconcilePublishJobs failed: ${err instanceof Error ? err.message : String(err)}`,
     )
     return { synced: 0, failed: pinIds.length }
   }
@@ -119,4 +124,4 @@ async function syncPublishJobs(
  */
 export const syncPublishJobsFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pinIds: string[] }) => data)
-  .handler(({ data }) => syncPublishJobs(data.pinIds))
+  .handler(({ data }) => reconcilePublishJobs(data.pinIds, getSupabaseServerClient()))

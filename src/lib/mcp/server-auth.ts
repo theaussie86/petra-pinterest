@@ -8,6 +8,7 @@ import type {
 import type { FeatureKey } from '@/lib/features'
 import { protectedResourceMetadata } from './metadata'
 import { createBoardLister } from './boards-server'
+import { reconcilePublishJobs } from '@/lib/server/publish-sync'
 
 /**
  * Production {@link Authenticate}: verify a Bearer token against Supabase and
@@ -60,6 +61,13 @@ export function createSupabaseAuthenticate(): Authenticate {
       supabase,
       listBoards: createBoardLister(supabase),
       fetchRemoteImage,
+      syncPublishJobs: async (pinIds) => {
+        // Reconcile over the same path as the UI, but with the agent's
+        // token-bound client (an MCP request carries no cookies). Best-effort:
+        // reconcilePublishJobs never throws, so a scheduling write is never
+        // broken by an MQ hiccup — the MQ reconcile job catches the rest.
+        await reconcilePublishJobs(pinIds, supabase)
+      },
     }
   }
 }

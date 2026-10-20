@@ -98,7 +98,7 @@ function metadataPatch(input: MetadataInput): Omit<AgentPinUpdate, 'source' | 'o
 }
 
 /** Provenance stamp for every MCP write (source + the token's client id). */
-function provenance(ctx: McpUserContext): PinProvenance {
+export function provenance(ctx: McpUserContext): PinProvenance {
   return { source: 'mcp', oauth_client_id: ctx.oauthClientId }
 }
 

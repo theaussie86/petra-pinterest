@@ -35,6 +35,13 @@ export interface McpUserContext {
    * server-reported content type and the raw bytes.
    */
   fetchRemoteImage?: (url: string) => Promise<FetchedImage>
+  /**
+   * Reconciles the MQ publish jobs for the given pins (ADR-0005). Injected so
+   * the `schedule_pins`/`unschedule_pin` tools keep the delayed publish job
+   * consistent over the same path the UI uses, but with the agent's token-bound
+   * client (an MCP request carries no cookies). Best-effort: never throws.
+   */
+  syncPublishJobs?: (pinIds: string[]) => Promise<void>
 }
 
 /** A Pinterest board as surfaced to a Connected Agent. */
