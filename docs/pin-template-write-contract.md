@@ -56,7 +56,7 @@ DB constraints (migration `00027`) are the source of truth.
   (or `archived`) reflects human review inside Pinfinity; the MCP Werkstatt tools
   (`update_pin_template`, `answer_revision_request`) refuse to change it and
   never set the status to `approved`/`archived`. (The old DB-role path enforced
-  the same rule with the `pin_templates_guard_agent_writes` trigger, dropped in
+  the same rule with the `guard_pin_templates_agent_writes` trigger, dropped in
   migration `00039` together with the role.) A re-ingest only touches rows that
   are still `draft`, so `approved`, `archived` **and** `needs_revision` positions
   are left alone. `needs_revision` rows are changed only through the revision
