@@ -33,6 +33,12 @@ export function createSupabaseAuthenticate(): Authenticate {
 
     const { data, error } = await supabase.auth.getClaims()
     if (error || !data?.claims) {
+      // Without this a rejected token is an anonymous 401 in the logs.
+      // Only non-secret claims are logged, never the token itself.
+      console.warn('[mcp] token rejected', {
+        error: error?.message ?? 'no claims',
+        ...unverifiedTokenInfo(token),
+      })
       return null
     }
 
@@ -69,6 +75,26 @@ export function createSupabaseAuthenticate(): Authenticate {
         await reconcilePublishJobs(pinIds, supabase)
       },
     }
+  }
+}
+
+/** Header and claim fields of an unverified JWT, for diagnosing rejections. */
+function unverifiedTokenInfo(token: string): Record<string, unknown> {
+  try {
+    const [header, payload] = token
+      .split('.')
+      .slice(0, 2)
+      .map((part) => JSON.parse(Buffer.from(part, 'base64url').toString()))
+    return {
+      alg: header.alg,
+      kid: header.kid,
+      iss: payload.iss,
+      aud: payload.aud,
+      exp: payload.exp,
+      client_id: payload.client_id,
+    }
+  } catch {
+    return { malformed: true, length: token.length }
   }
 }
 
