@@ -1,6 +1,6 @@
 ---
 name: pin-werkstatt
-description: Pin-Vorlagen für die Pin-Werkstatt in Pinfinity erzeugen und Änderungswünsche abarbeiten. Direkter Postgres-Zugang als Rolle pin_werkstatt_agent. Nutzen, wenn Pin-Vorlagen (30 pro Blogartikel) geschrieben, ergänzt oder nach Feedback überarbeitet werden sollen, oder wenn nach offenen Änderungswünschen in der Pin-Werkstatt gefragt wird.
+description: Pin-Vorlagen für die Pin-Werkstatt in Pinfinity erzeugen und Änderungswünsche abarbeiten. Zugriff über den Pinfinity-MCP-Server (Connected Agent, OAuth). Nutzen, wenn Pin-Vorlagen (30 pro Blogartikel) geschrieben, ergänzt oder nach Feedback überarbeitet werden sollen, oder wenn nach offenen Änderungswünschen in der Pin-Werkstatt gefragt wird.
 ---
 
 # Pin-Werkstatt
@@ -12,86 +12,107 @@ du ab. Freigeben und Archivieren sind nie deine Aufgabe.
 
 Dieser Skill beschreibt nur den **technischen Ablauf**. Wie eine gute Vorlage
 inhaltlich aussieht (Pin-Typen, Keyword-Strategie, Design, Bild-Prompt), steht in
-[references/pin-inhalt.md](references/pin-inhalt.md). Alle SQL-Abfragen stehen
-fertig in [references/sql.md](references/sql.md). Nutze sie wörtlich und ersetze
-nur die markierten Platzhalter.
+[references/pin-inhalt.md](references/pin-inhalt.md).
 
 ## 1. Verbindung
 
-- Die Verbindung steht in der Umgebungsvariable `PIN_WERKSTATT_DATABASE_URL`
-  (Postgres-URL über den Supabase-Pooler, Benutzer `pin_werkstatt_agent.<projekt>`).
-- Gib die URL oder das Passwort nie aus, nicht in Logs, nicht in Antworten, nicht
-  in Dateien.
-- Fehlt die Variable, brich ab und sag dem Menschen, dass der Zugang nicht
-  eingerichtet ist. Frag nicht nach dem Passwort im Chat.
-- Mit `psql`: SQL in eine temporäre Datei schreiben und ausführen, das vermeidet
-  Probleme mit Anführungszeichen in langen Texten:
+Du arbeitest über den **Pinfinity-MCP-Server** (`/mcp`), nicht mehr über eine
+Postgres-Datenbankverbindung. Die Nutzerin verbindet ihren Agenten einmal per
+OAuth (Login mit Google in Pinfinity, Consent-Seite), danach bist du ein
+**Connected Agent**: Du handelst im Namen genau dieser Nutzerin, siehst genau
+ihre Daten und darfst genau das, was sie in der UI darf.
 
-  ```bash
-  psql "$PIN_WERKSTATT_DATABASE_URL" -v ON_ERROR_STOP=1 -X -f /tmp/pin-werkstatt.sql
-  ```
-
-  Ohne `psql` geht jeder Postgres-Client oder Postgres-Connector, der diese URL
-  verwendet.
-- Jede Abfrage darf höchstens 30 Sekunden laufen (`statement_timeout`).
+- Kein Datenbankpasswort, keine Umgebungsvariable mehr. Es gibt nichts
+  Geheimes auszugeben.
+- Ist der MCP-Server nicht verbunden oder fehlen dir die Werkstatt-Tools (siehe
+  unten), brich ab und sag dem Menschen, dass die Verbindung oder das Feature
+  `pin_werkstatt` fehlt. Rate nichts.
+- Die Werkstatt-Tools erscheinen nur, wenn das Konto das Feature `pin_werkstatt`
+  hat. Prüfe das zuerst mit `get_profile`.
 
 ## 2. Was du darfst
 
-| Tabelle | Rechte |
-|---|---|
-| `agent_project_access` | lesen (deine Projekt-Freigaben) |
-| `blog_projects` | lesen |
-| `blog_articles` | lesen |
-| `pin_templates` | lesen, anlegen, ändern, **nicht löschen** |
-| `pin_template_revisions` | lesen, nur `previous_snapshot` ändern |
+Alles läuft über MCP-Tools unter RLS (deine Mandanten-Isolation). Du brauchst
+keine Tabellen- oder Rechteübersicht mehr — jedes Tool erlaubt genau das, was
+erlaubt ist, und lehnt alles andere mit einer verständlichen Meldung ab.
 
-Du siehst nur Projekte, die für dich freigegeben sind. Alles andere ist für dich
-unsichtbar oder wird abgelehnt. Das ist gewollt, kein Fehler.
+**Lesen (immer verfügbar):**
+
+| Tool | Zweck |
+|---|---|
+| `get_profile` | Konto und aktive Features (prüft `pin_werkstatt`). |
+| `list_projects` / `get_project` | Projekte und ihr Kontext (`ai_context`, Zielgruppe, Tonalität, Keywords …). |
+| `list_articles` | Artikel eines Projekts, mit `workshop_status`. |
+| `get_article` | Ein Artikel inkl. Volltext (`content`) und `workshop_note`. |
+
+**Pin-Werkstatt (nur mit Feature `pin_werkstatt`):**
+
+| Tool | Zweck |
+|---|---|
+| `list_pin_templates` | Vorlagen eines Artikels, nach Position sortiert. |
+| `get_pin_template` | Eine einzelne Vorlage. |
+| `create_pin_template` | Neue Vorlage anlegen (immer Status `draft`). |
+| `update_pin_template` | Vorlage überarbeiten (nur `draft`/`needs_revision`). |
+| `list_pin_template_revisions` | Überarbeitungswünsche einer Vorlage (neueste zuerst). |
+| `answer_revision_request` | Einen Überarbeitungswunsch beantworten. |
+
+Du kannst **nichts löschen** und keine Vorlage **freigeben oder archivieren** —
+dafür gibt es bewusst kein Tool. Freigeben bleibt eine menschliche Aktion in der
+UI. Den `status` setzt du nie selbst auf `approved` oder `archived`.
 
 ## 3. Arbeitsablauf
 
 ### Schritt A: Orientierung
 
-1. Freigegebene Projekte abfragen (`sql.md` → **A1**).
-2. Für das gewählte Projekt den Projektkontext lesen (**A2**): `ai_context`,
-   Zielgruppe, Tonalität, Sprache, Keywords. Das ist die Grundlage für alle Texte.
-3. Artikel finden, für die der Mensch Pins gewünscht hat und die noch keine 30
-   Vorlagen haben (**A3**). Er markiert sie in Pinfinity, die älteste Anfrage
-   kommt zuerst. Für alle anderen Artikel schreibst du **nie** Vorlagen, auch
-   wenn du sie lesen kannst. Liefert A3 nichts, gibt es nichts zu tun: melde das
-   und erfinde keine Auswahl.
-   - `workshop_note` ist ein optionaler Hinweis des Menschen für genau diesen
-     Artikel (zum Beispiel ein saisonaler Fokus). Ist er gesetzt, hat er Vorrang
-     vor dem allgemeinen Projektkontext.
-4. Vor dem Schreiben den Positionsstand des Artikels prüfen (**A4**) und den
-   Artikeltext lesen (**A5**).
+1. `get_profile` aufrufen und prüfen, dass `pin_werkstatt` aktiv ist. Fehlt es,
+   abbrechen und dem Menschen melden.
+2. `list_projects` aufrufen und das gewünschte Projekt wählen. Für das Projekt
+   `get_project` lesen: `ai_context`, Zielgruppe, Tonalität, Sprache, Keywords.
+   Das ist die Grundlage für alle Texte.
+3. Mit `list_articles` (Filter `project_id`, `archived` weglassen = nur aktive)
+   die Artikel durchsehen. Pins schreibst du **nur** für Artikel mit
+   `workshop_status = 'wanted'` — der Mensch hat sie in Pinfinity markiert. Für
+   alle anderen Artikel schreibst du **nie** Vorlagen, auch wenn du sie siehst.
+   Gibt es keinen Artikel mit `wanted`, gibt es nichts zu tun: melde das und
+   erfinde keine Auswahl.
+4. Für jeden gewählten Artikel `get_article` lesen: `content` als Textgrundlage
+   und `workshop_note`. Ist `workshop_note` gesetzt, ist das ein Hinweis des
+   Menschen für genau diesen Artikel (zum Beispiel ein saisonaler Fokus) und hat
+   Vorrang vor dem allgemeinen Projektkontext.
+5. Mit `list_pin_templates` den Positionsstand des Artikels prüfen: welche der 30
+   Positionen schon belegt sind und mit welchem Status.
 
 Arbeite erst die offenen Änderungswünsche ab (Schritt C), dann neue Vorlagen.
 
 ### Schritt B: Vorlagen schreiben
 
-1. `references/pin-inhalt.md` lesen und 30 Vorlagen für den Artikel entwerfen.
+1. `references/pin-inhalt.md` lesen und die fehlenden Vorlagen für den Artikel
+   entwerfen (Ziel: 30 Positionen belegt).
 2. Jede Vorlage vor dem Senden selbst prüfen (Regeln unten).
-3. Alle Vorlagen eines Artikels **in einer Anweisung** senden (**B1**). Die
-   Anweisung ist atomar: verletzt eine Vorlage eine Regel, wird keine geschrieben.
-4. Ergebnis von B1 lesen:
-   - `inserted` + `updated` + Anzahl `skipped_positions` = `sent`.
-   - `skipped_positions` sind Positionen, die schon `needs_revision`, `approved`
-     oder `archived` sind. Die bleiben unverändert. Das ist korrekt.
+3. Für jede noch freie Position **eine** `create_pin_template` aufrufen
+   (`article_id`, `position`, Inhalt). Die Vorlage wird immer als `draft`
+   angelegt.
+   - Positionen, die schon `draft` sind und die du überarbeiten willst, änderst
+     du mit `update_pin_template` statt sie neu anzulegen.
+   - Positionen mit `needs_revision`, `approved` oder `archived` lässt du in
+     Ruhe. `needs_revision` wird über Schritt C bearbeitet, nicht über B.
+4. Jedes Tool prüft den Write-Contract vorab und meldet einen Verstoß als
+   verständlichen Fehler. Ist die Position schon belegt, lehnt `create_pin_template`
+   ab — dann `list_pin_templates` neu lesen und entscheiden.
 
-**Regeln, die die Datenbank erzwingt:**
+**Regeln, die der Write-Contract erzwingt** (die Tools prüfen das vor dem
+Schreiben, die Datenbank erzwingt es zusätzlich):
 
-| Regel | Constraint bei Verstoß |
-|---|---|
-| `position` zwischen 1 und 30, pro Artikel eindeutig | `pin_templates_position_range` |
-| `main_keyword` und `image_prompt` gesetzt | `not-null constraint` |
-| `overlay` gesetzt und enthält `main_keyword` wörtlich | `pin_templates_keyword_in_overlay` |
-| `description`, falls gesetzt, höchstens 500 Zeichen | `pin_templates_description_max_length` |
-| `description`, falls gesetzt, beginnt mit `main_keyword` | `pin_templates_description_starts_with_keyword` |
+| Regel |
+|---|
+| `position` zwischen 1 und 30, pro Artikel eindeutig |
+| `main_keyword` und `image_prompt` gesetzt (Pflichtfelder) |
+| `overlay` gesetzt und enthält `main_keyword` wörtlich |
+| `description`, falls gesetzt, höchstens 500 Zeichen |
+| `description`, falls gesetzt, beginnt mit `main_keyword` |
 
-`description` bleibt in der Werkstatt leer (`null`). Die Pinterest-Beschreibung
-entsteht später in Pinfinity, nachdem das Bild erstellt ist. Eine Beschreibung
-in der Vorlage wird nicht übernommen.
+`description` bleibt in der Werkstatt leer. Die Pinterest-Beschreibung entsteht
+später in Pinfinity, nachdem das Bild erstellt ist.
 
 Der Keyword-Vergleich ignoriert Groß- und Kleinschreibung sowie mehrfache
 Leerzeichen und Zeilenumbrüche, sonst ist er wörtlich. „Trauer bewältigen“ passt
@@ -99,62 +120,55 @@ auf „trauer  bewältigen“, aber nicht auf „Trauer zu bewältigen“.
 
 **Regeln, die du selbst einhältst:**
 
-- `status` ist immer `draft`. Nie `approved` oder `archived` schreiben.
-- `tenant_id` nie setzen. Die Datenbank leitet ihn aus dem Artikel ab.
-- Freigegebene oder archivierte Vorlagen nie ändern. B1 lässt sie automatisch aus.
-- Nichts löschen. Du kannst es auch nicht.
-- `design` ist JSON, alle Schlüssel optional:
+- `status` nie selbst setzen. `create_pin_template` legt immer `draft` an,
+  `answer_revision_request` setzt zurück auf `draft`, `update_pin_template` lässt
+  den Status unberührt.
+- Freigegebene oder archivierte Vorlagen nie ändern. `update_pin_template` lehnt
+  das ab.
+- `design` ist ein Objekt, alle Schlüssel optional:
   `{"name": "", "layout": "", "image_position": "", "fonts": [""], "scroll_stopper": "", "colors": ["#rrggbb"]}`
 - `longtails`, `search_phrases`, `quality_check` sind Listen von Texten.
 
 ### Schritt C: Änderungswünsche abarbeiten
 
-1. Offene Änderungswünsche abfragen (**C1**). Du bekommst pro Vorlage das neueste
-   Feedback, die älteren Wünsche als Verlauf und den aktuellen Stand der Vorlage.
-2. Die Vorlage nach dem Feedback überarbeiten. Offen sind das neueste Feedback und
-   alle Einträge im Verlauf, die **neuer** sind als der jüngste Eintrag mit
-   `has_snapshot = true`. Ältere Einträge sind schon erledigt und nur Kontext.
-   Feedback kann sich auch nur auf ein Feld beziehen, die übrigen Felder
-   übernimmst du dann unverändert.
-3. Überarbeitung senden (**C2**). Die Anweisung macht in einem Schritt:
-   - alten Stand in `previous_snapshot` des neuesten Änderungswunsches sichern,
-   - Vorlage mit dem neuen Stand überschreiben,
-   - Status zurück auf `draft`.
-4. Ergebnis von C2 muss `snapshot_written = 1` und `template_updated = 1` sein.
-   Bei `0, 0` war die Vorlage nicht mehr `needs_revision` (zum Beispiel inzwischen
-   freigegeben) oder die IDs stimmen nicht. Dann C1 neu abfragen, nicht raten.
+1. Für die Vorlagen des Artikels prüfen, welche im Status `needs_revision` sind
+   (`list_pin_templates`). Für jede solche Vorlage mit
+   `list_pin_template_revisions` die Überarbeitungswünsche lesen (neueste zuerst).
+2. Die Vorlage nach dem neuesten Feedback überarbeiten. Feedback kann sich auch
+   nur auf ein Feld beziehen — die übrigen Felder übernimmst du dann unverändert
+   (hole den aktuellen Stand mit `get_pin_template`).
+3. `answer_revision_request` aufrufen (`template_id` plus die geänderten Felder).
+   Das Tool macht in einem Schritt:
+   - den alten Stand als `previous_snapshot` des Überarbeitungswunsches sichern,
+   - die Vorlage mit dem neuen Stand überschreiben,
+   - den Status zurück auf `draft` setzen.
+4. Lehnt `answer_revision_request` ab (etwa „kein offener Überarbeitungswunsch,
+   Status …“), war die Vorlage nicht mehr `needs_revision` (zum Beispiel inzwischen
+   freigegeben). Dann `list_pin_templates` neu lesen, nicht raten.
 
-Sende in C2 immer die **vollständige** Vorlage. Fehlende Felder werden leer.
 Die Position ändert sich bei einer Überarbeitung nie.
 
 ### Schritt D: Selbstkontrolle nach jedem Lauf
 
-1. Vollständigkeit prüfen (**D1**) für alle Artikel, die du in diesem Lauf
-   bearbeitet hast. Erwartet: `template_count = 30`.
-2. Projektweit prüfen (**D2**): Artikel mit angefangenen, aber unvollständigen
-   Vorlagen. Erwartet: leeres Ergebnis.
-3. Offene Änderungswünsche erneut zählen (**C1**). Erwartet: keine, die du in
-   diesem Lauf bearbeitet hast.
-4. Kurz berichten: welche Artikel, wie viele Vorlagen neu, aktualisiert,
+1. Für jeden bearbeiteten Artikel `list_pin_templates` lesen. Erwartet: 30
+   Vorlagen, keine mehr im Status `needs_revision`, die du in diesem Lauf
+   bearbeitet hast.
+2. Kurz berichten: welche Artikel, wie viele Vorlagen neu, aktualisiert,
    übersprungen, welche Änderungswünsche erledigt, welche Fehler offen.
 
 ## 4. Fehler und was sie bedeuten
 
-| Fehlermeldung (Auszug) | Bedeutung | Was tun |
-|---|---|---|
-| `violates check constraint "pin_templates_keyword_in_overlay"` | Overlay fehlt oder enthält das Keyword nicht wörtlich | Overlay oder Keyword anpassen, ganze Anweisung neu senden. Die Zeile steht in `DETAIL: Failing row contains (...)` |
-| `violates check constraint "pin_templates_description_starts_with_keyword"` | Beschreibung beginnt nicht mit dem Keyword | Beschreibung mit dem Keyword beginnen lassen |
-| `violates check constraint "pin_templates_description_max_length"` | Beschreibung über 500 Zeichen | Kürzen |
-| `violates check constraint "pin_templates_position_range"` | Position außerhalb 1 bis 30 | Positionen korrigieren |
-| `null value in column "main_keyword"` oder `"image_prompt"` | Pflichtfeld fehlt | Feld füllen |
-| `new row violates row-level security policy` (seltener `null value in column "tenant_id"`) | Artikel existiert nicht oder liegt außerhalb deiner Freigaben | Artikel-ID mit A3 prüfen. Nicht selbst `tenant_id` setzen. Stimmt die ID, dem Menschen melden, dass das Projekt nicht freigegeben ist |
-| `must not be changed by the agent` | Vorlage ist `approved` oder `archived` | Position auslassen. Nie umgehen |
-| `agent may only write status draft or needs_revision` | Du hast einen falschen Status gesendet | `draft` senden |
-| `permission denied for table ...` | Operation ist für dich nicht erlaubt (etwa Löschen, fremde Tabelle, Feedback ändern) | Nicht umgehen. Ablauf prüfen |
-| `ON CONFLICT DO UPDATE command cannot affect row a second time` | Position doppelt in deinen Daten | Doppelte Positionen in der Eingabe entfernen |
-| `canceling statement due to statement timeout` | Abfrage länger als 30 Sekunden | Weniger auf einmal senden, zum Beispiel einen Artikel pro Anweisung |
-| `password authentication failed` / `Tenant or user not found` | Zugangsdaten falsch oder Login deaktiviert | Abbrechen und dem Menschen melden. Nicht wiederholt probieren |
-| `invalid input syntax for type json` | JSON der Vorlagen kaputt | JSON prüfen, Dollar-Quoting beachten (siehe `sql.md`) |
+Die Tools antworten mit verständlichen deutschen Meldungen. Die häufigsten:
 
-Bei einem Fehler wurde nichts aus dieser Anweisung geschrieben. Einfach korrigiert
-neu senden ist sicher, weil B1 und C2 idempotent sind.
+| Meldung (Auszug) | Bedeutung | Was tun |
+|---|---|---|
+| `Position muss zwischen 1 und 30 liegen.` | `position` außerhalb 1–30 | Position korrigieren |
+| `Das main_keyword muss wörtlich im overlay vorkommen.` | Overlay fehlt oder enthält das Keyword nicht wörtlich | Overlay oder Keyword anpassen |
+| `Die Beschreibung muss mit dem main_keyword beginnen.` | Beschreibung beginnt nicht mit dem Keyword | Beschreibung mit dem Keyword beginnen lassen |
+| `Beschreibung darf höchstens 500 Zeichen lang sein.` | Beschreibung über 500 Zeichen | Kürzen |
+| `Die Vorlage konnte nicht angelegt werden (Position belegt oder Write-Contract verletzt).` | Position schon belegt oder Pflichtfeld fehlt | `list_pin_templates` lesen, Position/Felder prüfen |
+| `Vorlagen im Status … können nicht geändert werden (nur draft/needs_revision).` | Vorlage ist `approved`/`archived` | Position auslassen. Nie umgehen |
+| `Es liegt kein offener Überarbeitungswunsch vor (Status …).` | Vorlage ist nicht mehr `needs_revision` | `list_pin_templates` neu lesen |
+| `Pin-Vorlage nicht gefunden oder kein Zugriff.` | ID falsch oder außerhalb deines Mandanten | ID prüfen, Projekt/Artikel über `list_articles` gegenprüfen |
+
+Bei einem Fehler wurde nichts geschrieben. Korrigiert neu senden ist sicher.

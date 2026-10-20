@@ -332,12 +332,14 @@ Ephemeral OAuth CSRF/PKCE state. Entries auto-expire after 10 minutes.
 
 Pin-Werkstatt templates ("Vorlagen"). Each template hangs directly off a blog
 article (no campaign table in v1) via `blog_article_id` (`ON DELETE CASCADE`).
-Templates are **created exclusively by an external agent** logged in as the
+Templates are **created exclusively by an external agent**, now a Connected
+Agent through the MCP server under the user's OAuth token and RLS (ADR-0006,
+`src/lib/mcp/tools/werkstatt.ts`). The older path — a direct login as the
 least-privilege role `pin_werkstatt_agent` (migration 00029, scoped per project
-via `agent_project_access`);
-the app only displays them, changes their `status`, and records revision
-requests — template texts are never edited in the UI. Migrations
-00026 (table), 00027 (validation), 00028 (revisions relationship).
+via `agent_project_access`) — is retired: locked `NOLOGIN` in migration 00038
+(#126) and dropped later (#127). The app only displays templates, changes their
+`status`, and records revision requests — template texts are never edited in the
+UI. Migrations 00026 (table), 00027 (validation), 00028 (revisions relationship).
 
 The CHECK constraints from migration 00027 (`position BETWEEN 1 AND 30`,
 `description <= 500` chars, `overlay` present and containing `main_keyword`,
@@ -621,4 +623,4 @@ tenant_id IN (
 - **`oauth_state_mapping`** uses `user_id = auth.uid()` instead of tenant isolation (user-scoped, not tenant-scoped)
 - **`pin_publish_events`** carries no own `tenant_id`; its SELECT policy scopes through the denormalised `blog_project_id` to the project's tenant
 - **`service_role` bypass policies** exist on `pins`, `pinterest_connections`, `oauth_state_mapping`, `pin_templates`, `pin_template_revisions`, and `pin_publish_events` for background jobs
-- **`pin_werkstatt_agent`** is the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. Setup and revocation: [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md)
+- **`pin_werkstatt_agent`** was the external Werkstatt agent's own Postgres role (migration 00029): no RLS bypass, scoped per project via `agent_project_access`. **Retired per ADR-0006** — the agent now writes via the MCP server under the user's OAuth token; the role is locked `NOLOGIN` (migration 00038, #126) and dropped later (#127). Kept as a rollback reference: [`pin-werkstatt-agent-db-user.md`](./pin-werkstatt-agent-db-user.md)

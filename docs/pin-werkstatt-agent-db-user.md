@@ -1,5 +1,28 @@
 # Pin-Werkstatt: DB-User für den Agenten einrichten
 
+> **Abgelöst (ADR-0006, Issue #126).** Der Pin-Werkstatt-Agent arbeitet nicht
+> mehr über diese Postgres-Login-Rolle, sondern über den Pinfinity-MCP-Server
+> (`/mcp`) unter dem OAuth-Token der Nutzerin und RLS (siehe
+> [`docs/adr/0006-mcp-route-with-supabase-oauth.md`](./adr/0006-mcp-route-with-supabase-oauth.md)
+> und den neuen Skill in [`agent-skills/pin-werkstatt/`](../agent-skills/pin-werkstatt/SKILL.md)).
+>
+> Die Rolle `pin_werkstatt_agent` wurde mit Migration
+> `00038_lock_pin_werkstatt_agent_role.sql` auf `NOLOGIN` gesperrt (reversibel,
+> siehe unten) und wird mit einer späteren Migration ganz entfernt (Issue #127).
+> Dieses Dokument bleibt als Referenz und **Rückweg** erhalten, bis die Rolle
+> gedroppt ist. Für neue Agenten-Anbindungen gilt ausschließlich der MCP-Weg.
+>
+> **Rückweg (DB-Rolle wieder aktivieren), falls der MCP-Weg zurückgerollt werden muss:**
+>
+> ```sql
+> ALTER ROLE pin_werkstatt_agent WITH LOGIN;  -- Passwort ist noch gesetzt
+> ```
+>
+> Danach ggf. Passwort rotieren (Abschnitt 5) und `PIN_WERKSTATT_DATABASE_URL`
+> in der Agenten-Umgebung wieder hinterlegen. Der alte, SQL-basierte Skill liegt
+> dafür in der Git-Historie (`agent-skills/pin-werkstatt/references/sql.md` vor
+> Issue #126).
+
 Anleitung für Menschen. Beschreibt, wie ein externer KI-Agent Zugang zur
 Pinfinity-Datenbank bekommt, um Pin-Vorlagen zu schreiben, und wie man diesen
 Zugang erweitert, rotiert und wieder entzieht.
