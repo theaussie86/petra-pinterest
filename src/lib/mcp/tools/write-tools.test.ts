@@ -16,6 +16,14 @@ interface FakeCalls {
   inserts: Array<Record<string, unknown>>
   updates: Array<{ id: unknown; value: Record<string, unknown> }>
   uploads: Array<{ path: string; contentType: string | undefined }>
+  signedUploads: string[]
+  removed: string[]
+}
+
+/** A stored object as reported by `storage.info()` in the fake. */
+interface FakeObject {
+  contentType: string
+  size: number
 }
 
 /**
@@ -24,18 +32,34 @@ interface FakeCalls {
  * patch) and plain selects (the existing pin, for getPin); storage records
  * uploads and builds a CDN URL — no network, in-memory.
  */
-function fakeSupabase(opts: { existingPin?: Record<string, unknown> } = {}): {
+function fakeSupabase(
+  opts: {
+    existingPin?: Record<string, unknown>
+    /** Objects in the pin-images bucket, keyed by storage path. */
+    objects?: Record<string, FakeObject>
+    /** Image paths already referenced by a pin. */
+    usedImagePaths?: string[]
+  } = {},
+): {
   client: SupabaseClient
   calls: FakeCalls
 } {
-  const calls: FakeCalls = { inserts: [], updates: [], uploads: [] }
+  const calls: FakeCalls = {
+    inserts: [],
+    updates: [],
+    uploads: [],
+    signedUploads: [],
+    removed: [],
+  }
+  const objects = { ...(opts.objects ?? {}) }
 
   const from = () => {
     const state: {
       op: 'insert' | 'update' | null
       payload: Record<string, unknown>
       id: unknown
-    } = { op: null, payload: {}, id: undefined }
+      imagePath: string | null
+    } = { op: null, payload: {}, id: undefined, imagePath: null }
     const builder: Record<string, unknown> = {
       insert(value: Record<string, unknown>) {
         state.op = 'insert'
@@ -49,15 +73,21 @@ function fakeSupabase(opts: { existingPin?: Record<string, unknown> } = {}): {
         return builder
       },
       select: () => builder,
-      eq(_col: string, value: unknown) {
-        state.id = value
+      eq(col: string, value: unknown) {
+        if (col === 'image_path') state.imagePath = value as string
+        else state.id = value
         return builder
       },
+      limit: () => builder,
       single: () => builder,
       then(resolve: (value: { data: unknown; error: unknown }) => unknown) {
         let data: unknown
         if (state.op === 'insert') {
           data = { id: 'pin-new', ...state.payload }
+        } else if (state.imagePath !== null) {
+          data = (opts.usedImagePaths ?? []).includes(state.imagePath)
+            ? [{ id: 'pin-existing' }]
+            : []
         } else if (state.op === 'update') {
           calls.updates.push({ id: state.id, value: state.payload })
           data = { ...(opts.existingPin ?? {}), ...state.payload }
@@ -81,6 +111,30 @@ function fakeSupabase(opts: { existingPin?: Record<string, unknown> } = {}): {
         getPublicUrl: (path: string) => ({
           data: { publicUrl: `https://cdn.test/pin-images/${path}` },
         }),
+        createSignedUploadUrl: (path: string) => {
+          calls.signedUploads.push(path)
+          return Promise.resolve({
+            data: {
+              signedUrl: `https://project.supabase.co/storage/v1/object/upload/sign/pin-images/${path}?token=tok`,
+              token: 'tok',
+              path,
+            },
+            error: null,
+          })
+        },
+        info: (path: string) => {
+          const obj = objects[path]
+          return Promise.resolve(
+            obj
+              ? { data: { name: path, ...obj }, error: null }
+              : { data: null, error: { message: 'Object not found', statusCode: '404' } },
+          )
+        },
+        remove: (paths: string[]) => {
+          calls.removed.push(...paths)
+          for (const path of paths) delete objects[path]
+          return Promise.resolve({ data: [], error: null })
+        },
       }),
     },
   } as unknown as SupabaseClient
@@ -161,7 +215,7 @@ async function callTool(ctx: McpUserContext, name: string, args: unknown = {}) {
   return { res, result, payload, text }
 }
 
-const WRITE_TOOLS = ['create_pin', 'set_pin_metadata', 'update_pin']
+const WRITE_TOOLS = ['request_pin_upload', 'create_pin', 'set_pin_metadata', 'update_pin']
 
 describe('write tools — tools/list', () => {
   it('lists the three pin write tools with German descriptions', async () => {
@@ -261,6 +315,183 @@ describe('create_pin', () => {
     })
     expect(result.isError).toBe(true)
     expect(text).toContain('20 MB')
+  })
+})
+
+describe('request_pin_upload', () => {
+  it('returns a signed upload URL for a fresh path in the tenant folder', async () => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({ supabase: client })
+
+    const { payload, result } = await callTool(ctx, 'request_pin_upload', {
+      content_type: 'image/png',
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(calls.signedUploads).toHaveLength(1)
+    expect(payload.upload_path).toMatch(/^tenant-1\/[0-9a-f-]{36}\.png$/)
+    expect(payload.upload_path).toBe(calls.signedUploads[0])
+    expect(payload.upload_url).toContain('token=tok')
+    expect(Date.parse(payload.expires_at)).toBeGreaterThan(Date.now())
+    expect(payload.curl_example).toContain('curl -X PUT')
+    expect(payload.curl_example).toContain('Content-Type: image/png')
+    expect(payload.curl_example).toContain(payload.upload_url)
+  })
+
+  it('maps the content type to the file extension', async () => {
+    const { client } = fakeSupabase()
+    const ctx = userContext({ supabase: client })
+    const { payload } = await callTool(ctx, 'request_pin_upload', {
+      content_type: 'image/jpeg',
+    })
+    expect(payload.upload_path).toMatch(/\.jpg$/)
+  })
+
+  it('rejects a non-image or unsupported content type', async () => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({ supabase: client })
+    for (const content_type of ['text/html', 'image/svg+xml']) {
+      const { result, text } = await callTool(ctx, 'request_pin_upload', { content_type })
+      expect(result.isError).toBe(true)
+      expect(text).toContain('content_type')
+    }
+    expect(calls.signedUploads).toHaveLength(0)
+  })
+})
+
+describe('create_pin with upload_path', () => {
+  const PATH = 'tenant-1/0b6a3c2e-1111-4222-8333-944445555666.png'
+
+  it('creates the pin from an uploaded object without downloading anything', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: 2048 } },
+    })
+    const fetchRemoteImage = vi.fn()
+    const ctx = userContext({ supabase: client, fetchRemoteImage })
+
+    const { payload, result } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+      title: 'Titel',
+      description: 'Beschreibung',
+      board_id: 'board-1',
+      board_name: 'Rezepte',
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(fetchRemoteImage).not.toHaveBeenCalled()
+    expect(calls.uploads).toHaveLength(0)
+    const inserted = calls.inserts[0]
+    expect(inserted.image_path).toBe(PATH)
+    expect(inserted.media_type).toBe('image')
+    expect(inserted.status).toBe('metadata_created')
+    expect(inserted.source).toBe('mcp')
+    expect(inserted.oauth_client_id).toBe('client-abc')
+    expect(payload.id).toBe('pin-new')
+  })
+
+  it('leaves a pin without full metadata as a draft', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: 2048 } },
+    })
+    await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(calls.inserts[0].status).toBe('draft')
+  })
+
+  it('requires exactly one of image_url and upload_path', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: 2048 } },
+    })
+    const ctx = userContext({ supabase: client })
+
+    const none = await callTool(ctx, 'create_pin', { project_id: 'p1' })
+    expect(none.result.isError).toBe(true)
+    expect(none.text).toContain('image_url')
+    expect(none.text).toContain('upload_path')
+
+    const both = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_url: 'https://example.com/a.png',
+      upload_path: PATH,
+    })
+    expect(both.result.isError).toBe(true)
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it.each([
+    ['another tenant', 'tenant-2/x.png'],
+    ['a path traversal', 'tenant-1/../tenant-2/x.png'],
+    ['a nested path', 'tenant-1/sub/x.png'],
+    ['a tenant-prefix lookalike', 'tenant-10/x.png'],
+  ])('rejects %s', async (_label, upload_path) => {
+    const { client, calls } = fakeSupabase({
+      objects: { [upload_path]: { contentType: 'image/png', size: 2048 } },
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('upload_path')
+    expect(calls.inserts).toHaveLength(0)
+    expect(calls.removed).toHaveLength(0)
+  })
+
+  it('reports a missing object', async () => {
+    const { client, calls } = fakeSupabase()
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toBe('Bild unter upload_path nicht gefunden - wurde der Upload ausgeführt?')
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('deletes and rejects an object that is not an image', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'text/html', size: 2048 } },
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('text/html')
+    expect(calls.removed).toEqual([PATH])
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('deletes and rejects an object larger than 20 MB', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: 20 * 1024 * 1024 + 1 } },
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('20 MB')
+    expect(calls.removed).toEqual([PATH])
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('rejects an upload that already belongs to a pin', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: 2048 } },
+      usedImagePaths: [PATH],
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('bereits')
+    expect(calls.inserts).toHaveLength(0)
+    expect(calls.removed).toHaveLength(0)
   })
 })
 

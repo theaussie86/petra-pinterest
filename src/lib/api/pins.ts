@@ -400,6 +400,77 @@ export async function uploadPinImageBytes(
   return path
 }
 
+/** Whether `imageExtensionFor` maps this MIME type (i.e. a known image type). */
+export function isSupportedImageType(contentType: string): boolean {
+  const base = contentType.split(';')[0].trim().toLowerCase()
+  return base in IMAGE_EXTENSION_BY_TYPE
+}
+
+/** A signed upload slot in the pin-images bucket (see `createPinImageUploadUrl`). */
+export interface PinImageUploadSlot {
+  /** Absolute URL the bytes are PUT to; carries its own upload token. */
+  signedUrl: string
+  /** Storage path the object lands at (`{tenant_id}/{uuid}.{ext}`). */
+  path: string
+}
+
+/**
+ * Reserve a fresh path in the tenant folder of the pin-images bucket and return
+ * a signed upload URL for it. Used by the MCP `request_pin_upload` tool so a
+ * Connected Agent can PUT the bytes itself. Runs under the caller's RLS session:
+ * the INSERT policy on the tenant folder gates the signing.
+ */
+export async function createPinImageUploadUrl(
+  contentType: string,
+  tenantId: string,
+  client: SupabaseClient
+): Promise<PinImageUploadSlot> {
+  const path = `${tenantId}/${crypto.randomUUID()}.${imageExtensionFor(contentType)}`
+  const { data, error } = await client.storage
+    .from('pin-images')
+    .createSignedUploadUrl(path)
+  if (error) throw error
+  return { signedUrl: data.signedUrl, path: data.path }
+}
+
+/** Storage metadata of an object in the pin-images bucket. */
+export interface PinImageInfo {
+  contentType: string | null
+  size: number | null
+}
+
+/**
+ * Look up a pin-images object's stored content type and size, or null when no
+ * object exists at the path.
+ */
+export async function getPinImageInfo(
+  path: string,
+  client: SupabaseClient
+): Promise<PinImageInfo | null> {
+  const { data, error } = await client.storage.from('pin-images').info(path)
+  if (error || !data) return null
+  return { contentType: data.contentType ?? null, size: data.size ?? null }
+}
+
+/** Delete an object from the pin-images bucket (best-effort, errors ignored). */
+export async function removePinImage(path: string, client: SupabaseClient): Promise<void> {
+  await client.storage.from('pin-images').remove([path])
+}
+
+/** Whether any pin (visible to the caller) already references this image path. */
+export async function isPinImagePathUsed(
+  path: string,
+  client: SupabaseClient
+): Promise<boolean> {
+  const { data, error } = await client
+    .from('pins')
+    .select('id')
+    .eq('image_path', path)
+    .limit(1)
+  if (error) throw error
+  return (data ?? []).length > 0
+}
+
 /** Provenance stamped on every pin a Connected Agent writes (ADR-0006). */
 export interface PinProvenance {
   source: 'mcp'

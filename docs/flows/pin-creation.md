@@ -72,6 +72,31 @@ Pins are created with `status: 'draft'` by default. The `tenant_id` is added by 
 - Shows "No boards available" if connected but no boards found
 - Board selection applies to all pins in the batch
 
+## Via MCP (Connected Agent)
+
+A Connected Agent creates pins with the MCP tool `create_pin`
+(`src/lib/mcp/tools/pins-write.ts`). It never triggers Gemini (ADR-0006): the
+pin is `metadata_created` when Titel, Beschreibung and Board are given, else
+`draft`. The image comes from exactly one of two sources:
+
+- **`image_url`** - a public HTTPS URL. Pinfinity downloads it (`image/*`, max 20 MB).
+- **`upload_path`** - for images without a public URL (local files, images the
+  agent generated). Two steps (#135):
+  1. `request_pin_upload(content_type)` returns `upload_url` (signed, valid
+     about 2 hours), `upload_path` (`{tenant_id}/{uuid}.{ext}`) and a
+     `curl_example`.
+  2. The agent PUTs the bytes itself, then calls `create_pin(upload_path)`:
+     ```bash
+     curl -X PUT -H "Content-Type: image/png" --data-binary @pin.png "<upload_url>"
+     ```
+  `create_pin` rejects a path outside the caller's tenant folder, a missing
+  object, a non-image or an object over 20 MB (both deleted), and a path that
+  already backs a pin.
+
+Cowork: the sandbox must be allowed to reach `dedacaqstvzxlxpxvxgb.supabase.co`
+(network allowlist in the Cowork settings), otherwise the PUT fails. ChatGPT's
+code interpreter has no network and cannot use this path.
+
 ## Key Files
 
 | File | Purpose |
@@ -81,3 +106,4 @@ Pins are created with `status: 'draft'` by default. The `tenant_id` is added by 
 | `src/lib/api/pins.ts` | `uploadPinMedia`, `createPins` functions |
 | `src/lib/hooks/use-pins.ts` | `useCreatePins` mutation hook |
 | `src/types/pins.ts` | `Pin`, `PinInsert` type definitions |
+| `src/lib/mcp/tools/pins-write.ts` | MCP `request_pin_upload`, `create_pin` |
