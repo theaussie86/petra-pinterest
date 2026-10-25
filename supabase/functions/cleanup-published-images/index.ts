@@ -6,6 +6,7 @@ type SupabaseClient = ReturnType<typeof createServiceClient>
 
 const BUCKET = 'pin-images'
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+const PUBLISHED_LIMIT = 100
 const ORPHAN_LIMIT = 100
 
 /**
@@ -20,7 +21,7 @@ async function cleanupPublishedImages(supabase: SupabaseClient) {
     .not('pinterest_pin_id', 'is', null)
     .not('image_path', 'is', null)
     .lt('published_at', new Date(Date.now() - SEVEN_DAYS_MS).toISOString())
-    .limit(100)
+    .limit(PUBLISHED_LIMIT)
 
   if (fetchError) {
     console.error('[cleanup-published-images] Fetch error:', fetchError.message)
