@@ -505,6 +505,11 @@ export interface PinImageInfo {
   size: number | null
 }
 
+/** Whether a Supabase storage error means the object does not exist (404). */
+function isStorageNotFound(error: { status?: number; statusCode?: string; message: string }): boolean {
+  return error.status === 404 || error.statusCode === '404' || /not.?found/i.test(error.message)
+}
+
 /**
  * Look up a pin-images object's stored content type and size, or null when no
  * object exists at the path. Any other storage error is thrown.
@@ -515,9 +520,7 @@ export async function getPinImageInfo(
 ): Promise<PinImageInfo | null> {
   const { data, error } = await client.storage.from('pin-images').info(path)
   if (error) {
-    const status = (error as { status?: number }).status
-    const statusCode = (error as { statusCode?: string }).statusCode
-    if (status === 404 || statusCode === '404' || /not.?found/i.test(error.message)) return null
+    if (isStorageNotFound(error)) return null
     throw error
   }
   return { contentType: data.contentType ?? null, size: data.size ?? null }
@@ -534,9 +537,7 @@ export async function downloadPinImageBytes(
 ): Promise<Uint8Array | null> {
   const { data, error } = await client.storage.from('pin-images').download(path)
   if (error) {
-    const status = (error as { status?: number }).status
-    const statusCode = (error as { statusCode?: string }).statusCode
-    if (status === 404 || statusCode === '404' || /not.?found/i.test(error.message)) return null
+    if (isStorageNotFound(error)) return null
     throw error
   }
   return new Uint8Array(await data.arrayBuffer())
