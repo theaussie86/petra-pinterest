@@ -218,7 +218,7 @@ async function callTool(ctx: McpUserContext, name: string, args: unknown = {}) {
 const WRITE_TOOLS = ['request_pin_upload', 'create_pin', 'set_pin_metadata', 'update_pin']
 
 describe('write tools — tools/list', () => {
-  it('lists the three pin write tools with German descriptions', async () => {
+  it('lists the pin write tools with German descriptions', async () => {
     const tools = await listTools(userContext())
     for (const name of WRITE_TOOLS) {
       const tool = tools.find((t) => t.name === name)
@@ -492,6 +492,47 @@ describe('create_pin with upload_path', () => {
     expect(text).toContain('bereits')
     expect(calls.inserts).toHaveLength(0)
     expect(calls.removed).toHaveLength(0)
+  })
+
+  it("never deletes an existing pin's media (e.g. a video) passed as upload_path", async () => {
+    const videoPath = 'tenant-1/clip.mp4'
+    const { client, calls } = fakeSupabase({
+      objects: { [videoPath]: { contentType: 'video/mp4', size: 2048 } },
+      usedImagePaths: [videoPath],
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: videoPath,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('bereits')
+    expect(calls.removed).toHaveLength(0)
+  })
+
+  it('deletes and rejects an unsupported image type such as SVG', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/svg+xml', size: 2048 } },
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image/svg+xml')
+    expect(calls.removed).toEqual([PATH])
+  })
+
+  it('deletes and rejects an object without a known size', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: undefined as unknown as number } },
+    })
+    const { result } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(calls.removed).toEqual([PATH])
+    expect(calls.inserts).toHaveLength(0)
   })
 })
 

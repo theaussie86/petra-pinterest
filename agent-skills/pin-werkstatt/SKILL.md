@@ -172,3 +172,36 @@ Die Tools antworten mit verständlichen deutschen Meldungen. Die häufigsten:
 | `Pin-Vorlage nicht gefunden oder kein Zugriff.` | ID falsch oder außerhalb deines Mandanten | ID prüfen, Projekt/Artikel über `list_articles` gegenprüfen |
 
 Bei einem Fehler wurde nichts geschrieben. Korrigiert neu senden ist sicher.
+
+## 5. Pin mit eigenem Bild anlegen
+
+Ist das Pin-Bild fertig (lokal erzeugt oder im Cowork-Ordner), legst du daraus
+einen Pin an. Hat das Bild keine öffentliche HTTPS-URL, läuft das in drei
+Schritten:
+
+1. `request_pin_upload` mit `content_type` (z. B. `image/png`) aufrufen. Du
+   bekommst `upload_url` (ca. 2 Stunden gültig), `upload_path` und ein fertiges
+   `curl_example`.
+2. Das Bild selbst hochladen, mit genau diesem Content-Type:
+   ```bash
+   curl -X PUT -H "Content-Type: image/png" --data-binary @pin.png "<upload_url>"
+   ```
+3. `create_pin` mit `project_id`, `upload_path` (statt `image_url`) und den
+   Metadaten aufrufen. Sind Titel, Beschreibung und Board vollständig, ist der
+   Pin sofort planbar (`metadata_created`), sonst bleibt er `draft`. Gemini wird
+   nie angestoßen.
+
+Pro Upload genau ein Pin. Für den nächsten Pin `request_pin_upload` neu aufrufen.
+
+Hat das Bild eine öffentliche HTTPS-URL, reicht `create_pin` mit `image_url`.
+
+**Cowork:** Die Sandbox muss `dedacaqstvzxlxpxvxgb.supabase.co` erreichen dürfen
+(Netzwerk-Allowlist in den Cowork-Einstellungen). Sonst schlägt der `curl`-PUT
+fehl.
+
+| Meldung (Auszug) | Bedeutung | Was tun |
+|---|---|---|
+| `Bild unter upload_path nicht gefunden - wurde der Upload ausgeführt?` | Upload fehlt oder ist fehlgeschlagen | `curl` prüfen und wiederholen |
+| `upload_path gehört nicht zu deinem Konto.` | Pfad nicht aus `request_pin_upload` | Den gelieferten `upload_path` verwenden |
+| `… ist kein unterstütztes Bild …` / `… größer als 20 MB …` | Datei ungeeignet, wurde gelöscht | Neues Bild, `request_pin_upload` neu aufrufen |
+| `upload_path wird bereits von einem Pin verwendet.` | Upload schon verbraucht | `request_pin_upload` neu aufrufen |

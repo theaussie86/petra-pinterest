@@ -1,12 +1,15 @@
 import { z } from 'zod'
 import {
+  baseMimeType,
   createPinImageUploadUrl,
   getPin,
   getPinImageInfo,
+  imageExtensionFor,
   insertAgentPin,
   isPinImagePathUsed,
   isSupportedImageType,
   removePinImage,
+  SUPPORTED_IMAGE_TYPES,
   updateAgentPin,
   uploadPinImageBytes,
   type AgentPinUpdate,
@@ -107,6 +110,9 @@ export function provenance(ctx: McpUserContext): PinProvenance {
   return { source: 'mcp', oauth_client_id: ctx.oauthClientId }
 }
 
+/** The supported image types as a German list for tool texts. */
+const SUPPORTED_IMAGE_LIST = SUPPORTED_IMAGE_TYPES.join(', ')
+
 /** Supabase signed upload URLs are valid for two hours (storage-js docs). */
 const SIGNED_UPLOAD_TTL_MS = 2 * 60 * 60 * 1000
 
@@ -119,22 +125,22 @@ const SIGNED_UPLOAD_TTL_MS = 2 * 60 * 60 * 1000
 export const requestPinUploadTool = defineTool({
   name: 'request_pin_upload',
   description:
-    'Schritt 1 von 2 für Bilder ohne öffentliche URL (lokal oder im Agenten erzeugt): Liefert eine signierte Upload-URL (ca. 2 Stunden gültig) und einen upload_path. Lade das Bild per HTTP PUT mit passendem Content-Type hoch (Beispiel: curl_example) und rufe danach create_pin mit upload_path statt image_url auf. Erlaubt: image/jpeg, image/png, image/webp, image/gif, image/avif.',
+    `Schritt 1 von 2 für Bilder ohne öffentliche URL (lokal oder im Agenten erzeugt): Liefert eine signierte Upload-URL (ca. 2 Stunden gültig) und einen upload_path. Lade das Bild per HTTP PUT mit passendem Content-Type hoch (Beispiel: curl_example) und rufe danach create_pin mit upload_path statt image_url auf. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
   inputSchema: {
     content_type: z
       .string()
       .describe('MIME-Typ des Bilds, z. B. image/png. Muss beim PUT als Content-Type mitgeschickt werden.'),
   },
   handler: async ({ input, ctx }) => {
-    const contentType = input.content_type.split(';')[0].trim().toLowerCase()
+    const contentType = baseMimeType(input.content_type)
     if (!isSupportedImageType(contentType)) {
       return errorResult(
-        `content_type ${input.content_type} wird nicht unterstützt. Erlaubt: image/jpeg, image/png, image/webp, image/gif, image/avif.`,
+        `content_type ${input.content_type} wird nicht unterstützt. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
       )
     }
 
     const slot = await createPinImageUploadUrl(contentType, ctx.tenantId, ctx.supabase)
-    const file = `pin.${slot.path.split('.').pop()}`
+    const file = `pin.${imageExtensionFor(contentType)}`
     return jsonResult({
       upload_url: slot.signedUrl,
       upload_path: slot.path,
@@ -165,7 +171,7 @@ async function storeImageFromUrl(
     return errorResult('Das Bild konnte unter image_url nicht geladen werden.')
   }
 
-  const contentType = (image.contentType ?? '').split(';')[0].trim().toLowerCase()
+  const contentType = baseMimeType(image.contentType ?? '')
   if (!contentType.startsWith('image/')) {
     return errorResult(
       `image_url liefert keinen Bildinhalt (Content-Type: ${image.contentType ?? 'unbekannt'}).`,
@@ -181,8 +187,9 @@ async function storeImageFromUrl(
 
 /**
  * Validate an object uploaded via `request_pin_upload`: it must sit directly in
- * the caller's tenant folder, exist, be an image up to 20 MB, and not already
- * back a pin. An invalid object (wrong type, too big) is deleted.
+ * the caller's tenant folder, not already back a pin, exist, and be a supported
+ * image up to 20 MB. An invalid object (wrong type, too big) is deleted — the
+ * "already used" check runs first so an existing pin's media is never touched.
  */
 async function claimUploadedImage(
   uploadPath: string,
@@ -197,26 +204,29 @@ async function claimUploadedImage(
     )
   }
 
+  if (await isPinImagePathUsed(path, ctx.supabase)) {
+    return errorResult(
+      'upload_path wird bereits von einem Pin verwendet. Für einen weiteren Pin request_pin_upload erneut aufrufen.',
+    )
+  }
+
   const info = await getPinImageInfo(path, ctx.supabase)
   if (!info) {
     return errorResult('Bild unter upload_path nicht gefunden - wurde der Upload ausgeführt?')
   }
 
-  const contentType = (info.contentType ?? '').split(';')[0].trim().toLowerCase()
-  if (!contentType.startsWith('image/')) {
+  if (!isSupportedImageType(info.contentType ?? '')) {
     await removePinImage(path, ctx.supabase)
     return errorResult(
-      `Die Datei unter upload_path ist kein Bild (Content-Type: ${info.contentType ?? 'unbekannt'}) und wurde gelöscht.`,
+      `Die Datei unter upload_path ist kein unterstütztes Bild (Content-Type: ${info.contentType ?? 'unbekannt'}) und wurde gelöscht. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
     )
   }
-  if ((info.size ?? 0) > MAX_IMAGE_BYTES) {
+  if (info.size == null || info.size > MAX_IMAGE_BYTES) {
     await removePinImage(path, ctx.supabase)
-    return errorResult('Das Bild unter upload_path ist größer als 20 MB und wurde gelöscht.')
-  }
-
-  if (await isPinImagePathUsed(path, ctx.supabase)) {
     return errorResult(
-      'upload_path wird bereits von einem Pin verwendet. Für einen weiteren Pin request_pin_upload erneut aufrufen.',
+      info.size == null
+        ? 'Die Größe des Bilds unter upload_path ist unbekannt; es wurde gelöscht. Bitte erneut hochladen.'
+        : 'Das Bild unter upload_path ist größer als 20 MB und wurde gelöscht.',
     )
   }
 
