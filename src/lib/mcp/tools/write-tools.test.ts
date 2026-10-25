@@ -2,6 +2,25 @@ import { describe, expect, it, vi } from 'vitest'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { handleMcpRequest } from '../handler'
 import type { McpHandlerDeps, McpUserContext } from '../context'
+import { baseMimeType } from '@/lib/api/pins'
+
+/** Magic-byte signatures the content check recognises, keyed by MIME type. */
+const MAGIC_BYTES: Record<string, number[]> = {
+  'image/png': [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+  'image/jpeg': [0xff, 0xd8, 0xff],
+  'image/jpg': [0xff, 0xd8, 0xff],
+  'image/gif': [0x47, 0x49, 0x46, 0x38, 0x39, 0x61], // GIF89a
+  'image/webp': [0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50], // RIFF....WEBP
+  'image/avif': [0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66], // ....ftypavif
+}
+
+/** Leading bytes that match `contentType`, padded to at least `byteLength`. */
+function magicBytesFor(contentType: string, byteLength = 0): Uint8Array {
+  const sig = MAGIC_BYTES[baseMimeType(contentType)] ?? []
+  const out = new Uint8Array(Math.max(byteLength, sig.length))
+  out.set(sig, 0)
+  return out
+}
 
 // The tools pull in the API layer, which imports the browser client and the
 // isomorphic selector at module load. Every tool here uses the injected
@@ -20,10 +39,12 @@ interface FakeCalls {
   removed: string[]
 }
 
-/** A stored object as reported by `storage.info()` in the fake. */
+/** A stored object as reported by `storage.info()`/`download()` in the fake. */
 interface FakeObject {
   contentType: string
   size: number
+  /** Raw bytes `download()` returns; defaults to magic bytes for `contentType`. */
+  bytes?: Uint8Array
 }
 
 /**
@@ -39,6 +60,8 @@ function fakeSupabase(
     objects?: Record<string, FakeObject>
     /** Image paths already referenced by a pin. */
     usedImagePaths?: string[]
+    /** Error the insert resolves with (e.g. a 23505 unique violation). */
+    insertError?: { code?: string; message?: string }
   } = {},
 ): {
   client: SupabaseClient
@@ -83,6 +106,9 @@ function fakeSupabase(
       then(resolve: (value: { data: unknown; error: unknown }) => unknown) {
         let data: unknown
         if (state.op === 'insert') {
+          if (opts.insertError) {
+            return Promise.resolve({ data: null, error: opts.insertError }).then(resolve)
+          }
           data = { id: 'pin-new', ...state.payload }
         } else if (state.imagePath !== null) {
           data = (opts.usedImagePaths ?? []).includes(state.imagePath)
@@ -130,6 +156,24 @@ function fakeSupabase(
               : { data: null, error: { message: 'Object not found', statusCode: '404' } },
           )
         },
+        download: (path: string) => {
+          const obj = objects[path]
+          if (!obj) {
+            return Promise.resolve({
+              data: null,
+              error: { message: 'Object not found', statusCode: '404' },
+            })
+          }
+          const bytes = obj.bytes ?? magicBytesFor(obj.contentType)
+          // supabase-js resolves download() to a Blob; jsdom's Blob lacks
+          // arrayBuffer(), so hand back a minimal blob-like with the one method
+          // downloadPinImageBytes uses.
+          const blob = {
+            arrayBuffer: async () =>
+              bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+          }
+          return Promise.resolve({ data: blob, error: null })
+        },
         remove: (paths: string[]) => {
           calls.removed.push(...paths)
           for (const path of paths) delete objects[path]
@@ -143,7 +187,8 @@ function fakeSupabase(
 }
 
 function imageFetch(contentType = 'image/png', byteLength = 1024) {
-  return async () => ({ contentType, bytes: new ArrayBuffer(byteLength) })
+  const bytes = magicBytesFor(contentType, byteLength).buffer as ArrayBuffer
+  return async () => ({ contentType, bytes })
 }
 
 function userContext(overrides: Partial<McpUserContext> = {}): McpUserContext {
@@ -315,6 +360,45 @@ describe('create_pin', () => {
     })
     expect(result.isError).toBe(true)
     expect(text).toContain('20 MB')
+  })
+
+  it('rejects image_url whose content does not match the declared type', async () => {
+    const { client, calls } = fakeSupabase()
+    const htmlAsPng = async () => ({
+      contentType: 'image/png',
+      bytes: new TextEncoder().encode('<!doctype html><html></html>').buffer as ArrayBuffer,
+    })
+    const ctx = userContext({ supabase: client, fetchRemoteImage: htmlAsPng })
+
+    const { result, text } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_url: 'https://example.com/a.png',
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image_url')
+    expect(calls.uploads).toHaveLength(0)
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it.each([
+    ['image/jpeg'],
+    ['image/png'],
+    ['image/gif'],
+    ['image/webp'],
+    ['image/avif'],
+  ])('accepts a %s whose magic bytes match', async (contentType) => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({ supabase: client, fetchRemoteImage: imageFetch(contentType) })
+
+    const { result } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_url: 'https://example.com/a',
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(calls.uploads).toHaveLength(1)
+    expect(calls.uploads[0].contentType).toBe(contentType)
   })
 })
 
@@ -533,6 +617,43 @@ describe('create_pin with upload_path', () => {
     expect(result.isError).toBe(true)
     expect(calls.removed).toEqual([PATH])
     expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('deletes and rejects an object whose bytes do not match the declared type', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: {
+        [PATH]: {
+          contentType: 'image/png',
+          size: 2048,
+          bytes: new TextEncoder().encode('<!doctype html><html></html>'),
+        },
+      },
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('upload_path')
+    expect(calls.removed).toEqual([PATH])
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('returns the "bereits verwendet" message when the insert hits the unique index (race)', async () => {
+    const { client, calls } = fakeSupabase({
+      objects: { [PATH]: { contentType: 'image/png', size: 2048 } },
+      insertError: {
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "pins_image_path_unique"',
+      },
+    })
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      upload_path: PATH,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('bereits')
+    expect(calls.inserts).toHaveLength(1)
   })
 })
 

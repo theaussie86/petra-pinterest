@@ -2,12 +2,15 @@ import { z } from 'zod'
 import {
   baseMimeType,
   createPinImageUploadUrl,
+  downloadPinImageBytes,
   getPin,
   getPinImageInfo,
+  imageBytesMatchType,
   imageExtensionFor,
   insertAgentPin,
   isPinImagePathUsed,
   isSupportedImageType,
+  PinImagePathConflictError,
   removePinImage,
   SUPPORTED_IMAGE_TYPES,
   updateAgentPin,
@@ -180,6 +183,11 @@ async function storeImageFromUrl(
   if (image.bytes.byteLength > MAX_IMAGE_BYTES) {
     return errorResult('Das Bild ist größer als 20 MB.')
   }
+  if (!imageBytesMatchType(new Uint8Array(image.bytes), contentType)) {
+    return errorResult(
+      `Der Bildinhalt unter image_url passt nicht zum Content-Type (${image.contentType ?? 'unbekannt'}). Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
+    )
+  }
 
   const path = await uploadPinImageBytes(image.bytes, contentType, ctx.tenantId, ctx.supabase)
   return { path }
@@ -230,6 +238,16 @@ async function claimUploadedImage(
     )
   }
 
+  // Trust the content, not the declared type: sniff the magic bytes and reject a
+  // falsely declared object (e.g. HTML PUT as image/png) before it backs a pin.
+  const bytes = await downloadPinImageBytes(path, ctx.supabase)
+  if (!bytes || !imageBytesMatchType(bytes, info.contentType ?? '')) {
+    await removePinImage(path, ctx.supabase)
+    return errorResult(
+      `Der Inhalt unter upload_path ist kein ${info.contentType ?? 'Bild'} und wurde gelöscht. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
+    )
+  }
+
   return { path }
 }
 
@@ -274,26 +292,38 @@ export const createPinTool = defineTool({
     const boardId = cleanText(input.board_id)
     const complete = missingMetadata({ title, description, board: boardId }).length === 0
 
-    const pin = await insertAgentPin(
-      {
-        tenant_id: ctx.tenantId,
-        blog_project_id: input.project_id,
-        blog_article_id: input.article_id ?? null,
-        image_path,
-        media_type: 'image',
-        title,
-        description,
-        alt_text: cleanText(input.alt_text),
-        alternate_url: cleanText(input.link),
-        pinterest_board_id: boardId,
-        pinterest_board_name: cleanText(input.board_name),
-        synthetic_performer: input.synthetic_performer ?? false,
-        ai_modified: input.synthetic_performer ? true : input.ai_modified ?? true,
-        status: complete ? 'metadata_created' : 'draft',
-        ...provenance(ctx),
-      },
-      ctx.supabase,
-    )
+    let pin: Pin
+    try {
+      pin = await insertAgentPin(
+        {
+          tenant_id: ctx.tenantId,
+          blog_project_id: input.project_id,
+          blog_article_id: input.article_id ?? null,
+          image_path,
+          media_type: 'image',
+          title,
+          description,
+          alt_text: cleanText(input.alt_text),
+          alternate_url: cleanText(input.link),
+          pinterest_board_id: boardId,
+          pinterest_board_name: cleanText(input.board_name),
+          synthetic_performer: input.synthetic_performer ?? false,
+          ai_modified: input.synthetic_performer ? true : input.ai_modified ?? true,
+          status: complete ? 'metadata_created' : 'draft',
+          ...provenance(ctx),
+        },
+        ctx.supabase,
+      )
+    } catch (err) {
+      // The unique index is the race-proof backstop when two create_pin calls
+      // claim the same upload_path at once (the pre-check can let both through).
+      if (err instanceof PinImagePathConflictError) {
+        return errorResult(
+          'upload_path wird bereits von einem Pin verwendet. Für einen weiteren Pin request_pin_upload erneut aufrufen.',
+        )
+      }
+      throw err
+    }
 
     return jsonResult(pinToResult(pin, ctx))
   },
