@@ -414,6 +414,64 @@ export function isSupportedImageType(contentType: string): boolean {
   return baseMimeType(contentType) in IMAGE_EXTENSION_BY_TYPE
 }
 
+/** The image kinds whose magic bytes {@link detectImageKind} recognises. */
+type ImageSignatureKind = 'jpeg' | 'png' | 'gif' | 'webp' | 'avif'
+
+/** Maps a supported image MIME type to the kind its magic bytes must identify. */
+const IMAGE_KIND_BY_TYPE: Record<string, ImageSignatureKind> = {
+  'image/jpeg': 'jpeg',
+  'image/jpg': 'jpeg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+}
+
+/** Read `length` bytes starting at `offset` as a Latin-1 string (for ASCII tags). */
+function asciiAt(bytes: Uint8Array, offset: number, length: number): string {
+  let s = ''
+  for (let i = 0; i < length; i++) s += String.fromCharCode(bytes[offset + i])
+  return s
+}
+
+/**
+ * Identify an image from the first bytes of its content (the "magic bytes"),
+ * independent of any declared content type. Returns the image kind, or null when
+ * the leading bytes match none of the supported signatures (issue #137).
+ */
+export function detectImageKind(bytes: Uint8Array): ImageSignatureKind | null {
+  const b = bytes
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'jpeg'
+  if (
+    b.length >= 8 &&
+    b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47 &&
+    b[4] === 0x0d && b[5] === 0x0a && b[6] === 0x1a && b[7] === 0x0a
+  )
+    return 'png'
+  if (b.length >= 6 && (asciiAt(b, 0, 6) === 'GIF87a' || asciiAt(b, 0, 6) === 'GIF89a')) return 'gif'
+  if (b.length >= 12 && asciiAt(b, 0, 4) === 'RIFF' && asciiAt(b, 8, 4) === 'WEBP') return 'webp'
+  if (
+    b.length >= 12 &&
+    asciiAt(b, 4, 4) === 'ftyp' &&
+    (asciiAt(b, 8, 4) === 'avif' || asciiAt(b, 8, 4) === 'avis')
+  )
+    return 'avif'
+  return null
+}
+
+/**
+ * Whether the leading bytes of an object match its declared image content type.
+ * Guards against a falsely declared object — e.g. an HTML file served as
+ * `image/png` (issue #137): the content type must name a supported image and
+ * the magic bytes must identify that same kind. Unsupported or unrecognised
+ * content returns false.
+ */
+export function imageBytesMatchType(bytes: Uint8Array, contentType: string): boolean {
+  const kind = IMAGE_KIND_BY_TYPE[baseMimeType(contentType)]
+  if (!kind) return false
+  return detectImageKind(bytes) === kind
+}
+
 /** A signed upload slot in the pin-images bucket (see `createPinImageUploadUrl`). */
 export interface PinImageUploadSlot {
   /** Absolute URL the bytes are PUT to; carries its own upload token. */
@@ -447,6 +505,11 @@ export interface PinImageInfo {
   size: number | null
 }
 
+/** Whether a Supabase storage error means the object does not exist (404). */
+function isStorageNotFound(error: { status?: number; statusCode?: string; message: string }): boolean {
+  return error.status === 404 || error.statusCode === '404' || /not.?found/i.test(error.message)
+}
+
 /**
  * Look up a pin-images object's stored content type and size, or null when no
  * object exists at the path. Any other storage error is thrown.
@@ -457,12 +520,27 @@ export async function getPinImageInfo(
 ): Promise<PinImageInfo | null> {
   const { data, error } = await client.storage.from('pin-images').info(path)
   if (error) {
-    const status = (error as { status?: number }).status
-    const statusCode = (error as { statusCode?: string }).statusCode
-    if (status === 404 || statusCode === '404' || /not.?found/i.test(error.message)) return null
+    if (isStorageNotFound(error)) return null
     throw error
   }
   return { contentType: data.contentType ?? null, size: data.size ?? null }
+}
+
+/**
+ * Download a pin-images object's bytes so its real type can be sniffed from the
+ * magic bytes (issue #137). Returns null when no object exists at the path; any
+ * other storage error is thrown. Callers cap the object size before calling.
+ */
+export async function downloadPinImageBytes(
+  path: string,
+  client: SupabaseClient
+): Promise<Uint8Array | null> {
+  const { data, error } = await client.storage.from('pin-images').download(path)
+  if (error) {
+    if (isStorageNotFound(error)) return null
+    throw error
+  }
+  return new Uint8Array(await data.arrayBuffer())
 }
 
 /** Delete an object from the pin-images bucket (best-effort, errors ignored). */
@@ -509,16 +587,37 @@ export interface AgentPinInsert extends PinProvenance {
 }
 
 /**
+ * Thrown by {@link insertAgentPin} when the insert hits the partial unique index
+ * on an image path (Postgres 23505) — another pin already owns the storage
+ * object. The pre-insert `isPinImagePathUsed` check gives the fast, friendly
+ * answer; this is the race-proof backstop for two concurrent `create_pin` calls
+ * passing the same `upload_path` (issue #137).
+ */
+export class PinImagePathConflictError extends Error {
+  constructor() {
+    super('image path is already used by another pin')
+    this.name = 'PinImagePathConflictError'
+  }
+}
+
+/**
  * Insert a pin on behalf of a Connected Agent (MCP). Unlike {@link createPin} it
  * takes an explicit client, tenant and provenance, and never enqueues Gemini
  * metadata generation — writing over MCP is deliberately Gemini-free (ADR-0006).
+ * A unique-violation on an image path surfaces as {@link PinImagePathConflictError}.
  */
 export async function insertAgentPin(
   pin: AgentPinInsert,
   client: SupabaseClient
 ): Promise<Pin> {
   const { data, error } = await client.from('pins').insert(pin).select().single()
-  if (error) throw error
+  if (error) {
+    const code = (error as { code?: string }).code
+    if (code === '23505' && /image_path/.test(error.message ?? '')) {
+      throw new PinImagePathConflictError()
+    }
+    throw error
+  }
   return data
 }
 

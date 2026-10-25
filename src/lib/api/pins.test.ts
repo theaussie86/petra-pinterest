@@ -21,6 +21,9 @@ import {
   insertAgentPin,
   updateAgentPin,
   getPinImageUrl,
+  detectImageKind,
+  imageBytesMatchType,
+  PinImagePathConflictError,
 } from './pins'
 import { createMockQueryBuilder, createMockStorageBucket } from '@/test/mocks/supabase'
 import { buildPin, buildPinInsert } from '@/test/factories'
@@ -617,6 +620,88 @@ describe('imageExtensionFor()', () => {
 
   it('falls back to jpg for an unmapped image type', () => {
     expect(imageExtensionFor('image/x-weird')).toBe('jpg')
+  })
+})
+
+describe('detectImageKind() / imageBytesMatchType() — magic bytes (issue #137)', () => {
+  const SIGNATURES: Array<[string, string, number[]]> = [
+    ['jpeg', 'image/jpeg', [0xff, 0xd8, 0xff, 0x00]],
+    ['png', 'image/png', [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+    ['gif', 'image/gif', [0x47, 0x49, 0x46, 0x38, 0x37, 0x61]], // GIF87a
+    ['webp', 'image/webp', [0x52, 0x49, 0x46, 0x46, 1, 2, 3, 4, 0x57, 0x45, 0x42, 0x50]],
+    ['avif', 'image/avif', [0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66]],
+  ]
+
+  it.each(SIGNATURES)('detects %s and matches its declared type', (kind, type, bytes) => {
+    const arr = new Uint8Array(bytes)
+    expect(detectImageKind(arr)).toBe(kind)
+    expect(imageBytesMatchType(arr, type)).toBe(true)
+  })
+
+  it('treats image/jpg as jpeg', () => {
+    expect(imageBytesMatchType(new Uint8Array([0xff, 0xd8, 0xff, 0x00]), 'image/jpg')).toBe(true)
+  })
+
+  it('returns null / false for content that matches no signature', () => {
+    const html = new TextEncoder().encode('<!doctype html>')
+    expect(detectImageKind(html)).toBeNull()
+    expect(imageBytesMatchType(html, 'image/png')).toBe(false)
+  })
+
+  it('rejects bytes that match a different kind than declared', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+    expect(imageBytesMatchType(png, 'image/jpeg')).toBe(false)
+  })
+
+  it('rejects an unsupported declared type even with matching-looking bytes', () => {
+    expect(imageBytesMatchType(new Uint8Array([0xff, 0xd8, 0xff]), 'image/svg+xml')).toBe(false)
+  })
+})
+
+describe('insertAgentPin() — unique image_path conflict (issue #137)', () => {
+  it('maps a 23505 on an image_path index to PinImagePathConflictError', async () => {
+    const qb = createMockQueryBuilder({
+      data: null,
+      error: {
+        code: '23505',
+        message: 'duplicate key value violates unique constraint "pins_image_path_unique"',
+      },
+    })
+    const client = { from: vi.fn().mockReturnValue(qb) } as any
+
+    await expect(
+      insertAgentPin(
+        {
+          tenant_id: 'tenant-1',
+          blog_project_id: 'p1',
+          image_path: 'tenant-1/x.png',
+          source: 'mcp',
+          oauth_client_id: 'client-abc',
+        },
+        client,
+      ),
+    ).rejects.toBeInstanceOf(PinImagePathConflictError)
+  })
+
+  it('rethrows an unrelated error untouched', async () => {
+    const qb = createMockQueryBuilder({
+      data: null,
+      error: { code: '23505', message: 'duplicate key on some_other_index' },
+    })
+    const client = { from: vi.fn().mockReturnValue(qb) } as any
+
+    await expect(
+      insertAgentPin(
+        {
+          tenant_id: 'tenant-1',
+          blog_project_id: 'p1',
+          image_path: 'tenant-1/x.png',
+          source: 'mcp',
+          oauth_client_id: 'client-abc',
+        },
+        client,
+      ),
+    ).rejects.not.toBeInstanceOf(PinImagePathConflictError)
   })
 })
 
