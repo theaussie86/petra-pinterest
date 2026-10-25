@@ -93,6 +93,14 @@ pin is `metadata_created` when Titel, Beschreibung and Board are given, else
   object, a non-image or an object over 20 MB (both deleted), and a path that
   already backs a pin.
 
+If an upload is reserved but `create_pin` is never called (agent aborts, UI
+upload followed by a failed insert), the object is left orphaned in
+`pin-images`. The daily `cleanup-published-images` Edge Function removes
+orphaned uploads older than 7 days — objects no pin references via `image_path`
+or `cover_image_path` — using the service-role-only RPC
+`list_orphaned_pin_images()` (max 100 per run, #138). The 7-day buffer safely
+covers the ~2-hour signed upload URL and in-progress Werkstatt sessions.
+
 Cowork: the sandbox must be allowed to reach `dedacaqstvzxlxpxvxgb.supabase.co`
 (network allowlist in the Cowork settings), otherwise the PUT fails. ChatGPT's
 code interpreter has no network and cannot use this path.
