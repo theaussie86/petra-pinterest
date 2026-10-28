@@ -460,6 +460,16 @@ export function detectImageKind(bytes: Uint8Array): ImageSignatureKind | null {
 }
 
 /**
+ * The MIME type of an image identified purely by its magic bytes, or null when
+ * the content is no supported image. For sources without a trustworthy declared
+ * type (base64 from an agent, ChatGPT file downloads served as octet-stream).
+ */
+export function detectImageType(bytes: Uint8Array): string | null {
+  const kind = detectImageKind(bytes)
+  return kind ? `image/${kind}` : null
+}
+
+/**
  * Whether the leading bytes of an object match its declared image content type.
  * Guards against a falsely declared object — e.g. an HTML file served as
  * `image/png` (issue #137): the content type must name a supported image and

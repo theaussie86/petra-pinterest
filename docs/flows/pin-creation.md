@@ -77,7 +77,7 @@ Pins are created with `status: 'draft'` by default. The `tenant_id` is added by 
 A Connected Agent creates pins with the MCP tool `create_pin`
 (`src/lib/mcp/tools/pins-write.ts`). It never triggers Gemini (ADR-0006): the
 pin is `metadata_created` when Titel, Beschreibung and Board are given, else
-`draft`. The image comes from exactly one of two sources:
+`draft`. The image comes from exactly one of four sources:
 
 - **`image_url`** - a public HTTPS URL. Pinfinity downloads it (`image/*`, max 20 MB).
 - **`upload_path`** - for images without a public URL (local files, images the
@@ -92,6 +92,16 @@ pin is `metadata_created` when Titel, Beschreibung and Board are given, else
   `create_pin` rejects a path outside the caller's tenant folder, a missing
   object, a non-image or an object over 20 MB (both deleted), and a path that
   already backs a pin.
+- **`image_file`** - a file reference from ChatGPT. `create_pin` lists the field
+  in `_meta["openai/fileParams"]`, so ChatGPT fills it with
+  `{download_url, file_id, mime_type?, file_name?}` for an image in the chat
+  (uploaded or generated). Pinfinity downloads the short-lived `download_url`
+  and detects the image type from the magic bytes (served type is often
+  `application/octet-stream`).
+- **`image_base64`** - the image bytes inline as base64 (or a `data:` URL), for
+  agents that can neither host a file nor PUT. Type detected from magic bytes.
+  The MCP transport caps a request at 4 MiB (Vercel at 4.5 MB), so this fits
+  images up to about 3 MB.
 
 If an upload is reserved but `create_pin` is never called (agent aborts, UI
 upload followed by a failed insert), the object is left orphaned in
