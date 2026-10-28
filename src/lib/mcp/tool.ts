@@ -39,6 +39,11 @@ export interface McpToolDefinition<Shape extends z.ZodRawShape = z.ZodRawShape> 
   inputSchema?: Shape
   feature?: FeatureKey
   dryRun?: boolean
+  /**
+   * Tool descriptor `_meta`, passed through to `tools/list`. Used for client
+   * extensions such as ChatGPT's `openai/fileParams`.
+   */
+  meta?: Record<string, unknown>
   handler: (args: ToolHandlerArgs<Shape>) => Promise<ToolResult> | ToolResult
 }
 
@@ -102,7 +107,7 @@ export function registerTool<Shape extends z.ZodRawShape>(
 
   server.registerTool(
     def.name,
-    { description: def.description, inputSchema },
+    { description: def.description, inputSchema, ...(def.meta ? { _meta: def.meta } : {}) },
     // The SDK infers the callback's argument type from `inputSchema`; our shape
     // is built dynamically, so bridge it at this one boundary.
     callback as Parameters<typeof server.registerTool>[2],

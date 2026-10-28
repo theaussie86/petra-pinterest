@@ -2,6 +2,7 @@ import { z } from 'zod'
 import {
   baseMimeType,
   createPinImageUploadUrl,
+  detectImageType,
   downloadPinImageBytes,
   getPin,
   getPinImageInfo,
@@ -116,6 +117,30 @@ export function provenance(ctx: McpUserContext): PinProvenance {
 /** The supported image types as a German list for tool texts. */
 const SUPPORTED_IMAGE_LIST = SUPPORTED_IMAGE_TYPES.join(', ')
 
+/**
+ * A file reference as ChatGPT passes it for a field listed in
+ * `_meta["openai/fileParams"]` (Apps SDK reference): `download_url` and
+ * `file_id` always, `mime_type`/`file_name` optional but declared.
+ */
+const imageFileSchema = z
+  .object({
+    download_url: z.string().describe('Temporäre Download-URL der Datei.'),
+    file_id: z.string().describe('Datei-ID.'),
+    mime_type: z.string().nullish().describe('MIME-Typ der Datei.'),
+    file_name: z.string().nullish().describe('Dateiname.'),
+  })
+  .describe(
+    'Bilddatei aus dem Chat (ChatGPT füllt das automatisch, z. B. für hochgeladene oder erzeugte Bilder).',
+  )
+
+type ImageFileInput = z.infer<typeof imageFileSchema>
+
+/**
+ * The inline image inputs of `create_pin`. Vercel caps request bodies at 4.5 MB,
+ * so base64 (≈ +33 %) fits images up to roughly 3 MB.
+ */
+const MAX_BASE64_HINT = 'bis ca. 3 MB'
+
 /** Supabase signed upload URLs are valid for two hours (storage-js docs). */
 const SIGNED_UPLOAD_TTL_MS = 2 * 60 * 60 * 1000
 
@@ -194,6 +219,72 @@ async function storeImageFromUrl(
 }
 
 /**
+ * Size-check, sniff and store raw image bytes whose type comes from the content
+ * alone (no trustworthy declared type). `field` names the input in errors.
+ */
+async function storeSniffedImage(
+  bytes: Uint8Array,
+  field: string,
+  ctx: McpUserContext,
+): Promise<{ path: string } | ToolResult> {
+  if (bytes.byteLength === 0) {
+    return errorResult(`${field} ist leer.`)
+  }
+  if (bytes.byteLength > MAX_IMAGE_BYTES) {
+    return errorResult('Das Bild ist größer als 20 MB.')
+  }
+  const contentType = detectImageType(bytes)
+  if (!contentType) {
+    return errorResult(`${field} enthält kein unterstütztes Bild. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`)
+  }
+  const path = await uploadPinImageBytes(bytes, contentType, ctx.tenantId, ctx.supabase)
+  return { path }
+}
+
+/**
+ * Store a file ChatGPT passed via `openai/fileParams`: it hands over a short-lived
+ * `download_url`, which the server fetches. The served content type is often
+ * generic, so the type is sniffed from the bytes.
+ */
+async function storeImageFromFile(
+  file: ImageFileInput,
+  ctx: McpUserContext,
+): Promise<{ path: string } | ToolResult> {
+  const url = file.download_url.trim()
+  if (!/^https:\/\//i.test(url)) {
+    return errorResult('image_file.download_url muss eine HTTPS-URL sein.')
+  }
+  if (!ctx.fetchRemoteImage) {
+    return errorResult('Bild-Download ist in dieser Umgebung nicht verfügbar.')
+  }
+
+  let image: FetchedImage
+  try {
+    image = await ctx.fetchRemoteImage(url)
+  } catch {
+    return errorResult(
+      'Die Datei aus image_file konnte nicht geladen werden (Download-Link evtl. abgelaufen). Bitte erneut versuchen.',
+    )
+  }
+  return storeSniffedImage(new Uint8Array(image.bytes), 'image_file', ctx)
+}
+
+/** Base64 alphabet (standard or URL-safe), optional padding, after whitespace is stripped. */
+const BASE64_PATTERN = /^[A-Za-z0-9+/_-]+={0,2}$/
+
+/** Decode inline `image_base64` (plain or as `data:` URL) and store it. */
+async function storeImageFromBase64(
+  data: string,
+  ctx: McpUserContext,
+): Promise<{ path: string } | ToolResult> {
+  const payload = data.trim().replace(/^data:[^,]*;base64,/i, '').replace(/\s+/g, '')
+  if (!BASE64_PATTERN.test(payload)) {
+    return errorResult('image_base64 ist kein gültiges Base64.')
+  }
+  return storeSniffedImage(new Uint8Array(Buffer.from(payload, 'base64')), 'image_base64', ctx)
+}
+
+/**
  * Validate an object uploaded via `request_pin_upload`: it must sit directly in
  * the caller's tenant folder, not already back a pin, exist, and be a supported
  * image up to 20 MB. An invalid object (wrong type, too big) is deleted — the
@@ -251,11 +342,16 @@ async function claimUploadedImage(
   return { path }
 }
 
+/** The mutually exclusive image sources of `create_pin`. */
+const IMAGE_SOURCES = ['image_url', 'upload_path', 'image_file', 'image_base64'] as const
+
 /**
  * `create_pin` — create a pin from an image (Spec #115, user stories 28–31;
- * issue #135). The image comes either from `image_url` (fetched over HTTPS,
- * `image/*` up to ~20 MB, stored like a UI upload) or from `upload_path` (an
- * object the agent PUT via `request_pin_upload`). Attaches any metadata given.
+ * issue #135). The image comes from exactly one source: `image_url` (fetched
+ * over HTTPS, `image/*` up to ~20 MB, stored like a UI upload), `upload_path`
+ * (an object the agent PUT via `request_pin_upload`), `image_file` (a ChatGPT
+ * file reference via `openai/fileParams`) or `image_base64` (inline bytes, for
+ * agents that cannot PUT or host a file). Attaches any metadata given.
  * Complete metadata (Titel, Beschreibung, Board) makes the pin schedulable
  * right away (`metadata_created`); otherwise it stays a `draft`. Never triggers
  * Gemini (ADR-0006).
@@ -263,7 +359,7 @@ async function claimUploadedImage(
 export const createPinTool = defineTool({
   name: 'create_pin',
   description:
-    'Legt einen Pin an. Das Bild kommt entweder aus image_url (öffentliche HTTPS-URL, wird geladen; nur image/*, bis ca. 20 MB) oder aus upload_path (vorher per request_pin_upload hochgeladen). Genau eins von beiden angeben. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.',
+    `Legt einen Pin an. Das Bild kommt aus genau einer Quelle: image_url (öffentliche HTTPS-URL, wird geladen; bis ca. 20 MB), upload_path (vorher per request_pin_upload hochgeladen), image_file (Bild direkt aus dem Chat, z. B. in ChatGPT hochgeladen oder erzeugt) oder image_base64 (Bilddaten direkt als Base64, ${MAX_BASE64_HINT}). Erlaubt: ${SUPPORTED_IMAGE_LIST}. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.`,
   inputSchema: {
     project_id: z.string().describe('ID des Blog-Projekts, zu dem der Pin gehört.'),
     image_url: z.string().optional().describe('HTTPS-URL des Pin-Bilds.'),
@@ -271,19 +367,33 @@ export const createPinTool = defineTool({
       .string()
       .optional()
       .describe('upload_path aus request_pin_upload, nachdem das Bild hochgeladen wurde.'),
+    image_file: imageFileSchema.optional(),
+    image_base64: z
+      .string()
+      .optional()
+      .describe(
+        `Bilddaten als Base64 (auch als data:-URL), ${MAX_BASE64_HINT}. Der Bildtyp wird aus dem Inhalt erkannt.`,
+      ),
     article_id: z.string().optional().describe('ID des zugehörigen Artikels (optional).'),
     ...metadataShape,
   },
+  meta: { 'openai/fileParams': ['image_file'] },
   handler: async ({ input, ctx }) => {
-    const hasUrl = !!input.image_url?.trim()
-    const hasUpload = !!input.upload_path?.trim()
-    if (hasUrl === hasUpload) {
-      return errorResult('Genau eins von image_url oder upload_path angeben.')
+    const given = IMAGE_SOURCES.filter((key) =>
+      key === 'image_file' ? !!input.image_file?.download_url?.trim() : !!input[key]?.trim(),
+    )
+    if (given.length !== 1) {
+      return errorResult(`Genau eins von ${IMAGE_SOURCES.join(', ')} angeben.`)
     }
 
-    const stored = hasUpload
-      ? await claimUploadedImage(input.upload_path!, ctx)
-      : await storeImageFromUrl(input.image_url!, ctx)
+    const stored =
+      given[0] === 'upload_path'
+        ? await claimUploadedImage(input.upload_path!, ctx)
+        : given[0] === 'image_file'
+          ? await storeImageFromFile(input.image_file!, ctx)
+          : given[0] === 'image_base64'
+            ? await storeImageFromBase64(input.image_base64!, ctx)
+            : await storeImageFromUrl(input.image_url!, ctx)
     if (!('path' in stored)) return stored
     const image_path = stored.path
 

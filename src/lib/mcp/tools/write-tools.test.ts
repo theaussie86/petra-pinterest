@@ -657,6 +657,164 @@ describe('create_pin with upload_path', () => {
   })
 })
 
+describe('create_pin with inline images', () => {
+  /** Base64 of bytes whose magic bytes identify `contentType`. */
+  function base64For(contentType: string, byteLength = 1024): string {
+    return Buffer.from(magicBytesFor(contentType, byteLength)).toString('base64')
+  }
+
+  it('declares image_file as an openai/fileParams field in tools/list', async () => {
+    const tools = (await listTools(userContext())) as Array<{
+      name: string
+      _meta?: Record<string, unknown>
+      inputSchema?: { properties?: Record<string, unknown> }
+    }>
+    const tool = tools.find((t) => t.name === 'create_pin')
+    expect(tool?._meta?.['openai/fileParams']).toEqual(['image_file'])
+    expect(tool?.inputSchema?.properties).toHaveProperty('image_file')
+    expect(tool?.inputSchema?.properties).toHaveProperty('image_base64')
+  })
+
+  it('stores a ChatGPT file from its download_url, typed by magic bytes', async () => {
+    const { client, calls } = fakeSupabase()
+    const fetched: string[] = []
+    const ctx = userContext({
+      supabase: client,
+      fetchRemoteImage: async (url) => {
+        fetched.push(url)
+        return {
+          contentType: 'application/octet-stream',
+          bytes: magicBytesFor('image/png', 1024).buffer as ArrayBuffer,
+        }
+      },
+    })
+
+    const { result, payload } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_file: {
+        download_url: 'https://files.oaiusercontent.com/file-abc?sig=x',
+        file_id: 'file-abc',
+        mime_type: 'image/png',
+        file_name: 'pin.png',
+      },
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(fetched).toEqual(['https://files.oaiusercontent.com/file-abc?sig=x'])
+    expect(calls.uploads[0].path).toMatch(/^tenant-1\/.*\.png$/)
+    expect(calls.uploads[0].contentType).toBe('image/png')
+    expect(calls.inserts[0].source).toBe('mcp')
+    expect(payload.id).toBe('pin-new')
+  })
+
+  it('rejects an image_file whose content is no supported image', async () => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({
+      supabase: client,
+      fetchRemoteImage: async () => ({
+        contentType: 'image/png',
+        bytes: new TextEncoder().encode('<html></html>').buffer as ArrayBuffer,
+      }),
+    })
+
+    const { result, text } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_file: { download_url: 'https://files.example/x', file_id: 'f1' },
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image_file')
+    expect(calls.uploads).toHaveLength(0)
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('reports an expired/failed image_file download', async () => {
+    const ctx = userContext({
+      fetchRemoteImage: async () => {
+        throw new Error('HTTP 403')
+      },
+    })
+    const { result, text } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_file: { download_url: 'https://files.example/x', file_id: 'f1' },
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image_file')
+  })
+
+  it.each([['image/jpeg'], ['image/png'], ['image/webp']])(
+    'stores image_base64 (%s) typed by magic bytes',
+    async (contentType) => {
+      const { client, calls } = fakeSupabase()
+      const ctx = userContext({ supabase: client })
+
+      const { result } = await callTool(ctx, 'create_pin', {
+        project_id: 'p1',
+        image_base64: base64For(contentType),
+      })
+
+      expect(result.isError).toBeFalsy()
+      expect(calls.uploads).toHaveLength(1)
+      expect(calls.uploads[0].contentType).toBe(contentType)
+    },
+  )
+
+  it('accepts image_base64 as a data: URL', async () => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({ supabase: client })
+
+    const { result } = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_base64: `data:image/png;base64,${base64For('image/png')}`,
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(calls.uploads[0].contentType).toBe('image/png')
+  })
+
+  it('rejects invalid base64 and non-image base64', async () => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({ supabase: client })
+
+    const garbage = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_base64: 'not base64!!',
+    })
+    expect(garbage.result.isError).toBe(true)
+    expect(garbage.text).toContain('Base64')
+
+    const html = await callTool(ctx, 'create_pin', {
+      project_id: 'p1',
+      image_base64: Buffer.from('<html></html>').toString('base64'),
+    })
+    expect(html.result.isError).toBe(true)
+    expect(html.text).toContain('image_base64')
+    expect(calls.uploads).toHaveLength(0)
+  })
+
+  it('refuses a request body over the transport cap (4 MiB) with 413', async () => {
+    const { client, calls } = fakeSupabase()
+    const { res } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      image_base64: base64For('image/png', 4 * 1024 * 1024),
+    })
+    expect(res.status).toBe(413)
+    expect(calls.uploads).toHaveLength(0)
+  })
+
+  it('rejects combining image_base64 with another image source', async () => {
+    const { client, calls } = fakeSupabase()
+    const { result, text } = await callTool(userContext({ supabase: client }), 'create_pin', {
+      project_id: 'p1',
+      image_url: 'https://example.com/a.png',
+      image_base64: base64For('image/png'),
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image_base64')
+    expect(calls.inserts).toHaveLength(0)
+  })
+})
+
 describe('set_pin_metadata', () => {
   it('sets metadata_created when the merged metadata is complete', async () => {
     const { client, calls } = fakeSupabase({
