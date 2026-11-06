@@ -175,9 +175,13 @@ Bei einem Fehler wurde nichts geschrieben. Korrigiert neu senden ist sicher.
 
 ## 5. Pin mit eigenem Bild anlegen
 
-Ist das Pin-Bild fertig (lokal erzeugt oder im Cowork-Ordner), legst du daraus
-einen Pin an. Hat das Bild keine öffentliche HTTPS-URL, läuft das in drei
-Schritten:
+**ChatGPT:** Liegt das Bild im Chat, rufe `create_pin` direkt mit `project_id`
+und den Metadaten auf. ChatGPT füllt `image_file` selbst. Erfinde keine URL und
+keinen Dateipfad und verwende weder `request_pin_upload` noch `image_base64`.
+
+**Cowork und andere Agenten mit Shell:** Ist das Pin-Bild fertig (lokal erzeugt
+oder im Cowork-Ordner), legst du daraus einen Pin an. Hat das Bild keine
+öffentliche HTTPS-URL, läuft das in drei Schritten:
 
 1. `request_pin_upload` mit `content_type` (z. B. `image/png`) aufrufen. Du
    bekommst `upload_url` (ca. 2 Stunden gültig), `upload_path` und ein fertiges

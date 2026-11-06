@@ -675,6 +675,28 @@ describe('create_pin with inline images', () => {
     expect(tool?.inputSchema?.properties).toHaveProperty('image_base64')
   })
 
+  it('publishes image_file as a strict, string-only file object', async () => {
+    const tools = (await listTools(userContext())) as Array<{
+      name: string
+      inputSchema?: { properties?: Record<string, Record<string, unknown>> }
+    }>
+    const schema = tools.find((t) => t.name === 'create_pin')?.inputSchema?.properties?.image_file
+    const properties = schema?.properties as Record<string, { type: unknown }>
+
+    expect(schema?.type).toBe('object')
+    expect(schema?.additionalProperties).toBe(false)
+    expect(schema?.required).toEqual(['download_url', 'file_id'])
+    expect(Object.keys(properties).sort()).toEqual([
+      'download_url',
+      'file_id',
+      'file_name',
+      'mime_type',
+    ])
+    for (const property of Object.values(properties)) {
+      expect(property.type).toBe('string')
+    }
+  })
+
   it('stores a ChatGPT file from its download_url, typed by magic bytes', async () => {
     const { client, calls } = fakeSupabase()
     const fetched: string[] = []
