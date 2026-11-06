@@ -97,7 +97,10 @@ pin is `metadata_created` when Titel, Beschreibung and Board are given, else
   `{download_url, file_id, mime_type?, file_name?}` for an image in the chat
   (uploaded or generated). Pinfinity downloads the short-lived `download_url`
   and detects the image type from the magic bytes (served type is often
-  `application/octet-stream`).
+  `application/octet-stream`). Whether ChatGPT fills the field depends on the
+  host and is unverified for mobile and generated images. Each `create_pin` and
+  `request_pin_upload` call logs `[mcp] image_intake` with the raw argument
+  shapes, before validation and without signed URLs.
 - **`image_base64`** - the image bytes inline as base64 (or a `data:` URL), for
   agents that can neither host a file nor PUT. Type detected from magic bytes.
   The MCP transport caps a request at 4 MiB (Vercel at 4.5 MB), so this fits

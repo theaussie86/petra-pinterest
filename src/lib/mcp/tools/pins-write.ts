@@ -120,17 +120,19 @@ const SUPPORTED_IMAGE_LIST = SUPPORTED_IMAGE_TYPES.join(', ')
 /**
  * A file reference as ChatGPT passes it for a field listed in
  * `_meta["openai/fileParams"]` (Apps SDK reference): `download_url` and
- * `file_id` always, `mime_type`/`file_name` optional but declared.
+ * `file_id` always, `mime_type`/`file_name` optional but declared. Strict and
+ * string-only: the shape a third party saw hydrated in ChatGPT Work, and the
+ * file schema OpenAI's Scan Tools step accepts.
  */
 const imageFileSchema = z
-  .object({
-    download_url: z.string().describe('Temporäre Download-URL der Datei.'),
-    file_id: z.string().describe('Datei-ID.'),
-    mime_type: z.string().nullish().describe('MIME-Typ der Datei.'),
-    file_name: z.string().nullish().describe('Dateiname.'),
+  .strictObject({
+    download_url: z.string().describe('Vom Client gesetzte temporäre Download-URL. Nie selbst setzen.'),
+    file_id: z.string().describe('Vom Client gesetzte Datei-ID. Nie selbst setzen.'),
+    mime_type: z.string().optional().describe('MIME-Typ, falls vom Client geliefert.'),
+    file_name: z.string().optional().describe('Dateiname, falls vom Client geliefert.'),
   })
   .describe(
-    'Bilddatei aus dem Chat (ChatGPT füllt das automatisch, z. B. für hochgeladene oder erzeugte Bilder).',
+    'Bild aus diesem Chat. Der Client (ChatGPT) füllt dieses Feld selbst. Felder nie selbst befüllen, keine URL, keinen Pfad und keine ID erfinden.',
   )
 
 type ImageFileInput = z.infer<typeof imageFileSchema>
@@ -153,7 +155,7 @@ const SIGNED_UPLOAD_TTL_MS = 2 * 60 * 60 * 1000
 export const requestPinUploadTool = defineTool({
   name: 'request_pin_upload',
   description:
-    `Schritt 1 von 2 für Bilder ohne öffentliche URL (lokal oder im Agenten erzeugt): Liefert eine signierte Upload-URL (ca. 2 Stunden gültig) und einen upload_path. Lade das Bild per HTTP PUT mit passendem Content-Type hoch (Beispiel: curl_example) und rufe danach create_pin mit upload_path statt image_url auf. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
+    `Nur für Agenten mit Shell und Netzzugang (z. B. Cowork), die eine lokale Datei per HTTP PUT senden können. Nicht für Bilder aus einem ChatGPT-Chat, dort create_pin direkt aufrufen. Schritt 1 von 2: Liefert eine signierte Upload-URL (ca. 2 Stunden gültig) und einen upload_path. Lade das Bild per HTTP PUT mit passendem Content-Type hoch (Beispiel: curl_example) und rufe danach create_pin mit upload_path statt image_url auf. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
   inputSchema: {
     content_type: z
       .string()
@@ -258,14 +260,25 @@ async function storeImageFromFile(
     return errorResult('Bild-Download ist in dieser Umgebung nicht verfügbar.')
   }
 
+  // Logs the origin only: the rest of the URL carries the signature.
+  const origin = URL.canParse(url) ? new URL(url).origin : 'invalid-url'
   let image: FetchedImage
   try {
     image = await ctx.fetchRemoteImage(url)
-  } catch {
+  } catch (err) {
+    console.warn('[mcp] image_file download failed', {
+      origin,
+      error: err instanceof Error ? err.message : 'unknown',
+    })
     return errorResult(
       'Die Datei aus image_file konnte nicht geladen werden (Download-Link evtl. abgelaufen). Bitte erneut versuchen.',
     )
   }
+  console.info('[mcp] image_file downloaded', {
+    origin,
+    bytes: image.bytes.byteLength,
+    contentType: image.contentType,
+  })
   return storeSniffedImage(new Uint8Array(image.bytes), 'image_file', ctx)
 }
 
@@ -359,7 +372,7 @@ const IMAGE_SOURCES = ['image_url', 'upload_path', 'image_file', 'image_base64']
 export const createPinTool = defineTool({
   name: 'create_pin',
   description:
-    `Legt einen Pin an. Das Bild kommt aus genau einer Quelle: image_url (öffentliche HTTPS-URL, wird geladen; bis ca. 20 MB), upload_path (vorher per request_pin_upload hochgeladen), image_file (Bild direkt aus dem Chat, z. B. in ChatGPT hochgeladen oder erzeugt) oder image_base64 (Bilddaten direkt als Base64, ${MAX_BASE64_HINT}). Erlaubt: ${SUPPORTED_IMAGE_LIST}. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.`,
+    `Legt einen Pin an. Liegt das Bild in diesem Chat (z. B. in ChatGPT hochgeladen oder erzeugt), rufe das Tool direkt auf: der Client füllt image_file selbst; lass image_url, upload_path und image_base64 weg und erfinde keine URL und keinen Dateipfad. Sonst kommt das Bild aus genau einer Quelle: image_url (öffentliche HTTPS-URL, wird geladen; bis ca. 20 MB), upload_path (vorher per request_pin_upload hochgeladen) oder image_base64 (nur für Agenten, die Dateien programmatisch lesen und senden können, ${MAX_BASE64_HINT}; Base64 nie von Hand ausschreiben). Erlaubt: ${SUPPORTED_IMAGE_LIST}. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.`,
   inputSchema: {
     project_id: z.string().describe('ID des Blog-Projekts, zu dem der Pin gehört.'),
     image_url: z.string().optional().describe('HTTPS-URL des Pin-Bilds.'),
@@ -372,7 +385,7 @@ export const createPinTool = defineTool({
       .string()
       .optional()
       .describe(
-        `Bilddaten als Base64 (auch als data:-URL), ${MAX_BASE64_HINT}. Der Bildtyp wird aus dem Inhalt erkannt.`,
+        `Bilddaten als Base64 (auch als data:-URL), ${MAX_BASE64_HINT}. Nur programmatisch befüllen, nie von Hand ausschreiben. Der Bildtyp wird aus dem Inhalt erkannt.`,
       ),
     article_id: z.string().optional().describe('ID des zugehörigen Artikels (optional).'),
     ...metadataShape,
