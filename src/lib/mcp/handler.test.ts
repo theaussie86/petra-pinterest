@@ -10,6 +10,7 @@ vi.mock('@/lib/supabase-iso', () => ({ getSupabaseClient: () => ({}) }))
 import type { McpHandlerDeps, McpUserContext } from './context'
 import { defineTool, jsonResult } from './tool'
 import type { McpToolDefinition } from './tool'
+import { IMAGE_UPLOAD_GUIDE_MARKDOWN, IMAGE_UPLOAD_GUIDE_URI } from './image-upload-guide'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const BASE_URL = 'https://pinfinity.test'
@@ -228,5 +229,70 @@ describe('registerTool — feature gate & dry-run (prepared helpers)', () => {
       count: 3,
       dryRun: false,
     })
+  })
+})
+
+describe('handleMcpRequest — image upload guide', () => {
+  async function rpc(method: string, params?: unknown) {
+    const res = await handleMcpRequest(
+      jsonRpcRequest(
+        { jsonrpc: '2.0', id: 1, method, ...(params ? { params } : {}) },
+        { token: 'valid-token' },
+      ),
+      makeDeps(),
+    )
+    return (await res.json()).result
+  }
+
+  it('announces the resources capability and instructions pointing at the guide', async () => {
+    const result = await rpc('initialize', {
+      protocolVersion: '2025-06-18',
+      capabilities: {},
+      clientInfo: { name: 'test', version: '1' },
+    })
+    expect(result.capabilities.resources).toBeDefined()
+    expect(result.instructions).toContain(IMAGE_UPLOAD_GUIDE_URI)
+    expect(result.instructions).toContain('create_pin_from_chat_image')
+    expect(result.instructions).toContain('get_image_upload_guide')
+  })
+
+  it('lists the guide resource', async () => {
+    const { resources } = await rpc('resources/list')
+    expect(resources).toContainEqual(
+      expect.objectContaining({
+        uri: IMAGE_UPLOAD_GUIDE_URI,
+        mimeType: 'text/markdown',
+        title: expect.stringContaining('Bilder'),
+      }),
+    )
+  })
+
+  it('reads the guide resource as Markdown', async () => {
+    const { contents } = await rpc('resources/read', { uri: IMAGE_UPLOAD_GUIDE_URI })
+    expect(contents).toEqual([
+      { uri: IMAGE_UPLOAD_GUIDE_URI, mimeType: 'text/markdown', text: IMAGE_UPLOAD_GUIDE_MARKDOWN },
+    ])
+  })
+
+  it('serves the same text through get_image_upload_guide', async () => {
+    const { body } = await callTool(makeDeps(), 'get_image_upload_guide')
+    expect(body.result.isError).toBeFalsy()
+    expect(body.result.content[0].text).toBe(IMAGE_UPLOAD_GUIDE_MARKDOWN)
+  })
+
+  it('names every image route and the supported formats from the code', () => {
+    for (const term of [
+      'create_pin_from_chat_image',
+      'image_url',
+      'request_pin_upload',
+      'upload_path',
+      'image_base64',
+      'image/jpeg',
+      'image/webp',
+      '20 MB',
+      'Gemini',
+    ]) {
+      expect(IMAGE_UPLOAD_GUIDE_MARKDOWN).toContain(term)
+    }
   })
 })

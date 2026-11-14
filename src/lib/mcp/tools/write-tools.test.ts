@@ -260,7 +260,13 @@ async function callTool(ctx: McpUserContext, name: string, args: unknown = {}) {
   return { res, result, payload, text }
 }
 
-const WRITE_TOOLS = ['request_pin_upload', 'create_pin', 'set_pin_metadata', 'update_pin']
+const WRITE_TOOLS = [
+  'request_pin_upload',
+  'create_pin',
+  'create_pin_from_chat_image',
+  'set_pin_metadata',
+  'update_pin',
+]
 
 describe('write tools — tools/list', () => {
   it('lists the pin write tools with German descriptions', async () => {
@@ -663,105 +669,20 @@ describe('create_pin with inline images', () => {
     return Buffer.from(magicBytesFor(contentType, byteLength)).toString('base64')
   }
 
-  it('declares image_file as an openai/fileParams field in tools/list', async () => {
+  it('offers no image_file and no fileParams meta on create_pin', async () => {
     const tools = (await listTools(userContext())) as Array<{
       name: string
+      description: string
       _meta?: Record<string, unknown>
       inputSchema?: { properties?: Record<string, unknown> }
     }>
     const tool = tools.find((t) => t.name === 'create_pin')
-    expect(tool?._meta?.['openai/fileParams']).toEqual(['image_file'])
-    expect(tool?.inputSchema?.properties).toHaveProperty('image_file')
+    expect(tool?._meta?.['openai/fileParams']).toBeUndefined()
+    expect(tool?.inputSchema?.properties).not.toHaveProperty('image_file')
+    expect(tool?.inputSchema?.properties).toHaveProperty('image_url')
+    expect(tool?.inputSchema?.properties).toHaveProperty('upload_path')
     expect(tool?.inputSchema?.properties).toHaveProperty('image_base64')
-  })
-
-  it('publishes image_file as a strict, string-only file object', async () => {
-    const tools = (await listTools(userContext())) as Array<{
-      name: string
-      inputSchema?: { properties?: Record<string, Record<string, unknown>> }
-    }>
-    const schema = tools.find((t) => t.name === 'create_pin')?.inputSchema?.properties?.image_file
-    const properties = schema?.properties as Record<string, { type: unknown }>
-
-    expect(schema?.type).toBe('object')
-    expect(schema?.additionalProperties).toBe(false)
-    expect(schema?.required).toEqual(['download_url', 'file_id'])
-    expect(Object.keys(properties).sort()).toEqual([
-      'download_url',
-      'file_id',
-      'file_name',
-      'mime_type',
-    ])
-    for (const property of Object.values(properties)) {
-      expect(property.type).toBe('string')
-    }
-  })
-
-  it('stores a ChatGPT file from its download_url, typed by magic bytes', async () => {
-    const { client, calls } = fakeSupabase()
-    const fetched: string[] = []
-    const ctx = userContext({
-      supabase: client,
-      fetchRemoteImage: async (url) => {
-        fetched.push(url)
-        return {
-          contentType: 'application/octet-stream',
-          bytes: magicBytesFor('image/png', 1024).buffer as ArrayBuffer,
-        }
-      },
-    })
-
-    const { result, payload } = await callTool(ctx, 'create_pin', {
-      project_id: 'p1',
-      image_file: {
-        download_url: 'https://files.oaiusercontent.com/file-abc?sig=x',
-        file_id: 'file-abc',
-        mime_type: 'image/png',
-        file_name: 'pin.png',
-      },
-    })
-
-    expect(result.isError).toBeFalsy()
-    expect(fetched).toEqual(['https://files.oaiusercontent.com/file-abc?sig=x'])
-    expect(calls.uploads[0].path).toMatch(/^tenant-1\/.*\.png$/)
-    expect(calls.uploads[0].contentType).toBe('image/png')
-    expect(calls.inserts[0].source).toBe('mcp')
-    expect(payload.id).toBe('pin-new')
-  })
-
-  it('rejects an image_file whose content is no supported image', async () => {
-    const { client, calls } = fakeSupabase()
-    const ctx = userContext({
-      supabase: client,
-      fetchRemoteImage: async () => ({
-        contentType: 'image/png',
-        bytes: new TextEncoder().encode('<html></html>').buffer as ArrayBuffer,
-      }),
-    })
-
-    const { result, text } = await callTool(ctx, 'create_pin', {
-      project_id: 'p1',
-      image_file: { download_url: 'https://files.example/x', file_id: 'f1' },
-    })
-
-    expect(result.isError).toBe(true)
-    expect(text).toContain('image_file')
-    expect(calls.uploads).toHaveLength(0)
-    expect(calls.inserts).toHaveLength(0)
-  })
-
-  it('reports an expired/failed image_file download', async () => {
-    const ctx = userContext({
-      fetchRemoteImage: async () => {
-        throw new Error('HTTP 403')
-      },
-    })
-    const { result, text } = await callTool(ctx, 'create_pin', {
-      project_id: 'p1',
-      image_file: { download_url: 'https://files.example/x', file_id: 'f1' },
-    })
-    expect(result.isError).toBe(true)
-    expect(text).toContain('image_file')
+    expect(tool?.description).toContain('create_pin_from_chat_image')
   })
 
   it.each([['image/jpeg'], ['image/png'], ['image/webp']])(
@@ -833,6 +754,177 @@ describe('create_pin with inline images', () => {
     })
     expect(result.isError).toBe(true)
     expect(text).toContain('image_base64')
+    expect(calls.inserts).toHaveLength(0)
+  })
+})
+
+describe('create_pin_from_chat_image', () => {
+  type ListedTool = {
+    name: string
+    description: string
+    _meta?: Record<string, unknown>
+    inputSchema?: {
+      required?: string[]
+      properties?: Record<string, Record<string, unknown>>
+    }
+  }
+
+  const FILE = {
+    download_url: 'https://files.oaiusercontent.com/file-abc?sig=x',
+    file_id: 'file-abc',
+    mime_type: 'image/png',
+    file_name: 'pin.png',
+  }
+
+  async function chatTool() {
+    const tools = (await listTools(userContext())) as ListedTool[]
+    return tools.find((t) => t.name === 'create_pin_from_chat_image')
+  }
+
+  it('declares a required image_file as openai/fileParams field', async () => {
+    const tool = await chatTool()
+    expect(tool?._meta?.['openai/fileParams']).toEqual(['image_file'])
+    expect(tool?.inputSchema?.required).toEqual(
+      expect.arrayContaining(['image_file', 'project_id']),
+    )
+    expect(tool?.inputSchema?.properties).toHaveProperty('title')
+    expect(tool?.inputSchema?.properties).not.toHaveProperty('image_url')
+  })
+
+  it('publishes image_file as a strict, string-only file object without default', async () => {
+    const schema = (await chatTool())?.inputSchema?.properties?.image_file
+    const properties = schema?.properties as Record<string, { type: unknown }>
+
+    expect(schema?.type).toBe('object')
+    expect(schema?.additionalProperties).toBe(false)
+    expect(schema?.required).toEqual(['download_url', 'file_id'])
+    expect(schema).not.toHaveProperty('default')
+    expect(Object.keys(properties).sort()).toEqual([
+      'download_url',
+      'file_id',
+      'file_name',
+      'mime_type',
+    ])
+    for (const property of Object.values(properties)) {
+      expect(property.type).toBe('string')
+    }
+  })
+
+  it('stores the chat file from its download_url, typed by magic bytes', async () => {
+    const { client, calls } = fakeSupabase()
+    const fetched: string[] = []
+    const ctx = userContext({
+      supabase: client,
+      fetchRemoteImage: async (url) => {
+        fetched.push(url)
+        return {
+          contentType: 'application/octet-stream',
+          bytes: magicBytesFor('image/png', 1024).buffer as ArrayBuffer,
+        }
+      },
+    })
+
+    const { result, payload } = await callTool(ctx, 'create_pin_from_chat_image', {
+      project_id: 'p1',
+      image_file: FILE,
+      title: 'T',
+      description: 'D',
+      board_id: 'b1',
+      board_name: 'Board',
+    })
+
+    expect(result.isError).toBeFalsy()
+    expect(fetched).toEqual([FILE.download_url])
+    expect(calls.uploads[0].path).toMatch(/^tenant-1\/.*\.png$/)
+    expect(calls.uploads[0].contentType).toBe('image/png')
+    expect(calls.inserts[0].source).toBe('mcp')
+    expect(calls.inserts[0].status).toBe('metadata_created')
+    expect(payload.id).toBe('pin-new')
+  })
+
+  it('salvages a file object with extra keys', async () => {
+    const { client, calls } = fakeSupabase()
+    const { result } = await callTool(
+      userContext({ supabase: client }),
+      'create_pin_from_chat_image',
+      { project_id: 'p1', image_file: { ...FILE, size: 1234 } },
+    )
+    expect(result.isError).toBeFalsy()
+    expect(calls.inserts).toHaveLength(1)
+  })
+
+  it.each([
+    ['a string instead of an object', 'chat_upload'],
+    ['an object without download_url', { file_id: 'f1' }],
+    ['no value at all', undefined],
+  ])('explains a missing file and names fallbacks for %s', async (_label, value) => {
+    const { client, calls } = fakeSupabase()
+    const fetched: string[] = []
+    const ctx = userContext({
+      supabase: client,
+      fetchRemoteImage: async (url) => {
+        fetched.push(url)
+        return { contentType: 'image/png', bytes: new ArrayBuffer(0) }
+      },
+    })
+
+    const { result, text } = await callTool(ctx, 'create_pin_from_chat_image', {
+      project_id: 'p1',
+      ...(value === undefined ? {} : { image_file: value }),
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text).toContain('Client hat die Datei nicht übergeben')
+    expect(text).toContain('image_url')
+    expect(text).toContain('request_pin_upload')
+    expect(text).not.toContain('Input validation error')
+    expect(fetched).toHaveLength(0)
+    expect(calls.inserts).toHaveLength(0)
+  })
+
+  it('rejects a non-HTTPS download_url without fetching', async () => {
+    const { result, text } = await callTool(userContext(), 'create_pin_from_chat_image', {
+      project_id: 'p1',
+      image_file: { download_url: 'file:///tmp/pin.png', file_id: 'f1' },
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('HTTPS')
+  })
+
+  it('reports an expired/failed download with fallbacks', async () => {
+    const ctx = userContext({
+      fetchRemoteImage: async () => {
+        throw new Error('HTTP 403')
+      },
+    })
+    const { result, text } = await callTool(ctx, 'create_pin_from_chat_image', {
+      project_id: 'p1',
+      image_file: FILE,
+    })
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image_file')
+    expect(text).toContain('abgelaufen')
+    expect(text).toContain('image_url')
+  })
+
+  it('rejects a chat file whose content is no supported image', async () => {
+    const { client, calls } = fakeSupabase()
+    const ctx = userContext({
+      supabase: client,
+      fetchRemoteImage: async () => ({
+        contentType: 'image/png',
+        bytes: new TextEncoder().encode('<html></html>').buffer as ArrayBuffer,
+      }),
+    })
+
+    const { result, text } = await callTool(ctx, 'create_pin_from_chat_image', {
+      project_id: 'p1',
+      image_file: FILE,
+    })
+
+    expect(result.isError).toBe(true)
+    expect(text).toContain('image_file')
+    expect(calls.uploads).toHaveLength(0)
     expect(calls.inserts).toHaveLength(0)
   })
 })

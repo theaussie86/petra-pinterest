@@ -4,6 +4,7 @@ import { getProject, listProjects } from './projects'
 import { getArticleTool, listArticlesTool } from './articles'
 import { getPinStatusCountsTool, getPinTool, listPinsTool } from './pins'
 import {
+  createPinFromChatImageTool,
   createPinTool,
   requestPinUploadTool,
   setPinMetadataTool,
@@ -22,11 +23,13 @@ import { listBoardsTool } from './boards'
 import { getDashboardStatsTool } from './dashboard'
 import { listPublishEventsTool } from './publish-events'
 import { werkstattTools } from './werkstatt'
+import { getImageUploadGuideTool } from './guide'
 
 /**
  * The full MCP tool registry (Spec #115). v1 grows area by area: the account
  * tracer (#119), the ten read tools (#121), the Gemini-free pin write tools
- * create_pin/set_pin_metadata/update_pin (#122) and request_pin_upload (#135),
+ * create_pin/set_pin_metadata/update_pin (#122), request_pin_upload (#135),
+ * create_pin_from_chat_image and get_image_upload_guide (chat images),
  * the scheduling tools schedule_pins/unschedule_pin (#123) and the
  * article/scraping/metadata tools (#124). The handler exposes these unless a test injects its own set;
  * feature-gated tools are filtered per tenant at registration time. The
@@ -42,8 +45,10 @@ export const allTools: ReadonlyArray<McpToolDefinition<never>> = [
   listPinsTool,
   getPinTool,
   getPinStatusCountsTool,
+  getImageUploadGuideTool,
   requestPinUploadTool,
   createPinTool,
+  createPinFromChatImageTool,
   setPinMetadataTool,
   updatePinTool,
   schedulePinsTool,

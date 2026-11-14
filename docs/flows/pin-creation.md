@@ -74,10 +74,11 @@ Pins are created with `status: 'draft'` by default. The `tenant_id` is added by 
 
 ## Via MCP (Connected Agent)
 
-A Connected Agent creates pins with the MCP tool `create_pin`
-(`src/lib/mcp/tools/pins-write.ts`). It never triggers Gemini (ADR-0006): the
-pin is `metadata_created` when Titel, Beschreibung and Board are given, else
-`draft`. The image comes from exactly one of four sources:
+A Connected Agent creates pins with the MCP tools `create_pin` and
+`create_pin_from_chat_image` (`src/lib/mcp/tools/pins-write.ts`, ADR-0007).
+Both share one core and never trigger Gemini (ADR-0006): the pin is
+`metadata_created` when Titel, Beschreibung and Board are given, else `draft`.
+`create_pin` takes the image from exactly one of three sources:
 
 - **`image_url`** - a public HTTPS URL. Pinfinity downloads it (`image/*`, max 20 MB).
 - **`upload_path`** - for images without a public URL (local files, images the
@@ -92,19 +93,28 @@ pin is `metadata_created` when Titel, Beschreibung and Board are given, else
   `create_pin` rejects a path outside the caller's tenant folder, a missing
   object, a non-image or an object over 20 MB (both deleted), and a path that
   already backs a pin.
-- **`image_file`** - a file reference from ChatGPT. `create_pin` lists the field
-  in `_meta["openai/fileParams"]`, so ChatGPT fills it with
-  `{download_url, file_id, mime_type?, file_name?}` for an image in the chat
-  (uploaded or generated). Pinfinity downloads the short-lived `download_url`
-  and detects the image type from the magic bytes (served type is often
-  `application/octet-stream`). Whether ChatGPT fills the field depends on the
-  host and is unverified for mobile and generated images. Each `create_pin` and
-  `request_pin_upload` call logs `[mcp] image_intake` with the raw argument
-  shapes, before validation and without signed URLs.
 - **`image_base64`** - the image bytes inline as base64 (or a `data:` URL), for
   agents that can neither host a file nor PUT. Type detected from magic bytes.
   The MCP transport caps a request at 4 MiB (Vercel at 4.5 MB), so this fits
   images up to about 3 MB.
+
+Images in a ChatGPT chat (uploaded or generated) go through
+**`create_pin_from_chat_image`** with the required field `image_file`. The tool
+lists it in `_meta["openai/fileParams"]`, so ChatGPT fills it with
+`{download_url, file_id, mime_type?, file_name?}`. Pinfinity downloads the
+short-lived `download_url` and detects the image type from the magic bytes
+(served type is often `application/octet-stream`). If the client sends no file
+object (e.g. the string `"chat_upload"`, seen in the probe log), the tool
+answers with an error that names the fallbacks instead of the SDK's validation
+message. Whether ChatGPT fills the field for generated images and on mobile is
+unverified. Each `create_pin`, `create_pin_from_chat_image` and
+`request_pin_upload` call logs `[mcp] image_intake` with the raw argument shapes,
+before validation and without signed URLs.
+
+The decision tree for agents lives in one text
+(`src/lib/mcp/image-upload-guide.ts`), served as resource
+`pinfinity://guides/bild-upload`, as tool `get_image_upload_guide` and in short
+in the server `instructions`.
 
 If an upload is reserved but `create_pin` is never called (agent aborts, UI
 upload followed by a failed insert), the object is left orphaned in
@@ -127,4 +137,5 @@ code interpreter has no network and cannot use this path.
 | `src/lib/api/pins.ts` | `uploadPinMedia`, `createPins` functions |
 | `src/lib/hooks/use-pins.ts` | `useCreatePins` mutation hook |
 | `src/types/pins.ts` | `Pin`, `PinInsert` type definitions |
-| `src/lib/mcp/tools/pins-write.ts` | MCP `request_pin_upload`, `create_pin` |
+| `src/lib/mcp/tools/pins-write.ts` | MCP `request_pin_upload`, `create_pin`, `create_pin_from_chat_image` |
+| `src/lib/mcp/image-upload-guide.ts` | Image upload guide (resource, tool text, server instructions) |

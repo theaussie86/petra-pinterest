@@ -8,7 +8,7 @@
  */
 
 /** Tools whose image arguments are worth recording. */
-const IMAGE_TOOLS = new Set(['create_pin', 'request_pin_upload'])
+const IMAGE_TOOLS = new Set(['create_pin', 'create_pin_from_chat_image', 'request_pin_upload'])
 
 const IMAGE_SOURCES = ['image_url', 'upload_path', 'image_file', 'image_base64'] as const
 

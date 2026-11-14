@@ -51,6 +51,18 @@ describe('describeImageIntake', () => {
     })
   })
 
+  it('records calls to create_pin_from_chat_image', () => {
+    const [record] = describeImageIntake(
+      toolCall('create_pin_from_chat_image', { project_id: 'p1', image_file: 'chat_upload' }),
+    )
+    expect(record.tool).toBe('create_pin_from_chat_image')
+    expect(record.sources.image_file).toEqual({
+      type: 'string',
+      length: 11,
+      preview: 'chat_upload',
+    })
+  })
+
   it('records a call with no file and which host sent it', () => {
     const [record] = describeImageIntake(
       toolCall(

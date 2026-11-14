@@ -13,7 +13,6 @@ import {
   isSupportedImageType,
   PinImagePathConflictError,
   removePinImage,
-  SUPPORTED_IMAGE_TYPES,
   updateAgentPin,
   uploadPinImageBytes,
   type AgentPinUpdate,
@@ -22,10 +21,9 @@ import {
 import type { Pin } from '@/types/pins'
 import type { FetchedImage, McpUserContext } from '../context'
 import { defineTool, errorResult, jsonResult, type ToolResult } from '../tool'
+import { MAX_BASE64_HINT, MAX_IMAGE_BYTES, SUPPORTED_IMAGE_LIST } from '../image-limits'
 import { pinToResult } from './pins'
 
-/** Roughly 20 MB — the upper bound on an image `create_pin` will accept. */
-const MAX_IMAGE_BYTES = 20 * 1024 * 1024
 
 /**
  * The three fields a pin needs to be schedulable (ADR-0006, Spec #115 user
@@ -114,17 +112,13 @@ export function provenance(ctx: McpUserContext): PinProvenance {
   return { source: 'mcp', oauth_client_id: ctx.oauthClientId }
 }
 
-/** The supported image types as a German list for tool texts. */
-const SUPPORTED_IMAGE_LIST = SUPPORTED_IMAGE_TYPES.join(', ')
-
 /**
  * A file reference as ChatGPT passes it for a field listed in
- * `_meta["openai/fileParams"]` (Apps SDK reference): `download_url` and
- * `file_id` always, `mime_type`/`file_name` optional but declared. Strict and
- * string-only: the shape a third party saw hydrated in ChatGPT Work, and the
- * file schema OpenAI's Scan Tools step accepts.
+ * `_meta["openai/fileParams"]` (Apps SDK reference, "Define file inputs"):
+ * `download_url` and `file_id` always, `mime_type`/`file_name` optional but
+ * declared. Strict and string-only, the shape OpenAI documents.
  */
-const imageFileSchema = z
+export const imageFileSchema = z
   .strictObject({
     download_url: z.string().describe('Vom Client gesetzte temporäre Download-URL. Nie selbst setzen.'),
     file_id: z.string().describe('Vom Client gesetzte Datei-ID. Nie selbst setzen.'),
@@ -132,16 +126,41 @@ const imageFileSchema = z
     file_name: z.string().optional().describe('Dateiname, falls vom Client geliefert.'),
   })
   .describe(
-    'Bild aus diesem Chat. Der Client (ChatGPT) füllt dieses Feld selbst. Felder nie selbst befüllen, keine URL, keinen Pfad und keine ID erfinden.',
+    'Bild aus diesem Chat (hochgeladen oder erzeugt). Der Client (ChatGPT) füllt dieses Feld selbst. Felder nie selbst befüllen, keine URL, keinen Pfad und keine ID erfinden.',
   )
 
 type ImageFileInput = z.infer<typeof imageFileSchema>
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 /**
- * The inline image inputs of `create_pin`. Vercel caps request bodies at 4.5 MB,
- * so base64 (≈ +33 %) fits images up to roughly 3 MB.
+ * `imageFileSchema` that never fails validation. The SDK validates arguments
+ * before the handler runs, and its generic "expected object, received string"
+ * leaves the model no way forward when a host sends e.g. `"chat_upload"`
+ * instead of a file object. So a malformed value is caught: an object that
+ * still carries a string `download_url` is salvaged (extra keys dropped),
+ * anything else becomes an empty file the handler answers with a helpful error.
+ *
+ * The published JSON Schema stays the strict file object, still required: zod
+ * renders a catch as its inner schema plus `default: catchValue(undefined)`, and
+ * returning `undefined` for that probe call keeps the `default` out (pinned by
+ * a test, since this leans on zod's converter).
  */
-const MAX_BASE64_HINT = 'bis ca. 3 MB'
+const lenientImageFileSchema = imageFileSchema.catch((ctx): ImageFileInput => {
+  if (!ctx) return undefined as unknown as ImageFileInput
+  const value = ctx.input
+  if (isRecord(value) && typeof value.download_url === 'string') {
+    return {
+      download_url: value.download_url,
+      file_id: typeof value.file_id === 'string' ? value.file_id : '',
+      ...(typeof value.mime_type === 'string' ? { mime_type: value.mime_type } : {}),
+      ...(typeof value.file_name === 'string' ? { file_name: value.file_name } : {}),
+    }
+  }
+  return { download_url: '', file_id: '' }
+})
 
 /** Supabase signed upload URLs are valid for two hours (storage-js docs). */
 const SIGNED_UPLOAD_TTL_MS = 2 * 60 * 60 * 1000
@@ -155,7 +174,7 @@ const SIGNED_UPLOAD_TTL_MS = 2 * 60 * 60 * 1000
 export const requestPinUploadTool = defineTool({
   name: 'request_pin_upload',
   description:
-    `Nur für Agenten mit Shell und Netzzugang (z. B. Cowork), die eine lokale Datei per HTTP PUT senden können. Nicht für Bilder aus einem ChatGPT-Chat, dort create_pin direkt aufrufen. Schritt 1 von 2: Liefert eine signierte Upload-URL (ca. 2 Stunden gültig) und einen upload_path. Lade das Bild per HTTP PUT mit passendem Content-Type hoch (Beispiel: curl_example) und rufe danach create_pin mit upload_path statt image_url auf. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
+    `Nur für Agenten mit Shell und Netzzugang (z. B. Cowork), die eine lokale Datei per HTTP PUT senden können. Nicht für Bilder aus einem ChatGPT-Chat, dort create_pin_from_chat_image aufrufen. Schritt 1 von 2: Liefert eine signierte Upload-URL (ca. 2 Stunden gültig) und einen upload_path. Lade das Bild per HTTP PUT mit passendem Content-Type hoch (Beispiel: curl_example) und rufe danach create_pin mit upload_path statt image_url auf. Erlaubt: ${SUPPORTED_IMAGE_LIST}.`,
   inputSchema: {
     content_type: z
       .string()
@@ -244,17 +263,32 @@ async function storeSniffedImage(
 }
 
 /**
+ * Fallbacks named whenever a chat file does not reach Pinfinity, so the model
+ * has a way forward instead of retrying blindly.
+ */
+const CHAT_FILE_FALLBACKS =
+  'Alternativen: Liegt das Bild unter einer öffentlichen HTTPS-URL, create_pin mit image_url aufrufen. Agenten mit Shell und Netz: request_pin_upload, Bild per PUT hochladen, dann create_pin mit upload_path. Sonst die Nutzerin bitten, das Bild erneut in den Chat zu laden, oder den Pin in der Pinfinity-Oberfläche anlegen. Leitfaden: get_image_upload_guide.'
+
+/**
  * Store a file ChatGPT passed via `openai/fileParams`: it hands over a short-lived
  * `download_url`, which the server fetches. The served content type is often
- * generic, so the type is sniffed from the bytes.
+ * generic, so the type is sniffed from the bytes. An empty `download_url` means
+ * the client sent no file object (see `lenientImageFileSchema`).
  */
 async function storeImageFromFile(
   file: ImageFileInput,
   ctx: McpUserContext,
 ): Promise<{ path: string } | ToolResult> {
   const url = file.download_url.trim()
+  if (!url) {
+    return errorResult(
+      `Der Client hat die Datei nicht übergeben: image_file muss ein Datei-Objekt mit download_url und file_id sein, das ChatGPT selbst füllt (kam z. B. nur ein Text wie "chat_upload" oder gar nichts an, unterstützt dieser Client die Dateiübergabe hier nicht). Keine URL oder ID selbst eintragen. ${CHAT_FILE_FALLBACKS}`,
+    )
+  }
   if (!/^https:\/\//i.test(url)) {
-    return errorResult('image_file.download_url muss eine HTTPS-URL sein.')
+    return errorResult(
+      `image_file.download_url ist keine HTTPS-URL. Das Feld füllt der Client, nicht das Modell. ${CHAT_FILE_FALLBACKS}`,
+    )
   }
   if (!ctx.fetchRemoteImage) {
     return errorResult('Bild-Download ist in dieser Umgebung nicht verfügbar.')
@@ -271,7 +305,7 @@ async function storeImageFromFile(
       error: err instanceof Error ? err.message : 'unknown',
     })
     return errorResult(
-      'Die Datei aus image_file konnte nicht geladen werden (Download-Link evtl. abgelaufen). Bitte erneut versuchen.',
+      `Die Datei aus image_file konnte nicht geladen werden (Download-Link evtl. abgelaufen). Einmal erneut aufrufen, damit der Client einen frischen Link setzt. ${CHAT_FILE_FALLBACKS}`,
     )
   }
   console.info('[mcp] image_file downloaded', {
@@ -355,100 +389,137 @@ async function claimUploadedImage(
   return { path }
 }
 
+/** Fields every pin-creating tool shares: project, article and metadata. */
+const pinBaseShape = {
+  project_id: z.string().describe('ID des Blog-Projekts, zu dem der Pin gehört.'),
+  article_id: z.string().optional().describe('ID des zugehörigen Artikels (optional).'),
+  ...metadataShape,
+}
+
+type PinBaseInput = z.infer<z.ZodObject<typeof pinBaseShape>>
+
+/**
+ * The shared core of `create_pin` and `create_pin_from_chat_image`: insert a
+ * pin for an image already stored in the tenant folder and attach the given
+ * metadata. Complete metadata (Titel, Beschreibung, Board) makes the pin
+ * schedulable right away (`metadata_created`); otherwise it stays a `draft`.
+ * Never triggers Gemini (ADR-0006).
+ */
+async function insertPinForImage(
+  imagePath: string,
+  input: PinBaseInput,
+  ctx: McpUserContext,
+): Promise<ToolResult> {
+  const title = cleanText(input.title)
+  const description = cleanText(input.description)
+  const boardId = cleanText(input.board_id)
+  const complete = missingMetadata({ title, description, board: boardId }).length === 0
+
+  let pin: Pin
+  try {
+    pin = await insertAgentPin(
+      {
+        tenant_id: ctx.tenantId,
+        blog_project_id: input.project_id,
+        blog_article_id: input.article_id ?? null,
+        image_path: imagePath,
+        media_type: 'image',
+        title,
+        description,
+        alt_text: cleanText(input.alt_text),
+        alternate_url: cleanText(input.link),
+        pinterest_board_id: boardId,
+        pinterest_board_name: cleanText(input.board_name),
+        synthetic_performer: input.synthetic_performer ?? false,
+        ai_modified: input.synthetic_performer ? true : input.ai_modified ?? true,
+        status: complete ? 'metadata_created' : 'draft',
+        ...provenance(ctx),
+      },
+      ctx.supabase,
+    )
+  } catch (err) {
+    // The unique index is the race-proof backstop when two create_pin calls
+    // claim the same upload_path at once (the pre-check can let both through).
+    if (err instanceof PinImagePathConflictError) {
+      return errorResult(
+        'upload_path wird bereits von einem Pin verwendet. Für einen weiteren Pin request_pin_upload erneut aufrufen.',
+      )
+    }
+    throw err
+  }
+
+  return jsonResult(pinToResult(pin, ctx))
+}
+
 /** The mutually exclusive image sources of `create_pin`. */
-const IMAGE_SOURCES = ['image_url', 'upload_path', 'image_file', 'image_base64'] as const
+const IMAGE_SOURCES = ['image_url', 'upload_path', 'image_base64'] as const
 
 /**
  * `create_pin` — create a pin from an image (Spec #115, user stories 28–31;
  * issue #135). The image comes from exactly one source: `image_url` (fetched
  * over HTTPS, `image/*` up to ~20 MB, stored like a UI upload), `upload_path`
- * (an object the agent PUT via `request_pin_upload`), `image_file` (a ChatGPT
- * file reference via `openai/fileParams`) or `image_base64` (inline bytes, for
- * agents that cannot PUT or host a file). Attaches any metadata given.
- * Complete metadata (Titel, Beschreibung, Board) makes the pin schedulable
- * right away (`metadata_created`); otherwise it stays a `draft`. Never triggers
- * Gemini (ADR-0006).
+ * (an object the agent PUT via `request_pin_upload`) or `image_base64` (inline
+ * bytes, for agents that cannot PUT or host a file). Images from a ChatGPT
+ * chat go through `create_pin_from_chat_image` instead.
  */
 export const createPinTool = defineTool({
   name: 'create_pin',
   description:
-    `Legt einen Pin an. Liegt das Bild in diesem Chat (z. B. in ChatGPT hochgeladen oder erzeugt), rufe das Tool direkt auf: der Client füllt image_file selbst; lass image_url, upload_path und image_base64 weg und erfinde keine URL und keinen Dateipfad. Sonst kommt das Bild aus genau einer Quelle: image_url (öffentliche HTTPS-URL, wird geladen; bis ca. 20 MB), upload_path (vorher per request_pin_upload hochgeladen) oder image_base64 (nur für Agenten, die Dateien programmatisch lesen und senden können, ${MAX_BASE64_HINT}; Base64 nie von Hand ausschreiben). Erlaubt: ${SUPPORTED_IMAGE_LIST}. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.`,
+    `Legt einen Pin an. Für ein Bild, das im ChatGPT-Chat hochgeladen oder erzeugt wurde, stattdessen create_pin_from_chat_image verwenden. Hier kommt das Bild aus genau einer Quelle: image_url (öffentliche HTTPS-URL, wird geladen; bis ca. 20 MB), upload_path (vorher per request_pin_upload hochgeladen) oder image_base64 (nur für Agenten, die Dateien programmatisch lesen und senden können, ${MAX_BASE64_HINT}; Base64 nie von Hand ausschreiben). Keine URL und keinen Pfad erfinden. Erlaubt: ${SUPPORTED_IMAGE_LIST}. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an. Leitfaden: get_image_upload_guide.`,
   inputSchema: {
-    project_id: z.string().describe('ID des Blog-Projekts, zu dem der Pin gehört.'),
-    image_url: z.string().optional().describe('HTTPS-URL des Pin-Bilds.'),
+    image_url: z.string().optional().describe('Öffentliche HTTPS-URL des Pin-Bilds.'),
     upload_path: z
       .string()
       .optional()
       .describe('upload_path aus request_pin_upload, nachdem das Bild hochgeladen wurde.'),
-    image_file: imageFileSchema.optional(),
     image_base64: z
       .string()
       .optional()
       .describe(
         `Bilddaten als Base64 (auch als data:-URL), ${MAX_BASE64_HINT}. Nur programmatisch befüllen, nie von Hand ausschreiben. Der Bildtyp wird aus dem Inhalt erkannt.`,
       ),
-    article_id: z.string().optional().describe('ID des zugehörigen Artikels (optional).'),
-    ...metadataShape,
+    ...pinBaseShape,
   },
-  meta: { 'openai/fileParams': ['image_file'] },
   handler: async ({ input, ctx }) => {
-    const given = IMAGE_SOURCES.filter((key) =>
-      key === 'image_file' ? !!input.image_file?.download_url?.trim() : !!input[key]?.trim(),
-    )
+    const given = IMAGE_SOURCES.filter((key) => !!input[key]?.trim())
     if (given.length !== 1) {
-      return errorResult(`Genau eins von ${IMAGE_SOURCES.join(', ')} angeben.`)
+      return errorResult(
+        `Genau eins von ${IMAGE_SOURCES.join(', ')} angeben. Bild aus dem ChatGPT-Chat: create_pin_from_chat_image.`,
+      )
     }
 
     const stored =
       given[0] === 'upload_path'
         ? await claimUploadedImage(input.upload_path!, ctx)
-        : given[0] === 'image_file'
-          ? await storeImageFromFile(input.image_file!, ctx)
-          : given[0] === 'image_base64'
-            ? await storeImageFromBase64(input.image_base64!, ctx)
-            : await storeImageFromUrl(input.image_url!, ctx)
+        : given[0] === 'image_base64'
+          ? await storeImageFromBase64(input.image_base64!, ctx)
+          : await storeImageFromUrl(input.image_url!, ctx)
     if (!('path' in stored)) return stored
-    const image_path = stored.path
+    return insertPinForImage(stored.path, input, ctx)
+  },
+})
 
-    const title = cleanText(input.title)
-    const description = cleanText(input.description)
-    const boardId = cleanText(input.board_id)
-    const complete = missingMetadata({ title, description, board: boardId }).length === 0
-
-    let pin: Pin
-    try {
-      pin = await insertAgentPin(
-        {
-          tenant_id: ctx.tenantId,
-          blog_project_id: input.project_id,
-          blog_article_id: input.article_id ?? null,
-          image_path,
-          media_type: 'image',
-          title,
-          description,
-          alt_text: cleanText(input.alt_text),
-          alternate_url: cleanText(input.link),
-          pinterest_board_id: boardId,
-          pinterest_board_name: cleanText(input.board_name),
-          synthetic_performer: input.synthetic_performer ?? false,
-          ai_modified: input.synthetic_performer ? true : input.ai_modified ?? true,
-          status: complete ? 'metadata_created' : 'draft',
-          ...provenance(ctx),
-        },
-        ctx.supabase,
-      )
-    } catch (err) {
-      // The unique index is the race-proof backstop when two create_pin calls
-      // claim the same upload_path at once (the pre-check can let both through).
-      if (err instanceof PinImagePathConflictError) {
-        return errorResult(
-          'upload_path wird bereits von einem Pin verwendet. Für einen weiteren Pin request_pin_upload erneut aufrufen.',
-        )
-      }
-      throw err
-    }
-
-    return jsonResult(pinToResult(pin, ctx))
+/**
+ * `create_pin_from_chat_image` — create a pin from an image in a ChatGPT chat
+ * (uploaded or generated). `image_file` is listed in
+ * `_meta["openai/fileParams"]`, so the client hydrates it with a file object;
+ * the server fetches the short-lived `download_url`. Same metadata and status
+ * logic as `create_pin`. A value that is no file object (e.g. the string
+ * `"chat_upload"`) is answered with an error naming the fallbacks.
+ */
+export const createPinFromChatImageTool = defineTool({
+  name: 'create_pin_from_chat_image',
+  description:
+    `Legt einen Pin aus einem Bild an, das in diesem Chat hochgeladen oder erzeugt wurde (z. B. in ChatGPT). Nur für solche Chat-Bilder; für öffentliche URLs oder lokale Dateien create_pin verwenden. Das Feld image_file füllt der Client (ChatGPT) selbst mit der Datei: nie eine URL, einen Pfad oder eine ID erfinden oder von Hand eintragen. Erlaubt: ${SUPPORTED_IMAGE_LIST}, bis ca. 20 MB. Kommt die Datei nicht an, nennt der Fehler die Alternativen. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.`,
+  inputSchema: {
+    image_file: lenientImageFileSchema,
+    ...pinBaseShape,
+  },
+  meta: { 'openai/fileParams': ['image_file'] },
+  handler: async ({ input, ctx }) => {
+    const stored = await storeImageFromFile(input.image_file, ctx)
+    if (!('path' in stored)) return stored
+    return insertPinForImage(stored.path, input, ctx)
   },
 })
 
