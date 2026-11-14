@@ -6,6 +6,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { discoverSitemapEntries } from './sitemap.ts'
 import { diffSitemapEntries } from './url-diff.ts'
+import { isNonArticleUrl } from './url-filter.ts'
 
 export interface ScrapeBlogJob {
   blog_project_id: string
@@ -37,8 +38,12 @@ export async function discoverAndEnqueueBlogScrape(
     throw new Error(`Failed to fetch project: ${projectError?.message || 'Not found'}`)
   }
 
-  // 2. Discover sitemap entries with lastmod
-  const entries = await discoverSitemapEntries(project.blog_url, project.sitemap_url)
+  // 2. Discover sitemap entries with lastmod, minus legal and utility pages
+  // (Impressum, AGB, ...). Their lastmod often moves on every build, so they
+  // came back as "updated" daily and failed extraction each time.
+  const allEntries = await discoverSitemapEntries(project.blog_url, project.sitemap_url)
+  const entries = allEntries.filter((entry) => !isNonArticleUrl(entry.url))
+  const skippedCount = allEntries.length - entries.length
 
   // 3. Existing articles for the slash-insensitive diff (issue #71)
   const { data: existingArticles, error: articlesError } = await supabase
@@ -57,6 +62,7 @@ export async function discoverAndEnqueueBlogScrape(
 
   console.log(
     `[scrape-blog] Project ${blog_project_id}: ${entries.length} sitemap entries, ` +
+      `${skippedCount} skipped as non-article, ` +
       `${(existingArticles || []).length} existing, ${newCount} new, ${updatedCount} updated`,
   )
 

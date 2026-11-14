@@ -163,6 +163,24 @@ describe('scrape-blog-worker', () => {
     expect(mockNotifyProjectError).not.toHaveBeenCalled()
   })
 
+  it('skips legal and utility pages even when their lastmod moved', async () => {
+    mockDiscoverSitemapEntries.mockResolvedValueOnce([
+      { url: 'https://blog.com/impressum', lastmod: '2026-02-01T00:00:00.000Z' },
+      { url: 'https://blog.com/agb' },
+      { url: 'https://blog.com/newsletter-bestaetigt' },
+      { url: 'https://blog.com/new-post' },
+    ])
+    const db = setupDb({
+      messages: [message(11, 1)],
+      existingArticles: [{ url: 'https://blog.com/impressum', scraped_at: '2026-01-15T00:00:00.000Z' }],
+    })
+
+    await runWorker()
+
+    expect(db.enqueued[0].p_messages.map((m) => m.url)).toEqual(['https://blog.com/new-post'])
+    expect(db.deleted).toEqual([11])
+  })
+
   it('has no per-run cap: enqueues far more than 25 URLs in one batch', async () => {
     const entries = Array.from({ length: 40 }, (_, i) => ({ url: `https://blog.com/post-${i}` }))
     mockDiscoverSitemapEntries.mockResolvedValueOnce(entries)
