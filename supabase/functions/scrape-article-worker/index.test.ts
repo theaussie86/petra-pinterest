@@ -1,14 +1,15 @@
 import { createMockQueryBuilder } from '@/test/mocks/supabase'
+import { PAGE_WITHOUT_ARTICLE, WORDPRESS_ARTICLE_WITH_META_DATE } from '@/test/fixtures/article-pages'
 
 // Behaviour test for the scrape_article queue worker (ADR-0004, issue #90).
 //
 // The worker is a Deno Edge function kicked by pg_cron. We shim `Deno` before
 // the import runs, capture the handler, then drive it with a Request. The queue
-// (pgmq wrappers exposed as RPCs), the Vault key RPC, the blog_articles table,
-// the HTTP fetch, Gemini extraction and the mailer are faked; the real worker
-// loop and scrape pipeline run.
+// (pgmq wrappers exposed as RPCs), the blog_articles table, the HTTP fetch and
+// the mailer are faked; the real worker loop, scrape pipeline and Readability
+// extraction (ADR-0008) run against an HTML fixture.
 
-const { capturedHandler, fake, mockGenerateArticleFromHtml, mockNotifyProjectError, fetchMock } =
+const { capturedHandler, fake, mockNotifyProjectError, fetchMock } =
   vi.hoisted(() => {
     const handler: { current: ((req: Request) => Promise<Response>) | null } = { current: null }
     const env: Record<string, string> = { SUPABASE_URL: 'https://test.supabase.co' }
@@ -21,7 +22,6 @@ const { capturedHandler, fake, mockGenerateArticleFromHtml, mockNotifyProjectErr
     return {
       capturedHandler: handler,
       fake: { client: { from: vi.fn(), rpc: vi.fn() } },
-      mockGenerateArticleFromHtml: vi.fn(),
       mockNotifyProjectError: vi.fn(),
       fetchMock: vi.fn(),
     }
@@ -31,11 +31,6 @@ vi.stubGlobal('fetch', fetchMock)
 
 vi.mock('../_shared/supabase.ts', () => ({
   createServiceClient: () => fake.client,
-}))
-
-vi.mock('../_shared/ai.ts', async (importOriginal) => ({
-  ...(await importOriginal<Record<string, unknown>>()),
-  generateArticleFromHtml: (...args: any[]) => mockGenerateArticleFromHtml(...args),
 }))
 
 vi.mock('../_shared/notifications.ts', () => ({
@@ -50,17 +45,12 @@ interface QueueMessage {
   message: { blog_project_id: string; url: string; tenant_id: string }
 }
 
-const ARTICLE = {
-  title: 'Extracted Title',
-  content: '# Extracted Title\n\nBody...',
-  published_at: '2026-01-15',
-}
+const articlePage = () => new Response(WORDPRESS_ARTICLE_WITH_META_DATE, { status: 200 })
 
 function setupDb(opts: {
   messages: QueueMessage[]
   lockHeld?: boolean
   archiveFails?: boolean
-  apiKey?: string | null
   upsertError?: string
 }) {
   const state = {
@@ -102,10 +92,6 @@ function setupDb(opts: {
         if (opts.archiveFails) return { data: null, error: { message: 'connection reset' } }
         state.archived.push(args.p_msg_id)
         return { data: true, error: null }
-      case 'get_gemini_api_key':
-        return opts.apiKey === null
-          ? { data: null, error: { message: 'No key configured' } }
-          : { data: opts.apiKey ?? 'test-api-key', error: null }
       default:
         throw new Error(`unexpected rpc ${fn}`)
     }
@@ -127,8 +113,7 @@ async function runWorker() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockGenerateArticleFromHtml.mockResolvedValue(ARTICLE)
-  fetchMock.mockResolvedValue(new Response('<html><body><article>hi</article></body></html>', { status: 200 }))
+  fetchMock.mockImplementation(async () => articlePage())
 })
 
 describe('scrape-article-worker', () => {
@@ -143,9 +128,9 @@ describe('scrape-article-worker', () => {
         tenant_id: 'tenant-1',
         blog_project_id: 'proj-1',
         url: 'https://blog.com/post',
-        title: 'Extracted Title',
-        content: '# Extracted Title\n\nBody...',
-        published_at: '2026-01-15T00:00:00.000Z',
+        title: '5 Abendrituale für besseren Schlaf',
+        content: expect.stringContaining('## 1. Ein fester Rhythmus'),
+        published_at: '2025-03-04T08:15:00.000Z',
       }),
     )
     expect(db.deleted).toEqual([11])
@@ -179,12 +164,12 @@ describe('scrape-article-worker', () => {
     expect(status).toBe(200)
     expect(body).toMatchObject({ lockHeldElsewhere: true })
     expect(db.read).toEqual([])
-    expect(mockGenerateArticleFromHtml).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 
   it('leaves a failed message for retry while attempts remain, without a mail', async () => {
     const db = setupDb({ messages: [message(11, 2)] })
-    mockGenerateArticleFromHtml.mockRejectedValueOnce(new Error('Gemini timeout'))
+    fetchMock.mockRejectedValueOnce(new Error('network timeout'))
 
     await runWorker()
 
@@ -196,7 +181,7 @@ describe('scrape-article-worker', () => {
 
   it('on the last attempt archives the message and mails the project once', async () => {
     const db = setupDb({ messages: [message(11, 3)] })
-    mockGenerateArticleFromHtml.mockRejectedValueOnce(new Error('Gemini timeout'))
+    fetchMock.mockRejectedValueOnce(new Error('network timeout'))
 
     await runWorker()
 
@@ -207,7 +192,7 @@ describe('scrape-article-worker', () => {
       expect.objectContaining({
         projectId: 'proj-1',
         subject: '[Pinfinity] Fehler beim Artikel-Scraping',
-        errorMessage: 'Gemini timeout',
+        errorMessage: 'network timeout',
         context: 'URL: https://blog.com/post',
       }),
     )
@@ -218,19 +203,30 @@ describe('scrape-article-worker', () => {
 
     await runWorker()
 
-    expect(mockGenerateArticleFromHtml).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
     expect(db.archived).toEqual([11])
     expect(mockNotifyProjectError).toHaveBeenCalledTimes(1)
   })
 
-  it('treats a missing Gemini API key as a job failure', async () => {
-    const db = setupDb({ messages: [message(11, 3)], apiKey: null })
+  it('scrapes without reading any Gemini API key', async () => {
+    const db = setupDb({ messages: [message(11, 1)] })
 
     await runWorker()
 
+    expect(db.deleted).toEqual([11])
+    expect(fake.client.rpc).not.toHaveBeenCalledWith('get_gemini_api_key', expect.anything())
+  })
+
+  it('treats a page without a readable article as a job failure and upserts nothing', async () => {
+    const db = setupDb({ messages: [message(11, 3)] })
+    fetchMock.mockResolvedValueOnce(new Response(PAGE_WITHOUT_ARTICLE, { status: 200 }))
+
+    await runWorker()
+
+    expect(db.upserts).toEqual([])
     expect(db.archived).toEqual([11])
     expect(mockNotifyProjectError).toHaveBeenCalledWith(
-      expect.objectContaining({ errorMessage: expect.stringContaining('Gemini API key') }),
+      expect.objectContaining({ errorMessage: expect.stringContaining('No readable article found') }),
     )
   })
 
@@ -250,8 +246,8 @@ describe('scrape-article-worker', () => {
     const db = setupDb({
       messages: [message(11, 1, 'https://blog.com/ok'), message(12, 3, 'https://blog.com/bad')],
     })
-    mockGenerateArticleFromHtml
-      .mockResolvedValueOnce(ARTICLE)
+    fetchMock
+      .mockResolvedValueOnce(articlePage())
       .mockRejectedValueOnce(new Error('boom'))
 
     const { body } = await runWorker()
@@ -263,7 +259,7 @@ describe('scrape-article-worker', () => {
 
   it('does not mail when the final message cannot be archived, so the retry mails only once', async () => {
     setupDb({ messages: [message(11, 3)], archiveFails: true })
-    mockGenerateArticleFromHtml.mockRejectedValueOnce(new Error('Gemini unavailable'))
+    fetchMock.mockRejectedValueOnce(new Error('connection refused'))
 
     await runWorker()
 
@@ -277,7 +273,7 @@ describe('scrape-article-worker', () => {
 
     expect(status).toBe(200)
     expect(body).toMatchObject({ success: true, succeeded: 0, retrying: 0, failed: 0 })
-    expect(mockGenerateArticleFromHtml).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
     expect(db.lockReleased).toBe(true)
   })
 })

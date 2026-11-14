@@ -1,6 +1,6 @@
 # Article Management Flow
 
-Blog scraping, manual article addition, content editing, and archive/restore. Articles are scraped from blog sitemaps using Gemini-based extraction and stored for linking to pins.
+Blog scraping, manual article addition, content editing, and archive/restore. Articles are scraped from blog sitemaps, extracted with Mozilla Readability (no AI, no Gemini key needed, ADR-0008) and stored for linking to pins.
 
 ## Bulk Scrape
 
@@ -13,7 +13,6 @@ sequenceDiagram
     participant BlogWorker as scrape-blog-worker
     participant ArticleWorker as scrape-article-worker
     participant DB as blog_articles
-    participant Gemini as Gemini API
 
     User->>Button: Click "Scrape Blog"
     Button->>Server: scrapeBlogFn({ blog_project_id, blog_url, sitemap_url })
@@ -29,14 +28,24 @@ sequenceDiagram
 
     loop Each scrape_article message
         Queue->>ArticleWorker: { url, blog_project_id, tenant_id }
-        ArticleWorker->>ArticleWorker: Fetch HTML, strip non-content tags
-        ArticleWorker->>Gemini: Extract title, content, published_at
-        Gemini-->>ArticleWorker: Structured article data
+        ArticleWorker->>ArticleWorker: Fetch HTML, parse DOM (linkedom)
+        ArticleWorker->>ArticleWorker: Readability: title + main content, HTML to Markdown (Turndown)
+        ArticleWorker->>ArticleWorker: published_at from Readability, else meta tag, JSON-LD, time element
         ArticleWorker->>DB: Upsert article (ON CONFLICT blog_project_id, url)
     end
 ```
 
 The server function returns immediately after enqueueing (fire-and-forget). New articles appear via Supabase Realtime subscription on the articles table.
+
+### Article extraction
+
+`supabase/functions/_shared/extract-article.ts` runs per article, without AI and without the project's Gemini key (ADR-0008):
+
+- **DOM:** `npm:linkedom` (the Edge runtime has no `DOMParser`). A `<base>` with the article URL is injected so relative links become absolute.
+- **Content:** `npm:@mozilla/readability` picks the main content and drops navigation, sidebar, footer and cookie banners. `npm:turndown` converts it to Markdown; headings, lists, links and emphasis stay, images, figures, embeds and forms are dropped.
+- **Title:** Readability's title; if the page has exactly one `<h1>` contained in that title, the `<h1>` wins (strips the " - Blog name" suffix).
+- **Date:** Readability `publishedTime`, else `article:published_time` and similar meta tags, else JSON-LD `datePublished` (also inside `@graph`), else the first `<time datetime>`. `parsePublishedAt` turns it into ISO or `null`.
+- **No article:** if Readability returns nothing or under 250 characters of text, `NoArticleFoundError` is thrown and nothing is upserted. The queue retries and mails after the last attempt like any other failure.
 
 > **Note:** The duplicate check queries all articles for the project **including archived ones** (no `archived_at` filter). This ensures archived articles are not re-scraped. If an archived article's `lastmod` in the sitemap is newer than its `scraped_at`, it will be re-scraped and updated in place — but it remains archived.
 
@@ -121,5 +130,6 @@ Displays article metadata, content, and linked pins:
 | `src/lib/server/scraping.ts` | Server functions: `scrapeBlogFn`, `scrapeSingleFn` |
 | `supabase/functions/_shared/scrape-blog.ts` | Sitemap discovery + fan-out into `scrape_article` |
 | `supabase/functions/_shared/scrape-article.ts` | Single-article scrape pipeline |
+| `supabase/functions/_shared/extract-article.ts` | Readability extraction: title, Markdown content, published_at |
 | `src/lib/api/articles.ts` | API: CRUD, archive/restore, content update |
 | `src/lib/hooks/use-articles.ts` | TanStack Query hooks with realtime invalidation |

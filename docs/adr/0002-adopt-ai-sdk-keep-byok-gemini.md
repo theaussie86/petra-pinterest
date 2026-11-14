@@ -7,7 +7,9 @@ superseded-by: ADR-0004
 > Trigger.dev and the Node-side AI path are gone; the AI SDK now runs only in
 > the Supabase Edge Functions (`supabase/functions/_shared/ai.ts`). The AI SDK
 > and BYOK-Gemini decision itself still stands - only the "both runtimes"
-> consequence below is history.
+> consequence below is history. Article extraction no longer uses AI at all
+> ([ADR-0008](0008-extract-articles-with-readability-not-gemini.md));
+> `generateArticleFromHtml` is gone.
 
 # Adopt Vercel AI SDK for all AI calls, keep per-project BYOK Gemini
 

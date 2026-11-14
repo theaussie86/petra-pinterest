@@ -1,13 +1,13 @@
 /**
  * Deno/Edge AI stack (ADR 0002 / PRD #40, issue #44; ADR-0004). This is the
- * single home for the metadata/article generation logic — it produces the
- * validated metadata/article shape used by the queue workers and the
- * synchronous single-pin functions. Prompts, schemas, settings and repair logic
+ * single home for the pin metadata generation logic — it produces the
+ * validated metadata shape used by the queue worker and the synchronous
+ * single-pin functions. Article extraction no longer uses AI (ADR-0008,
+ * `extract-article.ts`). Prompts, schemas, settings and repair logic
  * live here.
  *
- * `generatePinMetadata`, `generatePinMetadataWithFeedback` (the synchronous
- * "Neu-Erzeugen mit Feedback" path, issue #88) and `generateArticleFromHtml`
- * are defined here. The AI SDK is imported via Deno `npm:` specifiers; vitest
+ * `generatePinMetadata` and `generatePinMetadataWithFeedback` (the synchronous
+ * "Neu-Erzeugen mit Feedback" path, issue #88) are defined here. The AI SDK is imported via Deno `npm:` specifiers; vitest
  * aliases map them onto the installed Node packages so this module can be
  * exercised in tests.
  */
@@ -27,12 +27,9 @@ import { z } from 'npm:zod'
 export const DEFAULT_MODEL_ID = 'gemini-3.5-flash'
 
 /**
- * Thinking level per task — mirrors `src/lib/ai/model.ts`. Article extraction
- * needs `medium`: below that gemini-3.5-flash runs past the output cap and
- * emits corrupted fields. Pin metadata stays fine at `low`. Thinking tokens
- * bill at the full output rate (issue #71).
+ * Thinking level for pin metadata. Thinking tokens bill at the full output
+ * rate, so the level is pinned (issue #71).
  */
-export const ARTICLE_THINKING_LEVEL = 'medium' as const
 export const METADATA_THINKING_LEVEL = 'low' as const
 
 /**
@@ -203,43 +200,9 @@ export const generatedMetadataSchema = z.object({
   alt_text: z.string(),
 })
 
-export const scrapedArticleSchema = z.object({
-  title: z.string(),
-  content: z.string(),
-  published_at: z.string().optional(),
-  author: z.string().optional(),
-  excerpt: z.string().optional(),
-})
-
 export type GeneratedMetadata = z.infer<typeof generatedMetadataSchema>
-export type ScrapedArticle = z.infer<typeof scrapedArticleSchema>
 
 // --- System prompts (mirror of lib/ai/prompts.ts) ---
-
-export const ARTICLE_SCRAPER_SYSTEM_PROMPT = `You are an expert web scraper and content extractor.
-Your task is to analyze the provided HTML content of a blog post or article and extract the core information into structured JSON.
-
-**Requirements:**
-1. **Title**: The main title of the article.
-2. **Content**: The full body text of the article, converted to clean, readable Markdown. Preserve headers (H2, H3), lists, and important links. Remove ads, navigation, related posts, and boilerplates.
-3. **Published Date**: The publication date in ISO 8601 format (YYYY-MM-DD) if available.
-4. **Author**: The author's name if available (optional).
-5. **Excerpt**: A short summary (1-2 sentences) of the article.
-
-**Input HTML**:
-You will receive the raw HTML of the page (cleaned of scripts/styles).
-
-**Output Format**:
-Return ONLY valid JSON with this exact structure:
-{
-  "title": "Article Title",
-  "content": "# Article Title\n\nIntroduction...\n\n## Section 1...",
-  "published_at": "2023-10-27",
-  "author": "John Doe",
-  "excerpt": "This is a summary of the article."
-}
-
-Do not include any text outside the JSON object.`
 
 /**
  * Pinterest SEO System Prompt
@@ -353,51 +316,7 @@ export function sanitizeLanguage(value: string | null | undefined): string | nul
 
 // --- Public AI operations (mirror of lib/ai/generate.ts) ---
 
-const MAX_HTML_CHARS = 100000
-// Headroom for a long article plus its reasoning tokens; the cap only exists
-// to bound a runaway generation, not to trim normal output (issue #71).
-const MAX_ARTICLE_OUTPUT_TOKENS = 16384
 const MAX_ARTICLE_CONTENT_CHARS = 4000
-
-export interface GenerateArticleOptions {
-  html: string
-  url: string
-  apiKey: string
-  /** Injected model for tests; defaults to `getModel(apiKey)`. */
-  model?: LanguageModel
-}
-
-/**
- * Extract structured article content from raw HTML.
- *
- * Wraps `generateText` + `Output.object` with the article Zod schema and the article-scraper
- * system prompt at `temperature: 0.1`. No manual `JSON.parse` on the happy
- * path; the carried-over control-char repair only fires on parse failure.
- */
-export async function generateArticleFromHtml({
-  html,
-  url,
-  apiKey,
-  model,
-}: GenerateArticleOptions): Promise<ScrapedArticle> {
-  const truncatedHtml = html.slice(0, MAX_HTML_CHARS)
-
-  const { output } = await generateText({
-    model: model ?? getModel(apiKey),
-    output: repairableObject(scrapedArticleSchema),
-    system: ARTICLE_SCRAPER_SYSTEM_PROMPT,
-    prompt: `URL: ${url}\n\nHTML Content:\n${truncatedHtml}`,
-    temperature: 0.1,
-    maxOutputTokens: MAX_ARTICLE_OUTPUT_TOKENS,
-    // Gemini bills thinking tokens at the full output rate, so the level is
-    // pinned rather than left at the provider default (issue #71).
-    providerOptions: {
-      google: { thinkingConfig: { thinkingLevel: ARTICLE_THINKING_LEVEL } },
-    },
-  })
-
-  return output
-}
 
 export interface PinMetadataArticle {
   title?: string | null

@@ -125,7 +125,8 @@ vi.mock('./supabase', () => ({
 | **Utilities** | `cn()`, `sanitizeHtml()` | Pure functions, no mocking needed |
 | **API** | All CRUD functions in `src/lib/api/` | Validates correct Supabase queries, filters, ordering |
 | **Server functions** | Metadata generation, scraping, publishing, Gemini key management | Complex multi-step business logic with status machines |
-| **Gemini client** | Metadata generation, feedback flow, article extraction | External API integration with structured output parsing |
+| **Gemini client** | Metadata generation, feedback flow | External API integration with structured output parsing |
+| **Article extraction** | Readability + Markdown + date fallbacks against HTML fixtures (`src/test/fixtures/article-pages.ts`) | Decides what lands in `blog_articles` |
 
 ## What's NOT Tested (and why)
 
