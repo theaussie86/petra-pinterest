@@ -50,7 +50,39 @@ beforeEach(() => {
     data: { success: true, pin_id: 'pin-1', metadata: METADATA },
     error: null,
   })
+  tableQueue = []
+  settingsQb = null
+  setAiMetadata(undefined)
+  routeFrom()
 })
+
+/**
+ * Account setting read (tenant_settings, ADR-0009). `undefined` = no row,
+ * 'missing-table' = migration 00042 not applied yet.
+ */
+let settingsResponse: { data: unknown; error: unknown } = { data: null, error: null }
+function setAiMetadata(value: boolean | undefined | 'missing-table' | 'read-error') {
+  if (value === 'missing-table') {
+    settingsResponse = { data: null, error: { code: 'PGRST205', message: 'Could not find the table' } }
+  } else if (value === 'read-error') {
+    settingsResponse = { data: null, error: { code: '500', message: 'boom' } }
+  } else {
+    settingsResponse = { data: value === undefined ? null : { ai_metadata_enabled: value }, error: null }
+  }
+}
+
+/** Queue of builders for the other tables, served in call order. */
+let tableQueue: unknown[] = []
+let settingsQb: ReturnType<typeof createMockQueryBuilder> | null = null
+function routeFrom() {
+  mockServerClient.from.mockImplementation((table: string) => {
+    if (table === 'tenant_settings') {
+      settingsQb = createMockQueryBuilder(settingsResponse as any)
+      return settingsQb as any
+    }
+    return tableQueue.shift() as any
+  })
+}
 
 /** Wire the two RLS reads: profile (tenant) then pin-ownership check. */
 function setupAuthPin(opts: { tenantId?: string; pinExists?: boolean } = {}) {
@@ -59,9 +91,7 @@ function setupAuthPin(opts: { tenantId?: string; pinExists?: boolean } = {}) {
     opts.pinExists === false
       ? createMockQueryBuilder({ data: null, error: { message: 'not found' } })
       : createMockQueryBuilder({ data: { id: 'pin-1' } })
-  mockServerClient.from
-    .mockReturnValueOnce(profileQb as any) // profiles
-    .mockReturnValueOnce(pinQb as any) // pins - ownership check
+  tableQueue.push(profileQb, pinQb)
   return { profileQb, pinQb }
 }
 
@@ -185,7 +215,8 @@ describe('triggerAutoMetadataFn', () => {
       p_pin_ids: ['pin-1', 'pin-2'],
     })
     // The RPC handles the status update; no manual pin write on the queue path.
-    expect(mockServerClient.from).not.toHaveBeenCalled()
+    // The only table read is the account setting.
+    expect(mockServerClient.from.mock.calls.map((c: any[]) => c[0])).toEqual(['tenant_settings'])
   })
 
   it('fails when the pins cannot be enqueued', async () => {
@@ -194,5 +225,93 @@ describe('triggerAutoMetadataFn', () => {
     await expect(
       triggerAutoMetadataFn({ data: { pin_ids: ['pin-1'] } }),
     ).rejects.toThrow('Pin not found')
+  })
+})
+
+describe('AI metadata account setting (ADR-0009)', () => {
+  describe('single-pin paths', () => {
+    it('generateMetadataFn throws and never calls the Edge Function when the setting is off', async () => {
+      setupAuthPin()
+      setAiMetadata(false)
+
+      await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow(
+        'AI metadata generation is disabled for this account',
+      )
+      expect(mockInvoke).not.toHaveBeenCalled()
+      // Read for the caller's own tenant
+      expect(settingsQb!.eq).toHaveBeenCalledWith('tenant_id', 'test-tenant-id')
+    })
+
+    it('generateMetadataWithFeedbackFn throws and never calls the Edge Function when the setting is off', async () => {
+      setupAuthPin()
+      setAiMetadata(false)
+
+      await expect(
+        generateMetadataWithFeedbackFn({ data: { pin_id: 'pin-1', feedback: 'kürzer' } }),
+      ).rejects.toThrow('AI metadata generation is disabled for this account')
+      expect(mockInvoke).not.toHaveBeenCalled()
+    })
+
+    it('runs when the setting is explicitly on', async () => {
+      setupAuthPin()
+      setAiMetadata(true)
+
+      await generateMetadataFn({ data: { pin_id: 'pin-1' } })
+      expect(mockInvoke).toHaveBeenCalledTimes(1)
+    })
+
+    it('treats a missing tenant_settings table (migration not applied) as on', async () => {
+      setupAuthPin()
+      setAiMetadata('missing-table')
+
+      await generateMetadataFn({ data: { pin_id: 'pin-1' } })
+      expect(mockInvoke).toHaveBeenCalledTimes(1)
+    })
+
+    it('fails instead of calling Gemini when the setting cannot be read', async () => {
+      setupAuthPin()
+      setAiMetadata('read-error')
+
+      await expect(generateMetadataFn({ data: { pin_id: 'pin-1' } })).rejects.toThrow('tenant settings')
+      expect(mockInvoke).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('queue paths', () => {
+    it('triggerBulkMetadataFn throws and never enqueues when the setting is off', async () => {
+      setAiMetadata(false)
+
+      await expect(triggerBulkMetadataFn({ data: { pin_ids: ['pin-1'] } })).rejects.toThrow(
+        'AI metadata generation is disabled for this account',
+      )
+      expect(mockServerClient.rpc).not.toHaveBeenCalled()
+    })
+
+    it('triggerAutoMetadataFn quietly returns 0 and never enqueues when the setting is off', async () => {
+      setAiMetadata(false)
+
+      const result = await triggerAutoMetadataFn({ data: { pin_ids: ['pin-1', 'pin-2'] } })
+
+      expect(result).toEqual({ success: true, pins_queued: 0 })
+      expect(mockServerClient.rpc).not.toHaveBeenCalled()
+    })
+
+    it('triggerAutoMetadataFn returns 0 when the RPC hard stop fires (setting toggled meanwhile)', async () => {
+      mockServerClient.rpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'AI metadata generation is disabled for this account' },
+      })
+
+      const result = await triggerAutoMetadataFn({ data: { pin_ids: ['pin-1'] } })
+      expect(result).toEqual({ success: true, pins_queued: 0 })
+    })
+
+    it('triggerBulkMetadataFn enqueues when no settings row exists', async () => {
+      setAiMetadata(undefined)
+      mockServerClient.rpc.mockResolvedValueOnce({ data: 1, error: null })
+
+      const result = await triggerBulkMetadataFn({ data: { pin_ids: ['pin-1'] } })
+      expect(result).toEqual({ success: true, pins_queued: 1 })
+    })
   })
 })

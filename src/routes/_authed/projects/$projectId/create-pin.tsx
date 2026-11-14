@@ -25,6 +25,7 @@ import { MediaUploadZone } from '@/components/pins/media-upload-zone'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useCreatePins } from '@/lib/hooks/use-pins'
 import { useTriggerAutoMetadata } from '@/lib/hooks/use-metadata'
+import { useAiMetadataEnabled } from '@/lib/hooks/use-tenant-settings'
 import { usePinterestBoards, usePinterestConnection } from '@/lib/hooks/use-pinterest-connection'
 import { uploadPinMedia } from '@/lib/api/pins'
 import { ensureProfile } from '@/lib/auth'
@@ -51,6 +52,7 @@ function CreatePinPage() {
   const { data: boards = [] } = usePinterestBoards(projectId)
   const createPinsMutation = useCreatePins()
   const triggerMetadata = useTriggerAutoMetadata()
+  const { enabled: aiMetadataEnabled } = useAiMetadataEnabled()
 
   const handleSubmit = async () => {
     if (files.length === 0) {
@@ -84,9 +86,13 @@ function CreatePinPage() {
         }))
       )
 
-      // Auto-trigger metadata generation for all created pins via the queue
-      const pinIds = createdPins.map((pin) => pin.id)
-      triggerMetadata.mutate({ pin_ids: pinIds })
+      // Auto-trigger metadata generation for all created pins via the queue.
+      // With AI metadata switched off (ADR-0009) the pins stay drafts; the
+      // server function would return 0 anyway.
+      if (aiMetadataEnabled) {
+        const pinIds = createdPins.map((pin) => pin.id)
+        triggerMetadata.mutate({ pin_ids: pinIds })
+      }
 
       navigate({ to: '/projects/$projectId/pins', params: { projectId } })
     } catch (error) {

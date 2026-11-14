@@ -1,5 +1,10 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getSupabaseServerClient, getSupabaseServiceClient } from './supabase'
+import {
+  AI_METADATA_DISABLED_MESSAGE,
+  isAiMetadataDisabledError,
+  readAiMetadataEnabled,
+} from '@/lib/ai-metadata-setting'
 
 interface GeneratedMetadata {
   title: string
@@ -35,6 +40,12 @@ async function authorizePin(pin_id: string): Promise<string> {
     .eq('id', pin_id)
     .single()
   if (pinError || !pin) throw new Error('Pin not found')
+
+  // Account setting (ADR-0009): the single-pin path calls the Edge Function
+  // with the service role and never passes the enqueue RPC, so it checks here.
+  if (!(await readAiMetadataEnabled(supabase, profile.tenant_id))) {
+    throw new Error(AI_METADATA_DISABLED_MESSAGE)
+  }
 
   return profile.tenant_id
 }
@@ -108,8 +119,14 @@ export const generateMetadataWithFeedbackFn = createServerFn({ method: 'POST' })
  * first. The tenant-checked RPC sets the pins to 'generating_metadata' and
  * enqueues them on the generate_metadata queue; the worker picks them up within
  * ~15s (ADR-0004). Returns the de-duplicated count reported by the RPC.
+ *
+ * When the account switched AI metadata off (ADR-0009) nothing is enqueued:
+ * with `silentWhenDisabled` the call reports 0 pins, otherwise it throws.
  */
-async function dispatchMetadataGeneration(pin_ids: string[]) {
+async function dispatchMetadataGeneration(
+  pin_ids: string[],
+  { silentWhenDisabled = false }: { silentWhenDisabled?: boolean } = {},
+) {
   const supabase = getSupabaseServerClient()
   const {
     data: { user },
@@ -117,10 +134,22 @@ async function dispatchMetadataGeneration(pin_ids: string[]) {
   } = await supabase.auth.getUser()
   if (error || !user) throw new Error('Not authenticated')
 
+  const disabled = () => {
+    if (silentWhenDisabled) return { success: true, pins_queued: 0 }
+    throw new Error(AI_METADATA_DISABLED_MESSAGE)
+  }
+
+  // RLS scopes the read to the caller's tenant.
+  if (!(await readAiMetadataEnabled(supabase))) return disabled()
+
   const { data: pinsQueued, error: enqueueError } = await supabase.rpc('enqueue_generate_metadata', {
     p_pin_ids: pin_ids,
   })
-  if (enqueueError) throw new Error(enqueueError.message)
+  if (enqueueError) {
+    // The RPC enforces the same setting (hard stop); race with a toggle.
+    if (isAiMetadataDisabledError(enqueueError)) return disabled()
+    throw new Error(enqueueError.message)
+  }
 
   return { success: true, pins_queued: pinsQueued as number }
 }
@@ -128,7 +157,7 @@ async function dispatchMetadataGeneration(pin_ids: string[]) {
 /**
  * Server function: trigger bulk metadata generation via the generate_metadata
  * queue (async, ADR-0004). Authenticates via cookies, enqueues jobs for each
- * pin.
+ * pin. Throws when the account switched AI metadata off (ADR-0009).
  */
 export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_ids: string[] }) => data)
@@ -138,7 +167,9 @@ export const triggerBulkMetadataFn = createServerFn({ method: 'POST' })
  * Server function: auto-trigger metadata generation after pins are created.
  * Enqueues the pins on the generate_metadata queue via the tenant-checked RPC,
  * which also sets them to 'generating_metadata' (ADR-0004, issue #89).
+ * When the account switched AI metadata off (ADR-0009) it quietly returns
+ * `pins_queued: 0` and the new pins stay `draft`.
  */
 export const triggerAutoMetadataFn = createServerFn({ method: 'POST' })
   .inputValidator((data: { pin_ids: string[] }) => data)
-  .handler(({ data }) => dispatchMetadataGeneration(data.pin_ids))
+  .handler(({ data }) => dispatchMetadataGeneration(data.pin_ids, { silentWhenDisabled: true }))

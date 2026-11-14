@@ -3,6 +3,12 @@ import { toast } from 'sonner'
 import i18n from '@/lib/i18n'
 import { generateMetadataFn, generateMetadataWithFeedbackFn, triggerBulkMetadataFn, triggerAutoMetadataFn } from '@/lib/server/metadata'
 import { getMetadataHistory, restoreMetadataGeneration } from '@/lib/api/metadata'
+import { isAiMetadataDisabledError } from '@/lib/ai-metadata-setting'
+
+/** Error toast for a metadata action; names the account setting when it blocked the run (ADR-0009). */
+function metadataErrorToast(error: unknown, fallbackKey: string) {
+  toast.error(i18n.t(isAiMetadataDisabledError(error) ? 'toast.metadata.disabled' : fallbackKey))
+}
 
 /**
  * Query hook: Get metadata generation history for a pin.
@@ -33,8 +39,8 @@ export function useGenerateMetadata() {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
       queryClient.invalidateQueries({ queryKey: ['metadata-history'] })
     },
-    onError: () => {
-      toast.error(i18n.t('toast.metadata.generateFailed'))
+    onError: (error) => {
+      metadataErrorToast(error, 'toast.metadata.generateFailed')
     },
   })
 }
@@ -55,8 +61,8 @@ export function useGenerateMetadataWithFeedback() {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
       queryClient.invalidateQueries({ queryKey: ['metadata-history'] })
     },
-    onError: () => {
-      toast.error(i18n.t('toast.metadata.regenerateFailed'))
+    onError: (error) => {
+      metadataErrorToast(error, 'toast.metadata.regenerateFailed')
     },
   })
 }
@@ -77,8 +83,8 @@ export function useTriggerBulkMetadata() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error(i18n.t('toast.metadata.bulkFailed'))
+    onError: (error) => {
+      metadataErrorToast(error, 'toast.metadata.bulkFailed')
     },
   })
 }
@@ -98,8 +104,8 @@ export function useTriggerAutoMetadata() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pins'] })
     },
-    onError: () => {
-      toast.error(i18n.t('toast.metadata.bulkFailed'))
+    onError: (error) => {
+      metadataErrorToast(error, 'toast.metadata.bulkFailed')
     },
   })
 }
