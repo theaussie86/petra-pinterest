@@ -62,6 +62,8 @@ describe('CI edge-functions deploy job', () => {
     expect(deployStep?.if).toContain(
       "steps.changes.outputs.functions_changed == 'true'",
     )
+    // Non-interactive: CLI v3 aborts without --yes when there is no TTY.
+    expect(deployStep?.run).toContain('--yes')
     // Uses the documented deploy token secret.
     expect(deployStep?.env?.SUPABASE_ACCESS_TOKEN).toContain(
       'secrets.SUPABASE_ACCESS_TOKEN',
