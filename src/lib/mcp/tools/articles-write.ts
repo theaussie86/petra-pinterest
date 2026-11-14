@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { archiveArticle, getArticle, restoreArticle } from '@/lib/api/articles'
 import { normalizeUrl } from '@/lib/utils'
 import type { Article } from '@/types/articles'
+import { isAiMetadataDisabledError } from '@/lib/ai-metadata-setting'
 import { defineTool, errorResult, jsonResult } from '../tool'
 
 /**
@@ -186,11 +187,15 @@ export const scrapeArticleTool = defineTool({
  * default, so the agent can confirm the pin set before spending credits; the real
  * run goes through the tenant-checked `enqueue_generate_metadata` RPC, which sets
  * the pins to `generating_metadata` and returns how many were queued.
+ *
+ * Only listed while the account's AI metadata setting is on (ADR-0009); the
+ * RPC refuses as well when it is off.
  */
 export const generateMetadataTool = defineTool({
   name: 'generate_metadata',
   description:
-    'Stößt die Gemini-Metadaten-Generierung für einen oder mehrere Pins an — der einzige MCP-Weg, der Gemini-Credits verbraucht. Standard ist ein Probelauf: er zeigt nur, welche Pins betroffen wären. Echte Ausführung mit dry_run: false.',
+    'Lässt Pinfinity Titel, Beschreibung und Alt-Text per KI (Gemini) erzeugen und überschreibt dabei vorhandene Metadaten. Der einzige MCP-Weg, der Gemini-Credits verbraucht. Nur aufrufen, wenn die Nutzerin ausdrücklich verlangt, dass Pinfinity die Metadaten mit KI generiert. Nie für Pins, deren Metadaten du gerade selbst geschrieben oder per create_pin/set_pin_metadata eingetragen hast. Bittet sie dich, die Metadaten zu übernehmen, schreibst du sie selbst und trägst sie mit set_pin_metadata ein. Standard ist ein Probelauf: er zeigt nur, welche Pins betroffen wären. Echte Ausführung mit dry_run: false.',
+  requiresAiMetadata: true,
   dryRun: true,
   inputSchema: {
     pin_ids: z
@@ -212,7 +217,14 @@ export const generateMetadataTool = defineTool({
     const { data, error } = await ctx.supabase.rpc('enqueue_generate_metadata', {
       p_pin_ids: input.pin_ids,
     })
-    if (error) return errorResult(`Metadaten-Generierung konnte nicht angestoßen werden: ${error.message}`)
+    if (error) {
+      if (isAiMetadataDisabledError(error)) {
+        return errorResult(
+          'KI-Metadaten sind für dieses Konto ausgeschaltet. Schreib Titel, Beschreibung und Alt-Text selbst und trag sie mit set_pin_metadata ein.',
+        )
+      }
+      return errorResult(`Metadaten-Generierung konnte nicht angestoßen werden: ${error.message}`)
+    }
 
     return jsonResult({ enqueued: 'generate_metadata', pins_queued: (data as number) ?? 0 })
   },

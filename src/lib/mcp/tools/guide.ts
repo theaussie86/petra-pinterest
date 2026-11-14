@@ -1,5 +1,5 @@
-import { IMAGE_UPLOAD_GUIDE_MARKDOWN } from '../image-upload-guide'
-import { defineTool } from '../tool'
+import { imageUploadGuideMarkdown } from '../image-upload-guide'
+import { defineTool, isAiMetadataEnabled } from '../tool'
 
 /**
  * `get_image_upload_guide` — the image upload guide as a tool result, for
@@ -10,5 +10,7 @@ export const getImageUploadGuideTool = defineTool({
   name: 'get_image_upload_guide',
   description:
     'Liefert den Leitfaden zum Bild-Upload: welcher Weg für welches Bild (Chat-Bild, öffentliche URL, lokale Datei, Base64), erlaubte Formate und Größen, was tun, wenn die Chat-Datei nicht ankommt. Vor dem ersten Pin mit Bild oder nach einem Bildfehler aufrufen.',
-  handler: () => ({ content: [{ type: 'text', text: IMAGE_UPLOAD_GUIDE_MARKDOWN }] }),
+  handler: ({ ctx }) => ({
+    content: [{ type: 'text', text: imageUploadGuideMarkdown(isAiMetadataEnabled(ctx)) }],
+  }),
 })

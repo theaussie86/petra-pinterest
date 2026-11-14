@@ -24,6 +24,14 @@ import { defineTool, errorResult, jsonResult, type ToolResult } from '../tool'
 import { MAX_BASE64_HINT, MAX_IMAGE_BYTES, SUPPORTED_IMAGE_LIST } from '../image-limits'
 import { pinToResult } from './pins'
 
+/**
+ * Appended to the pin write tools' descriptions while the account switched AI
+ * metadata generation off (ADR-0009).
+ */
+export const AI_METADATA_OFF_NOTE =
+  'KI-Metadaten sind für dieses Konto ausgeschaltet: Titel, Beschreibung und Alt-Text schreibst du selbst, eine automatische Generierung gibt es nicht.'
+
+
 
 /**
  * The three fields a pin needs to be schedulable (ADR-0006, Spec #115 user
@@ -464,6 +472,7 @@ const IMAGE_SOURCES = ['image_url', 'upload_path', 'image_base64'] as const
  */
 export const createPinTool = defineTool({
   name: 'create_pin',
+  aiMetadataOffNote: AI_METADATA_OFF_NOTE,
   description:
     `Legt einen Pin an. Für ein Bild, das im ChatGPT-Chat hochgeladen oder erzeugt wurde, stattdessen create_pin_from_chat_image verwenden. Hier kommt das Bild aus genau einer Quelle: image_url (öffentliche HTTPS-URL, wird geladen; bis ca. 20 MB), upload_path (vorher per request_pin_upload hochgeladen) oder image_base64 (nur für Agenten, die Dateien programmatisch lesen und senden können, ${MAX_BASE64_HINT}; Base64 nie von Hand ausschreiben). Keine URL und keinen Pfad erfinden. Erlaubt: ${SUPPORTED_IMAGE_LIST}. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an. Leitfaden: get_image_upload_guide.`,
   inputSchema: {
@@ -509,6 +518,7 @@ export const createPinTool = defineTool({
  */
 export const createPinFromChatImageTool = defineTool({
   name: 'create_pin_from_chat_image',
+  aiMetadataOffNote: AI_METADATA_OFF_NOTE,
   description:
     `Legt einen Pin aus einem Bild an, das in diesem Chat hochgeladen oder erzeugt wurde (z. B. in ChatGPT). Nur für solche Chat-Bilder; für öffentliche URLs oder lokale Dateien create_pin verwenden. Das Feld image_file füllt der Client (ChatGPT) selbst mit der Datei: nie eine URL, einen Pfad oder eine ID erfinden oder von Hand eintragen. Erlaubt: ${SUPPORTED_IMAGE_LIST}, bis ca. 20 MB. Kommt die Datei nicht an, nennt der Fehler die Alternativen. Metadaten sind optional; sind Titel, Beschreibung und Board vollständig, wird der Pin planbar (metadata_created). Stößt nie die automatische Metadaten-Generierung (Gemini) an.`,
   inputSchema: {
@@ -532,6 +542,7 @@ export const createPinFromChatImageTool = defineTool({
  */
 export const setPinMetadataTool = defineTool({
   name: 'set_pin_metadata',
+  aiMetadataOffNote: AI_METADATA_OFF_NOTE,
   description:
     'Hinterlegt selbst formulierte Metadaten an einem Pin und macht ihn planbar. Sind Titel, Beschreibung und Board (zusammen mit den bestehenden Werten) vollständig, bekommt der Pin den Status metadata_created; fehlen Felder, kommt ein Fehler mit der Liste der fehlenden Felder. Stößt nie Gemini an.',
   inputSchema: {
