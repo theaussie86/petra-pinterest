@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useGenerateMetadataWithFeedback } from '@/lib/hooks/use-metadata'
+import { useAiMetadataEnabled } from '@/lib/hooks/use-tenant-settings'
 import {
   Dialog,
   DialogContent,
@@ -26,9 +27,10 @@ export function RegenerateFeedbackDialog({
   const { t } = useTranslation()
   const [feedback, setFeedback] = useState('')
   const regenerateWithFeedback = useGenerateMetadataWithFeedback()
+  const { enabled: aiMetadataEnabled } = useAiMetadataEnabled()
 
   const handleSubmit = async () => {
-    if (!feedback.trim()) return
+    if (!feedback.trim() || !aiMetadataEnabled) return
 
     await regenerateWithFeedback.mutateAsync({ pin_id: pinId, feedback: feedback.trim() })
     setFeedback('')
@@ -50,6 +52,9 @@ export function RegenerateFeedbackDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {!aiMetadataEnabled && (
+            <p className="text-sm text-slate-500">{t('regenerateFeedback.disabledHint')}</p>
+          )}
           <div className="space-y-2">
             <Label htmlFor="feedback">{t('regenerateFeedback.fieldFeedback')}</Label>
             <Textarea
@@ -73,7 +78,7 @@ export function RegenerateFeedbackDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!feedback.trim() || regenerateWithFeedback.isPending}
+            disabled={!aiMetadataEnabled || !feedback.trim() || regenerateWithFeedback.isPending}
           >
             {regenerateWithFeedback.isPending ? t('regenerateFeedback.regenerating') : t('regenerateFeedback.regenerate')}
           </Button>

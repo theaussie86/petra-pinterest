@@ -2,8 +2,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import type { McpHandlerDeps } from './context'
 import { logImageIntake } from './image-intake-probe'
-import { registerImageUploadGuide, SERVER_INSTRUCTIONS } from './image-upload-guide'
-import { registerTool } from './tool'
+import { registerImageUploadGuide, serverInstructions } from './image-upload-guide'
+import { isAiMetadataEnabled, registerTool } from './tool'
 import { allTools } from './tools'
 import { PROTECTED_RESOURCE_METADATA_PATH } from './metadata'
 
@@ -102,11 +102,12 @@ export async function handleMcpRequest(
 
   await logImageIntake(request, ctx.oauthClientId)
 
+  const aiMetadataEnabled = isAiMetadataEnabled(ctx)
   const server = new McpServer(
     { name: 'pinfinity', version: '1' },
-    { instructions: SERVER_INSTRUCTIONS },
+    { instructions: serverInstructions(aiMetadataEnabled) },
   )
-  registerImageUploadGuide(server)
+  registerImageUploadGuide(server, aiMetadataEnabled)
   const tools = deps.tools ?? allTools
   for (const tool of tools) {
     registerTool(server, tool, ctx)

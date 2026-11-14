@@ -72,6 +72,8 @@ function setupDb(opts: {
   lockHeld?: boolean
   archiveFails?: boolean
   apiKey?: string | null
+  /** tenant_settings.ai_metadata_enabled; undefined = no row. */
+  aiMetadataEnabled?: boolean
 }) {
   const pins = opts.pins ?? {
     'pin-1': {
@@ -100,8 +102,8 @@ function setupDb(opts: {
         values = v
         return qb
       })
-      qb.eq.mockImplementation((_col: string, id: string) => {
-        pinId = id
+      qb.eq.mockImplementation((col: string, id: string) => {
+        if (col === 'id') pinId = id
         return qb
       })
       qb.then = (resolve: any, reject: any) => {
@@ -115,6 +117,11 @@ function setupDb(opts: {
         ).then(resolve, reject)
       }
       return qb
+    }
+    if (table === 'tenant_settings') {
+      return createMockQueryBuilder({
+        data: opts.aiMetadataEnabled === undefined ? null : { ai_metadata_enabled: opts.aiMetadataEnabled },
+      })
     }
     if (table === 'blog_projects') {
       return createMockQueryBuilder({ data: { language: 'German', ai_context: null } })
@@ -425,5 +432,73 @@ describe('generate-metadata-worker', () => {
     await runWorker()
 
     expect(db.generationDeletes).toEqual([])
+  })
+})
+
+describe('generate-metadata-worker with AI metadata switched off (ADR-0009)', () => {
+  function generatingPin(previous_status: string | null) {
+    return {
+      'pin-1': {
+        id: 'pin-1',
+        status: 'generating_metadata',
+        previous_status,
+        blog_project_id: 'proj-1',
+        image_path: 'tenant/image.png',
+        blog_articles: null,
+      },
+    }
+  }
+
+  it('drops the job: no Gemini, no error status, no mail, pin back to previous_status, message deleted', async () => {
+    const db = setupDb({ messages: [message(11, 1)], pins: generatingPin('metadata_created'), aiMetadataEnabled: false })
+
+    const { status, body } = await runWorker()
+
+    expect(status).toBe(200)
+    expect(body).toMatchObject({ succeeded: 1, failed: 0, retrying: 0 })
+    expect(mockGeneratePinMetadata).not.toHaveBeenCalled()
+    expect(mockFetchImageBytes).not.toHaveBeenCalled()
+    expect(mockNotifyPinError).not.toHaveBeenCalled()
+    expect(db.pinUpdates).toEqual([{ id: 'pin-1', values: { status: 'metadata_created', error_message: null } }])
+    expect(db.deleted).toEqual([11])
+    expect(db.archived).toEqual([])
+  })
+
+  it('falls back to draft when previous_status is missing', async () => {
+    const db = setupDb({ messages: [message(11, 1)], pins: generatingPin(null), aiMetadataEnabled: false })
+
+    await runWorker()
+
+    expect(db.pinUpdates).toEqual([{ id: 'pin-1', values: { status: 'draft', error_message: null } }])
+  })
+
+  it('falls back to draft when previous_status was error', async () => {
+    const db = setupDb({ messages: [message(11, 3)], pins: generatingPin('error'), aiMetadataEnabled: false })
+
+    await runWorker()
+
+    expect(db.pinUpdates).toEqual([{ id: 'pin-1', values: { status: 'draft', error_message: null } }])
+    expect(db.archived).toEqual([])
+    expect(mockNotifyPinError).not.toHaveBeenCalled()
+  })
+
+  it('does not touch a pin that already left generating_metadata', async () => {
+    const pins = generatingPin('draft')
+    pins['pin-1'].status = 'metadata_created'
+    const db = setupDb({ messages: [message(11, 1)], pins, aiMetadataEnabled: false })
+
+    await runWorker()
+
+    expect(db.pinUpdates).toEqual([])
+    expect(db.deleted).toEqual([11])
+  })
+
+  it('generates as before when the setting is explicitly on', async () => {
+    const db = setupDb({ messages: [message(11, 1)], aiMetadataEnabled: true })
+
+    await runWorker()
+
+    expect(mockGeneratePinMetadata).toHaveBeenCalledTimes(1)
+    expect(db.deleted).toEqual([11])
   })
 })

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { PageLayout } from '@/components/layout/page-layout'
 import { PageHeader } from '@/components/layout/page-header'
+import { AiMetadataSetting } from '@/components/settings/ai-metadata-setting'
 import { ConnectedAgents } from '@/components/settings/connected-agents'
 import { ConnectAgentGuide } from '@/components/settings/connect-agent-guide'
 
@@ -17,6 +18,7 @@ function SettingsPage() {
       <PageHeader title={t('settings.title')} description={t('settings.description')} />
       <PageLayout maxWidth="wide">
         <div className="space-y-6">
+          <AiMetadataSetting />
           <ConnectedAgents />
           <ConnectAgentGuide />
         </div>

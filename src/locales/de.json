@@ -77,7 +77,7 @@
   },
   "settings": {
     "title": "Einstellungen",
-    "description": "Verbundene Agenten verwalten und neue verbinden",
+    "description": "KI-Metadaten und verbundene Agenten verwalten",
     "connectedAgents": {
       "title": "Verbundene Agenten",
       "description": "KI-Assistenten, die über MCP in deinem Namen auf Pinfinity zugreifen dürfen. Entziehe den Zugriff jederzeit.",
@@ -121,6 +121,13 @@
           "step2": "Der zweite Befehl öffnet den Browser: Melde dich mit Google an und bestätige den Zugriff auf der Pinfinity-Seite."
         }
       }
+    },
+    "aiMetadata": {
+      "title": "KI-Metadaten",
+      "label": "KI-Metadaten automatisch erzeugen (Gemini)",
+      "description": "Pinfinity schreibt Titel, Beschreibung und Alt-Text deiner Pins mit Gemini. Dafür braucht jedes Projekt einen Gemini-API-Schlüssel mit Guthaben.",
+      "offExplanation": "Aus bedeutet: Du schreibst Titel und Beschreibung selbst oder lässt sie von einem verbundenen Agenten eintragen. Es entstehen keine Gemini-Kosten, und neue Pins bleiben nach dem Anlegen im Entwurf.",
+      "loading": "Einstellung wird geladen …"
     }
   },
   "language": {
@@ -366,7 +373,8 @@
     "deletePinsTitle_plural": "{{count}} Pins löschen",
     "deletePinsMessage": "Bist du sicher, dass du {{count}} ausgewählte(n) Pin(s) löschen möchtest? Die zugehörigen Bilder werden ebenfalls aus dem Speicher entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteSingleTitle": "Pin löschen",
-    "deleteSingleMessage": "Bist du sicher, dass du diesen Pin löschen möchtest? Das zugehorige Bild wird ebenfalls aus dem Speicher entfernt. Diese Aktion kann nicht rückgängig gemacht werden."
+    "deleteSingleMessage": "Bist du sicher, dass du diesen Pin löschen möchtest? Das zugehorige Bild wird ebenfalls aus dem Speicher entfernt. Diese Aktion kann nicht rückgängig gemacht werden.",
+    "generateDisabled": "KI-Metadaten sind in den Einstellungen ausgeschaltet"
   },
   "deletePin": {
     "title": "Pin löschen",
@@ -484,7 +492,8 @@
     "fieldFeedback": "Wie sollen die Metadaten verbessert werden?",
     "placeholderFeedback": "z.B. kürzer machen, auf Back-Keywords fokussieren, mehr Dringlichkeit hinzufügen...",
     "regenerating": "Neu generieren...",
-    "regenerate": "Neu generieren"
+    "regenerate": "Neu generieren",
+    "disabledHint": "KI-Metadaten sind in den Einstellungen ausgeschaltet. Neu-Erzeugen ist nicht möglich."
   },
   "generateMetadata": {
     "title": "KI-Metadaten",
@@ -493,7 +502,8 @@
     "generate": "Metadaten generieren",
     "regenerateFeedback": "Mit Feedback neu generieren",
     "viewHistory": "Verlauf anzeigen",
-    "regenerate": "Neu generieren"
+    "regenerate": "Neu generieren",
+    "disabledHint": "KI-Metadaten sind in den Einstellungen ausgeschaltet. Titel und Beschreibung trägst du selbst ein oder lässt sie von einem verbundenen Agenten eintragen."
   },
   "schedulePin": {
     "title": "Zeitplan",
@@ -630,7 +640,8 @@
     "resetStatus": "Status zurücksetzen",
     "resetting": "Zurücksetzen...",
     "coverKeyframe": "Cover-Keyframe",
-    "scheduledAt": "Geplant"
+    "scheduledAt": "Geplant",
+    "aiMetadataOffHint": "KI-Metadaten sind ausgeschaltet. Setz den Pin zurück und trag die Metadaten selbst ein."
   },
   "articleDetail": {
     "breadcrumbDashboard": "Dashboard",
@@ -717,7 +728,8 @@
       "bulkPartial": "{{done}} erstellt, {{failed}} fehlgeschlagen",
       "bulkError": "Metadaten-Generierung fehlgeschlagen",
       "restored": "Metadaten wiederhergestellt",
-      "restoreFailed": "Metadaten konnten nicht wiederhergestellt werden"
+      "restoreFailed": "Metadaten konnten nicht wiederhergestellt werden",
+      "disabled": "KI-Metadaten sind für dein Konto ausgeschaltet"
     },
     "publish": {
       "published": "Pin auf Pinterest veröffentlicht!",
@@ -739,6 +751,11 @@
     "connectedAgents": {
       "revoked": "Zugriff entzogen",
       "revokeFailed": "Zugriff konnte nicht entzogen werden"
+    },
+    "aiMetadataSetting": {
+      "enabled": "KI-Metadaten eingeschaltet",
+      "disabled": "KI-Metadaten ausgeschaltet",
+      "saveFailed": "Einstellung konnte nicht gespeichert werden"
     }
   },
   "pinTemplateStatus": {

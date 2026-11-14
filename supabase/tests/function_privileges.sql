@@ -2,6 +2,7 @@
 -- Run in the Supabase SQL editor after every migration that adds functions,
 -- tables or roles. Every row must show passed = true (failures sort first).
 -- Created: 2026-09-13 (epic #74, migration 00029_pin_werkstatt_agent_role.sql)
+-- Updated: 2026-11-14 - tenant_settings (00042) checks added.
 -- Updated: 2026-10-20 (#127) — the pin_werkstatt_agent role and
 -- agent_project_access were dropped (migration 00039); their checks are gone.
 -- The agent now works through the MCP server under the user's JWT and RLS.
@@ -99,11 +100,28 @@ checks(check_name, passed) AS (
   ) AS f(rl, priv, expected)
 
   UNION ALL
+  --    tenant_settings (00042): users read and write their own settings, no delete
+  SELECT rl || ' ' || priv || ' on tenant_settings = ' || expected,
+         has_table_privilege(rl, 'public.tenant_settings', priv) = expected
+  FROM (VALUES
+    ('authenticated', 'SELECT', true),
+    ('authenticated', 'INSERT', true),
+    ('authenticated', 'UPDATE', true),
+    ('authenticated', 'DELETE', false),
+    ('anon',          'SELECT', false)
+  ) AS f(rl, priv, expected)
+
+  UNION ALL
+  SELECT 'authenticated can execute: public.enqueue_generate_metadata(uuid[])',
+         has_function_privilege('authenticated', 'public.enqueue_generate_metadata(uuid[])', 'EXECUTE')
+
+  UNION ALL
   SELECT 'RLS enabled on ' || relname, relrowsecurity
   FROM pg_class
   WHERE relnamespace = 'public'::regnamespace
     AND relname IN ('blog_projects', 'blog_articles',
-                    'pin_templates', 'pin_template_revisions', 'tenant_features')
+                    'pin_templates', 'pin_template_revisions', 'tenant_features',
+                    'tenant_settings')
 
   UNION ALL
   -- The tenant_id trigger stays (every writer); the agent status guard was

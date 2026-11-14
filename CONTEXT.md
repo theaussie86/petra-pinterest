@@ -37,6 +37,12 @@ Decision rule for people shown in a Pin:
 
 Core: SYNTHETIC_PERFORMER only when the person is AI-made AND fictional. Real person = never synthetic, even if AI-edited. No person = never synthetic.
 
+## KI-Metadaten (account setting)
+
+Account-wide switch "KI-Metadaten automatisch erzeugen (Gemini)", set by the user himself in `/settings` (not an admin feature flag). On (default): Pinfinity can write a pin's title, description and alt text with Gemini on the project's own key. Off: nobody in Pinfinity calls Gemini for metadata; the user writes the texts or a Connected Agent fills them in. See ADR-0009.
+
+_Avoid_: Metadaten-Generierung for what a Connected Agent writes itself; that is just setting metadata.
+
 ## Connected Agent
 
 An AI client (Claude, ChatGPT, Codex) that a user has granted access to Pinfinity via OAuth consent. Always acts on behalf of exactly that user and sees only what that user sees. The user can revoke it at any time. UI label: "Verbundene Agenten".

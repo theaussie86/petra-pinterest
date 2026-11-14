@@ -2,7 +2,35 @@
 
 Generate pin titles, descriptions, and alt text using Gemini 2.5 Flash with vision. Supports initial generation, regeneration with user feedback, and history with restore.
 
-**Prerequisite:** The project must have a Gemini API key stored in Supabase Vault. See [Gemini API Key](gemini-api-key.md).
+**Prerequisites:**
+- The account setting "KI-Metadaten automatisch erzeugen (Gemini)" is on (default). See [Account setting](#account-setting-ai-metadata-on--off).
+- The project has a Gemini API key stored in Supabase Vault. See [Gemini API Key](gemini-api-key.md).
+
+## Account setting: AI metadata on / off
+
+Users switch automatic AI metadata generation for their whole account in `/settings` (ADR-0009). Stored in `tenant_settings.ai_metadata_enabled` (migration `00042_tenant_settings.sql`); no row means on. When off, the user writes titles and descriptions himself or lets a Connected Agent fill them in via MCP (`create_pin`, `create_pin_from_chat_image`, `set_pin_metadata`). No Gemini costs arise.
+
+```mermaid
+flowchart TD
+    S[tenant_settings.ai_metadata_enabled = false] --> UI[UI: generate, regenerate with feedback,<br/>bulk action and error retry hidden or disabled]
+    S --> AUTO[create-pin: no auto trigger,<br/>triggerAutoMetadataFn returns 0, pins stay draft]
+    S --> SRV[generateMetadataFn / WithFeedbackFn / triggerBulkMetadataFn:<br/>error 'AI metadata generation is disabled for this account']
+    S --> RPC[enqueue_generate_metadata raises the same error<br/>hard stop for every queue path incl. MCP]
+    S --> MCP[MCP: generate_metadata not listed,<br/>instructions say: write metadata yourself]
+    S --> EDGE[generate-metadata-worker: drops queued messages,<br/>pin back to previous_status or draft, no error, no mail<br/>generate-metadata-single: 409, pin untouched]
+```
+
+Where the setting is checked:
+
+| Layer | Check | When off |
+|-------|-------|----------|
+| UI | `useAiMetadataEnabled()` (`src/lib/hooks/use-tenant-settings.ts`) | Actions hidden/disabled with a hint; no auto trigger after pin creation |
+| Server functions | `readAiMetadataEnabled()` in `src/lib/server/metadata.ts` | Error; `triggerAutoMetadataFn` returns `pins_queued: 0` silently |
+| Database | `enqueue_generate_metadata` | `RAISE EXCEPTION 'AI metadata generation is disabled for this account'` |
+| Edge Functions | `_shared/pin-metadata.ts` throws `AiMetadataDisabledError` before any Gemini work | Worker: release pin, delete message. Single: HTTP 409, no error status |
+| MCP | `ctx.aiMetadataEnabled`, `requiresAiMetadata` on `generate_metadata` | Tool not listed or callable; write tools and instructions say metadata is written by the agent |
+
+Missing table (migration not applied) and missing row both count as on. Any other read error fails the server function or retries the queue message instead of calling Gemini on a guess.
 
 ## Generate Metadata
 
@@ -93,13 +121,15 @@ For generating metadata across multiple pins at once:
 ```mermaid
 flowchart TD
     A[Select multiple pins] --> B[triggerBulkMetadataFn]
-    B --> C[Set all pins status → generating_metadata]
-    C --> D[Invoke 'generate-metadata-single'<br/>Edge Function per pin<br/>concurrency: 5]
+    B --> G{AI metadata on?}
+    G -->|No| X[Error toast: switched off]
+    G -->|Yes| C[RPC enqueue_generate_metadata:<br/>pins → generating_metadata, messages on queue]
+    C --> D[generate-metadata-worker<br/>kicked by pg_cron, batch of 5]
     D --> E[Each pin processes independently]
-    E --> F[Toast: N pins queued]
+    E --> F[Progress polled from pin status]
 ```
 
-The Edge Function mirrors the server function logic but runs asynchronously in the background.
+The worker runs the same pipeline as the single-pin Edge Function (`_shared/pin-metadata.ts`), asynchronously (ADR-0004). New pins created in the UI are enqueued the same way by `triggerAutoMetadataFn`, unless AI metadata is off.
 
 ## Button States
 
@@ -122,3 +152,7 @@ The `GenerateMetadataButton` adapts its UI based on pin state:
 | `src/lib/gemini/client.ts` | Gemini API: `generatePinMetadata`, `generatePinMetadataWithFeedback` |
 | `src/lib/api/metadata.ts` | Client API: `getMetadataHistory`, `restoreMetadataGeneration` |
 | `src/lib/hooks/use-metadata.ts` | TanStack Query hooks for all metadata operations |
+| `src/lib/ai-metadata-setting.ts` | Reads the account setting (missing row/table = on), shared error text |
+| `src/lib/hooks/use-tenant-settings.ts` | `useAiMetadataEnabled`, `useSetAiMetadataEnabled` |
+| `src/components/settings/ai-metadata-setting.tsx` | Switch in `/settings` |
+| `supabase/functions/_shared/ai-metadata-setting.ts` | Edge-side check and pin release |

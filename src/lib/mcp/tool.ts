@@ -31,6 +31,8 @@ export interface ToolHandlerArgs<Shape extends z.ZodRawShape> {
  *   user's tenant has the flag (Werkstatt tools use this; ADR-0006).
  * - `dryRun`: opt-in. When set, the tool gains a boolean `dry_run` argument that
  *   defaults to `true`, so bulk/enqueue tools preview by default.
+ * - `requiresAiMetadata`: a gate on the user's own account setting (ADR-0009).
+ *   The tool is only listed and callable while AI metadata generation is on.
  */
 export interface McpToolDefinition<Shape extends z.ZodRawShape = z.ZodRawShape> {
   name: string
@@ -38,6 +40,13 @@ export interface McpToolDefinition<Shape extends z.ZodRawShape = z.ZodRawShape> 
   description: string
   inputSchema?: Shape
   feature?: FeatureKey
+  /** Only list and run the tool while the account's AI metadata setting is on. */
+  requiresAiMetadata?: boolean
+  /**
+   * Appended to the description while the account's AI metadata setting is
+   * off (ADR-0009), e.g. "write the metadata yourself, there is no generation".
+   */
+  aiMetadataOffNote?: string
   dryRun?: boolean
   /**
    * Tool descriptor `_meta`, passed through to `tools/list`. Used for client
@@ -66,6 +75,22 @@ export function errorResult(message: string): ToolResult {
 
 const DRY_RUN_FIELD = 'dry_run'
 
+/** The account's AI metadata setting; undefined means on (ADR-0009). */
+export function isAiMetadataEnabled(ctx: Pick<McpUserContext, 'aiMetadataEnabled'>): boolean {
+  return ctx.aiMetadataEnabled !== false
+}
+
+/** The tool description for this user context (adds the AI-metadata-off note). */
+export function resolveDescription(
+  def: Pick<McpToolDefinition<never>, 'description' | 'aiMetadataOffNote'>,
+  ctx: Pick<McpUserContext, 'aiMetadataEnabled'>,
+): string {
+  if (def.aiMetadataOffNote && !isAiMetadataEnabled(ctx)) {
+    return `${def.description} ${def.aiMetadataOffNote}`
+  }
+  return def.description
+}
+
 /**
  * Registers a tool on an {@link McpServer} for a given user context. Honours the
  * feature gate (a gated tool the tenant lacks is skipped, so it never appears in
@@ -80,6 +105,9 @@ export function registerTool<Shape extends z.ZodRawShape>(
   ctx: McpUserContext,
 ): boolean {
   if (def.feature && !hasFeature(ctx, def.feature)) {
+    return false
+  }
+  if (def.requiresAiMetadata && !isAiMetadataEnabled(ctx)) {
     return false
   }
 
@@ -107,7 +135,7 @@ export function registerTool<Shape extends z.ZodRawShape>(
 
   server.registerTool(
     def.name,
-    { description: def.description, inputSchema, ...(def.meta ? { _meta: def.meta } : {}) },
+    { description: resolveDescription(def, ctx), inputSchema, ...(def.meta ? { _meta: def.meta } : {}) },
     // The SDK infers the callback's argument type from `inputSchema`; our shape
     // is built dynamically, so bridge it at this one boundary.
     callback as Parameters<typeof server.registerTool>[2],

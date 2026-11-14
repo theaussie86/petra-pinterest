@@ -17,6 +17,13 @@ export interface McpUserContext {
   email: string
   /** Feature flags enabled for the user's tenant (see src/lib/features.ts). */
   features: FeatureKey[]
+  /**
+   * Account setting "KI-Metadaten automatisch erzeugen (Gemini)" (ADR-0009).
+   * When false, `generate_metadata` is neither listed nor callable and the
+   * server instructions tell the agent to write metadata itself. Undefined
+   * means on (the database default).
+   */
+  aiMetadataEnabled?: boolean
   /** OAuth client id from the token (`client_id` claim), null when absent. */
   oauthClientId: string | null
   /** Supabase client bound to the user's token; all tool reads/writes go here. */

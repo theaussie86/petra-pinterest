@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Sparkles, History, RefreshCw, Loader2 } from 'lucide-react'
 import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
+import { useAiMetadataEnabled } from '@/lib/hooks/use-tenant-settings'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { Pin } from '@/types/pins'
@@ -18,10 +19,30 @@ export function GenerateMetadataButton({
 }: GenerateMetadataButtonProps) {
   const { t } = useTranslation()
   const generateMetadata = useGenerateMetadata()
+  const { enabled: aiMetadataEnabled } = useAiMetadataEnabled()
 
   const hasMetadata = pin.title || pin.description
   const isGenerating = pin.status === 'generating_metadata'
   const isDisabled = generateMetadata.isPending || isGenerating
+
+  // Account switched AI metadata off (ADR-0009): no generate actions, only a
+  // hint and the history of earlier generations.
+  if (!aiMetadataEnabled) {
+    return (
+      <Card>
+        <CardContent className="pt-6 space-y-3">
+          <h2 className="text-sm font-semibold text-slate-900">{t('generateMetadata.title')}</h2>
+          <p className="text-sm text-slate-500">{t('generateMetadata.disabledHint')}</p>
+          {hasMetadata && (
+            <Button variant="outline" onClick={onHistoryOpen} className="w-full">
+              <History className="mr-2 h-4 w-4" />
+              {t('generateMetadata.viewHistory')}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>

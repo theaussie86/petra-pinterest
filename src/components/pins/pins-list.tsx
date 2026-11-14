@@ -36,6 +36,7 @@ import type { PinColumnId } from '@/components/pins/pin-data-table-columns'
 import { usePinsPaginatedSuspense, usePinStatusCountsSuspense, useBulkDeletePins, useBulkUpdatePinStatus, useDeletePin } from '@/lib/hooks/use-pins'
 import { useArticles } from '@/lib/hooks/use-articles'
 import { useTriggerBulkMetadata } from '@/lib/hooks/use-metadata'
+import { useAiMetadataEnabled } from '@/lib/hooks/use-tenant-settings'
 import { useMetadataBatchProgress } from '@/lib/hooks/use-metadata-progress'
 import { usePublishPinsBulk } from '@/lib/hooks/use-pinterest-publishing'
 import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
@@ -105,6 +106,7 @@ export function PinsList({ projectId }: PinsListProps) {
   const bulkStatusMutation = useBulkUpdatePinStatus()
   const deletePinMutation = useDeletePin()
   const triggerBulkMetadata = useTriggerBulkMetadata()
+  const { enabled: aiMetadataEnabled } = useAiMetadataEnabled()
   const publishBulkMutation = usePublishPinsBulk()
 
   // Pins whose bulk metadata run is being tracked. Polling the DB status drives
@@ -332,7 +334,8 @@ export function PinsList({ projectId }: PinsListProps) {
                   variant="outline"
                   size="sm"
                   onClick={handleBulkGenerateMetadata}
-                  disabled={triggerBulkMetadata.isPending}
+                  disabled={!aiMetadataEnabled || triggerBulkMetadata.isPending}
+                  title={aiMetadataEnabled ? undefined : t('pinsList.generateDisabled')}
                 >
                   <Sparkles className="mr-1 h-3.5 w-3.5" />
                   {t('pinsList.generate', { count: selectedIds.size })}

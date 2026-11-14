@@ -14,6 +14,7 @@ stateDiagram-v2
 
     generating_metadata --> metadata_created : AI returns results
     generating_metadata --> error : AI/network failure
+    generating_metadata --> draft : AI metadata switched off (previous_status, else draft)
 
     metadata_created --> generate_metadata : User regenerates (with feedback)
     metadata_created --> published : Auto-publish (scheduled_at <= now) or manual publish
@@ -32,7 +33,7 @@ stateDiagram-v2
 
 | Status | Display Label (DE) | Color | Managed By | Description |
 |---|---|---|---|---|
-| `draft` | Entwurf | slate | User | Initial state after pin creation |
+| `draft` | Entwurf | slate | User | Initial state after pin creation; stays here when the account switched AI metadata off |
 | `generate_metadata` | Metadaten generieren | violet | User | User has requested generation |
 | `generating_metadata` | Metadaten werden generiert | violet | System | AI generation in progress |
 | `metadata_created` | Metadaten erstellt | teal | System | AI metadata applied to pin |
@@ -46,3 +47,4 @@ stateDiagram-v2
 - **Error recovery** restores `previous_status` if available, otherwise falls back to `draft`
 - **Auto-publishing** runs through MQ (retry, error mail only after final failure) for pins with `metadata_created` status and `scheduled_at` set; the old pg_cron job is deactivated. See `docs/flows/pin-publishing.md`
 - **Manual publishing** via the UI button prepares the pin (`metadata_created`, `scheduled_at = now`) and enqueues an immediate MQ job; the worker sets `published` or `error` (see flows/pin-publishing.md)
+- **AI metadata switched off** (account setting, ADR-0009): pins created in the UI stay `draft` (no auto trigger). Pins created by a Connected Agent via MCP get `metadata_created` when title, description and board are complete, otherwise `draft`. A `generate_metadata` queue message that was enqueued before the switch is dropped by the worker: no Gemini call, no `error`, no mail; the pin goes back to `previous_status` if that is `draft` or `metadata_created`, otherwise to `draft`. `enqueue_generate_metadata` refuses new runs with `AI metadata generation is disabled for this account`.

@@ -3,6 +3,7 @@ import { AlertTriangle, RotateCcw } from 'lucide-react'
 import { useGenerateMetadata } from '@/lib/hooks/use-metadata'
 import { usePublishPin } from '@/lib/hooks/use-pinterest-publishing'
 import { useUpdatePin } from '@/lib/hooks/use-pins'
+import { useAiMetadataEnabled } from '@/lib/hooks/use-tenant-settings'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
@@ -14,14 +15,19 @@ interface PinErrorAlertProps {
  * Shared error banner with a context-aware retry action. The retry routes back to
  * the operation that failed (metadata generation, publish, or a plain status reset)
  * based on `previous_status`. Used by the pin detail view and the pin-table row.
+ * When the account switched AI metadata off (ADR-0009) a failed generation is
+ * not retried; the action resets the pin to draft instead, with a hint.
  */
 export function PinErrorAlert({ pin }: PinErrorAlertProps) {
   const { t } = useTranslation()
   const generateMetadata = useGenerateMetadata()
   const publishPin = usePublishPin()
   const updatePin = useUpdatePin()
+  const { enabled: aiMetadataEnabled } = useAiMetadataEnabled()
 
-  const isMetadataError = ['generate_metadata', 'generating_metadata'].includes(pin.previous_status || '')
+  const failedInGeneration = ['generate_metadata', 'generating_metadata'].includes(pin.previous_status || '')
+  const isMetadataError = failedInGeneration && aiMetadataEnabled
+  const showAiMetadataOffHint = failedInGeneration && !aiMetadataEnabled
   const isPublishError = pin.previous_status === 'metadata_created'
 
   const handleRetry = () => {
@@ -51,6 +57,7 @@ export function PinErrorAlert({ pin }: PinErrorAlertProps) {
       <AlertTitle>{t('pinDetail.errorTitle')}</AlertTitle>
       <AlertDescription className="mt-1">
         <p className="mb-3">{pin.error_message || t('pinDetail.unknownError')}</p>
+        {showAiMetadataOffHint && <p className="mb-3">{t('pinDetail.aiMetadataOffHint')}</p>}
         <Button
           size="sm"
           variant="outline"

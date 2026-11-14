@@ -296,3 +296,85 @@ describe('handleMcpRequest — image upload guide', () => {
     }
   })
 })
+
+describe('handleMcpRequest — AI metadata account setting (ADR-0009)', () => {
+  async function rpcAs(ctx: McpUserContext, method: string, params?: unknown) {
+    const res = await handleMcpRequest(
+      jsonRpcRequest(
+        { jsonrpc: '2.0', id: 1, method, ...(params ? { params } : {}) },
+        { token: 'valid-token' },
+      ),
+      makeDeps({ authenticate: fakeAuth(ctx) }),
+    )
+    return (await res.json()).result
+  }
+
+  async function listTools(ctx: McpUserContext) {
+    const { tools } = await rpcAs(ctx, 'tools/list')
+    return tools as { name: string; description: string }[]
+  }
+
+  const initParams = {
+    protocolVersion: '2025-06-18',
+    capabilities: {},
+    clientInfo: { name: 'test', version: '1' },
+  }
+
+  it('lists generate_metadata when the setting is on or unset', async () => {
+    for (const ctx of [userContext(), userContext({ aiMetadataEnabled: true })]) {
+      const names = (await listTools(ctx)).map((t) => t.name)
+      expect(names).toContain('generate_metadata')
+    }
+  })
+
+  it('hides generate_metadata when the setting is off, other write tools stay', async () => {
+    const names = (await listTools(userContext({ aiMetadataEnabled: false }))).map((t) => t.name)
+    expect(names).not.toContain('generate_metadata')
+    expect(names).toEqual(expect.arrayContaining(['create_pin', 'create_pin_from_chat_image', 'set_pin_metadata']))
+  })
+
+  it('refuses a call to generate_metadata when the setting is off', async () => {
+    const deps = makeDeps({ authenticate: fakeAuth(userContext({ aiMetadataEnabled: false })) })
+    const { body } = await callTool(deps, 'generate_metadata', { pin_ids: ['pin-1'], dry_run: false })
+    // The tool is not registered, so the SDK answers with an error.
+    const failed = Boolean(body.error) || body.result?.isError === true
+    expect(failed).toBe(true)
+  })
+
+  it('tells the agent to write metadata itself in the pin write tools when off', async () => {
+    const tools = await listTools(userContext({ aiMetadataEnabled: false }))
+    for (const name of ['create_pin', 'create_pin_from_chat_image', 'set_pin_metadata']) {
+      const tool = tools.find((t) => t.name === name)
+      expect(tool?.description).toContain('eine automatische Generierung gibt es nicht')
+    }
+  })
+
+  it('keeps the pin write tool descriptions without the note when on', async () => {
+    const tools = await listTools(userContext())
+    for (const name of ['create_pin', 'create_pin_from_chat_image', 'set_pin_metadata']) {
+      const tool = tools.find((t) => t.name === name)
+      expect(tool?.description).not.toContain('eine automatische Generierung gibt es nicht')
+    }
+  })
+
+  it('restricts generate_metadata to explicit requests in its description', async () => {
+    const tool = (await listTools(userContext())).find((t) => t.name === 'generate_metadata')
+    expect(tool?.description).toContain('ausdrücklich')
+    expect(tool?.description).toContain('Nie für Pins, deren Metadaten du gerade selbst geschrieben')
+  })
+
+  it('server instructions and guide follow the setting', async () => {
+    const off = userContext({ aiMetadataEnabled: false })
+    const offInit = await rpcAs(off, 'initialize', initParams)
+    expect(offInit.instructions).toContain('Metadaten schreibst du selbst, eine automatische Generierung gibt es nicht')
+    expect(offInit.instructions).not.toContain('generate_metadata')
+
+    const offGuide = await rpcAs(off, 'resources/read', { uri: IMAGE_UPLOAD_GUIDE_URI })
+    expect(offGuide.contents[0].text).not.toContain('generate_metadata')
+    expect(offGuide.contents[0].text).toContain('ausgeschaltet')
+
+    const onInit = await rpcAs(userContext(), 'initialize', initParams)
+    expect(onInit.instructions).toContain('generate_metadata')
+    expect(onInit.instructions).toContain('ausdrücklichen Wunsch')
+  })
+})

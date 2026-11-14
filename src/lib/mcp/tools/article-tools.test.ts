@@ -32,7 +32,7 @@ interface FakeCalls {
  * (getArticle, returns the configured article). No network, in-memory.
  */
 function fakeSupabase(
-  opts: { article?: Record<string, unknown> | Article | null; rpcData?: unknown } = {},
+  opts: { article?: Record<string, unknown> | Article | null; rpcData?: unknown; rpcError?: { message: string } } = {},
 ): { client: SupabaseClient; calls: FakeCalls } {
   const calls: FakeCalls = { rpcs: [], updates: [] }
 
@@ -72,7 +72,7 @@ function fakeSupabase(
     from,
     rpc: (name: string, args: Record<string, unknown>) => {
       calls.rpcs.push({ name, args })
-      return Promise.resolve({ data: opts.rpcData ?? null, error: null })
+      return Promise.resolve({ data: opts.rpcData ?? null, error: opts.rpcError ?? null })
     },
   } as unknown as SupabaseClient
 
@@ -313,5 +313,18 @@ describe('generate_metadata', () => {
       { name: 'enqueue_generate_metadata', args: { p_pin_ids: ['pin-1', 'pin-2'] } },
     ])
     expect(payload.pins_queued).toBe(2)
+  })
+
+  it('tells the agent to write the metadata itself when the DB refuses (setting off, ADR-0009)', async () => {
+    const { client } = fakeSupabase({
+      rpcError: { message: 'AI metadata generation is disabled for this account' },
+    })
+    const ctx = userContext({ supabase: client })
+
+    const { result, text } = await callTool(ctx, 'generate_metadata', { pin_ids: ['pin-1'], dry_run: false })
+
+    expect(result.isError).toBe(true)
+    expect(text).toContain('ausgeschaltet')
+    expect(text).toContain('set_pin_metadata')
   })
 })

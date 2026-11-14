@@ -1,6 +1,7 @@
 // Pin metadata pipeline shared by the synchronous single-pin function and the
 // generate_metadata queue worker (ADR-0004). Throws on any failure; callers
-// decide what an error means for the pin's status.
+// decide what an error means for the pin's status. Throws AiMetadataDisabledError
+// when the tenant switched AI metadata off (ADR-0009).
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import {
   generatePinMetadata,
@@ -11,6 +12,7 @@ import {
   type ImageBytes,
 } from './ai.ts'
 import { extractKeyframe } from './ffmpeg-client.ts'
+import { AiMetadataDisabledError, isAiMetadataEnabled } from './ai-metadata-setting.ts'
 
 export interface PinMetadataJob {
   pin_id: string
@@ -36,6 +38,12 @@ export async function generateAndStorePinMetadata(
   supabase: SupabaseClient,
   { pin_id, tenant_id, feedback }: PinMetadataJob,
 ): Promise<PinMetadata> {
+  // Account setting (ADR-0009): checked first, before any read or Gemini call,
+  // so every caller (queue worker, single-pin function) is covered.
+  if (!(await isAiMetadataEnabled(supabase, tenant_id))) {
+    throw new AiMetadataDisabledError()
+  }
+
   const trimmedFeedback = feedback?.trim() || null
   // Fetch pin with article data (article may be null)
   const { data: pin, error: fetchError } = await supabase

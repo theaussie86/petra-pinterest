@@ -9,6 +9,7 @@ import type { FeatureKey } from '@/lib/features'
 import { protectedResourceMetadata, supabaseAuthIssuer } from './metadata'
 import { createBoardLister } from './boards-server'
 import { reconcilePublishJobs } from '@/lib/server/publish-sync'
+import { readAiMetadataEnabled } from '@/lib/ai-metadata-setting'
 
 /**
  * Production {@link Authenticate}: verify a Bearer token against Supabase and
@@ -48,13 +49,19 @@ export function createSupabaseAuthenticate(): Authenticate {
     const oauthClientId =
       typeof claims.client_id === 'string' ? claims.client_id : null
 
-    const [{ data: profile }, { data: featureRows }] = await Promise.all([
+    const [{ data: profile }, { data: featureRows }, aiMetadataEnabled] = await Promise.all([
       supabase
         .from('profiles')
         .select('tenant_id, display_name')
         .eq('id', userId)
         .single(),
       supabase.from('tenant_features').select('feature'),
+      // Account setting (ADR-0009). A failed read only affects which tools are
+      // listed; enqueue_generate_metadata still refuses when the setting is off.
+      readAiMetadataEnabled(supabase).catch((err) => {
+        console.warn('[mcp] could not read tenant settings, assuming AI metadata on', err)
+        return true
+      }),
     ])
 
     return {
@@ -63,6 +70,7 @@ export function createSupabaseAuthenticate(): Authenticate {
       displayName: profile?.display_name ?? email.split('@')[0] ?? 'User',
       email,
       features: (featureRows ?? []).map((row) => row.feature as FeatureKey),
+      aiMetadataEnabled,
       oauthClientId,
       supabase,
       listBoards: createBoardLister(supabase),
