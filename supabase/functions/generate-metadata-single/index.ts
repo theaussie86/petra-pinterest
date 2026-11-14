@@ -2,6 +2,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createServiceClient } from '../_shared/supabase.ts'
 import { corsHeaders, handleCors } from '../_shared/cors.ts'
 import { generateAndStorePinMetadata } from '../_shared/pin-metadata.ts'
+import { AiMetadataDisabledError } from '../_shared/ai-metadata-setting.ts'
 
 interface MetadataRequest {
   pin_id: string
@@ -51,6 +52,20 @@ Deno.serve(async (req) => {
     )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+
+    // Account setting off (ADR-0009): no Gemini call happened and the pin was
+    // not touched, so it keeps its status. A refusal, not a failure: no error
+    // status on the pin.
+    if (error instanceof AiMetadataDisabledError) {
+      return new Response(
+        JSON.stringify({ success: false, error: message }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     console.error('[generate-metadata-single] Error:', message)
 
     if (pin_id) {

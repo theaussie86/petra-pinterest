@@ -70,6 +70,8 @@ function setupDb(opts: {
   previous?: { title: string; description: string; alt_text: string } | null
   generations?: { id: string }[]
   apiKey?: string | null
+  /** tenant_settings.ai_metadata_enabled; undefined = no row. */
+  aiMetadataEnabled?: boolean
 } = {}) {
   const pin =
     opts.pin === undefined
@@ -95,8 +97,8 @@ function setupDb(opts: {
         values = v
         return qb
       })
-      qb.eq.mockImplementation((_col: string, id: string) => {
-        pinId = id
+      qb.eq.mockImplementation((col: string, id: string) => {
+        if (col === 'id') pinId = id
         return qb
       })
       qb.then = (resolve: any, reject: any) => {
@@ -109,6 +111,11 @@ function setupDb(opts: {
         ).then(resolve, reject)
       }
       return qb
+    }
+    if (table === 'tenant_settings') {
+      return createMockQueryBuilder({
+        data: opts.aiMetadataEnabled === undefined ? null : { ai_metadata_enabled: opts.aiMetadataEnabled },
+      })
     }
     if (table === 'blog_projects') {
       return createMockQueryBuilder({ data: { language: 'German', ai_context: null } })
@@ -278,5 +285,39 @@ describe('generate-metadata-single', () => {
         values: expect.objectContaining({ status: 'error' }),
       }),
     )
+  })
+})
+
+describe('generate-metadata-single with AI metadata switched off (ADR-0009)', () => {
+  it('refuses with 409, calls no Gemini and leaves the pin status alone', async () => {
+    const db = setupDb({ aiMetadataEnabled: false })
+
+    const { status, body } = await run({ pin_id: 'pin-1', tenant_id: 'tenant-1' })
+
+    expect(status).toBe(409)
+    expect(body).toEqual({ success: false, error: 'AI metadata generation is disabled for this account' })
+    expect(mockGeneratePinMetadata).not.toHaveBeenCalled()
+    expect(mockFetchImageBytes).not.toHaveBeenCalled()
+    expect(fake.client.rpc).not.toHaveBeenCalledWith('get_gemini_api_key', expect.anything())
+    expect(db.pinUpdates).toEqual([])
+  })
+
+  it('refuses the feedback path the same way', async () => {
+    const db = setupDb({ aiMetadataEnabled: false, previous: { title: 't', description: 'd', alt_text: 'a' } })
+
+    const { status } = await run({ pin_id: 'pin-1', tenant_id: 'tenant-1', feedback: 'kürzer' })
+
+    expect(status).toBe(409)
+    expect(mockGenerateWithFeedback).not.toHaveBeenCalled()
+    expect(db.pinUpdates).toEqual([])
+  })
+
+  it('generates when the setting is explicitly on', async () => {
+    setupDb({ aiMetadataEnabled: true })
+
+    const { status } = await run({ pin_id: 'pin-1', tenant_id: 'tenant-1' })
+
+    expect(status).toBe(200)
+    expect(mockGeneratePinMetadata).toHaveBeenCalledTimes(1)
   })
 })
