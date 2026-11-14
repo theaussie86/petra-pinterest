@@ -23,6 +23,7 @@ sequenceDiagram
     Note over Queue,BlogWorker: pg_cron kicks the worker every ~15s
     Queue->>BlogWorker: scrape_blog message
     BlogWorker->>BlogWorker: Discover sitemap URLs with lastmod
+    BlogWorker->>BlogWorker: Drop legal/utility pages (Impressum, AGB, Datenschutz, ...)
     BlogWorker->>DB: Fetch existing articles for project (incl. archived)
     BlogWorker->>Queue: queue_send_batch new + changed URLs into scrape_article
 
@@ -46,6 +47,10 @@ The server function returns immediately after enqueueing (fire-and-forget). New 
 - **Title:** Readability's title; if the page has exactly one `<h1>` contained in that title, the `<h1>` wins (strips the " - Blog name" suffix).
 - **Date:** Readability `publishedTime`, else `article:published_time` and similar meta tags, else JSON-LD `datePublished` (also inside `@graph`), else the first `<time datetime>`. `parsePublishedAt` turns it into ISO or `null`.
 - **No article:** if Readability returns nothing or under 250 characters of text, `NoArticleFoundError` is thrown and nothing is upserted. The queue retries and mails after the last attempt like any other failure.
+
+### Skipped sitemap URLs
+
+`supabase/functions/_shared/url-filter.ts` drops legal and utility pages before the diff: Impressum, Datenschutz/Privacy, AGB/Terms, Widerruf, Cookie pages, Kontakt, Warenkorb/Checkout/Mein Konto, Versand, newsletter confirmation and thank-you pages. Many sites stamp these with the build time as `lastmod`, so without the filter they came back as "updated" on every scan, Readability found no article, and each one ended in an error mail. Only the last segment of paths with at most two segments is matched (`/impressum`, `/de/impressum`), so article slugs like `/datenschutz-fuer-blogger` stay in. Taxonomy and product pages (`/tag/`, `/category/`, `/produkt-kategorie/`, `/products/`) are not filtered because some pins link to them. Already stored legal pages remain in `blog_articles`; they are simply no longer re-scraped.
 
 > **Note:** The duplicate check queries all articles for the project **including archived ones** (no `archived_at` filter). This ensures archived articles are not re-scraped. If an archived article's `lastmod` in the sitemap is newer than its `scraped_at`, it will be re-scraped and updated in place — but it remains archived.
 
