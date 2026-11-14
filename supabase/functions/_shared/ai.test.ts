@@ -1,7 +1,6 @@
 import { MockLanguageModelV3 } from 'ai/test'
 import {
   fetchImageBytes,
-  generateArticleFromHtml,
   generatePinMetadata,
   getModel,
   getRepairFireCount,
@@ -23,14 +22,6 @@ function mockModelReturning(text: string) {
       warnings: [],
     }),
   })
-}
-
-const article = {
-  title: 'Blog Post Title',
-  content: '# Blog Post\n\nContent here',
-  published_at: '2025-01-15',
-  author: 'Jane Doe',
-  excerpt: 'A summary',
 }
 
 const metadata = {
@@ -92,60 +83,6 @@ describe('fetchImageBytes() [edge mirror]', () => {
     await expect(fetchImageBytes('https://example.com/missing')).rejects.toThrow(
       /Failed to fetch image/
     )
-  })
-})
-
-describe('generateArticleFromHtml() [edge mirror]', () => {
-  it('returns a Zod-validated ScrapedArticle on the happy path (no repair)', async () => {
-    const result = await generateArticleFromHtml({
-      html: '<html><body><h1>Blog Post Title</h1></body></html>',
-      url: 'https://blog.com/post',
-      apiKey: 'unused',
-      model: mockModelReturning(JSON.stringify(article)),
-    })
-
-    expect(result).toEqual(article)
-    expect(getRepairFireCount()).toBe(0)
-  })
-
-  it('repairs malformed-but-recoverable model output and still validates', async () => {
-    const broken = '{"title":"T","content":"Line 1\nLine 2","excerpt":"E"}'
-    expect(() => JSON.parse(broken)).toThrow()
-
-    const result = await generateArticleFromHtml({
-      html: '<html></html>',
-      url: 'https://blog.com/post',
-      apiKey: 'unused',
-      model: mockModelReturning(broken),
-    })
-
-    expect(result.title).toBe('T')
-    expect(result.content).toBe('Line 1\nLine 2')
-    expect(getRepairFireCount()).toBe(1)
-  })
-
-  it('passes the URL through to the model prompt', async () => {
-    let seenPrompt = ''
-    const model = new MockLanguageModelV3({
-      doGenerate: async (options) => {
-        seenPrompt = JSON.stringify(options.prompt)
-        return {
-          finishReason: { unified: 'stop', raw: undefined },
-          usage: { inputTokens: { total: 1, noCache: 1, cacheRead: undefined, cacheWrite: undefined }, outputTokens: { total: 1, text: 1, reasoning: undefined } },
-          content: [{ type: 'text', text: JSON.stringify(article) }],
-          warnings: [],
-        }
-      },
-    })
-
-    await generateArticleFromHtml({
-      html: '<html></html>',
-      url: 'https://blog.com/unique-path',
-      apiKey: 'unused',
-      model,
-    })
-
-    expect(seenPrompt).toContain('https://blog.com/unique-path')
   })
 })
 

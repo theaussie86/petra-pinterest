@@ -248,14 +248,14 @@
   },
   "geminiApiKey": {
     "title": "Gemini API-Schlüssel",
-    "description": "Füge deinen Gemini API-Schlüssel hinzu, um KI-Metadaten-Generierung und Artikel-Scraping für dieses Projekt zu aktivieren.",
+    "description": "Füge deinen Gemini API-Schlüssel hinzu, um die KI-Metadaten-Generierung für dieses Projekt zu aktivieren. Das Artikel-Scraping braucht keinen Schlüssel.",
     "placeholder": "Gemini API-Schlüssel eingeben",
     "configured": "API-Schlüssel konfiguriert",
     "replace": "Schlüssel ersetzen",
     "remove": "Entfernen",
     "replaceDescription": "Gib einen neuen API-Schlüssel ein, um den bestehenden zu ersetzen.",
     "removeTitle": "Gemini API-Schlüssel entfernen?",
-    "removeMessage": "KI-Metadaten-Generierung und Artikel-Scraping funktionieren für dieses Projekt nicht mehr, bis ein neuer Schlüssel hinzugefügt wird. Bist du sicher?"
+    "removeMessage": "Die KI-Metadaten-Generierung funktioniert für dieses Projekt nicht mehr, bis ein neuer Schlüssel hinzugefügt wird. Das Artikel-Scraping läuft weiter. Bist du sicher?"
   },
   "pinterestConnection": {
     "title": "Pinterest-Verbindung",

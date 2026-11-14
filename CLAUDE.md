@@ -86,7 +86,7 @@ Scraping operations use `createServerFn` from TanStack Start (`src/lib/server/sc
 - `scrapeBlogFn` — enqueues one `scrape_blog` message via a tenant-checked RPC; a worker Edge Function discovers the sitemap and fans out into `scrape_article`
 - `scrapeSingleFn` — enqueues one `scrape_article` message via a tenant-checked RPC; the worker scrapes and upserts
 
-All scraping and metadata logic lives in the Supabase Edge Functions and their shared modules (`supabase/functions/_shared/`). The pgmq queues (`scrape_blog`, `scrape_article`, `generate_metadata`) are drained by worker Edge Functions kicked by `pg_cron` (ADR-0004). There is no Node-side copy of this logic and no Trigger.dev.
+All scraping and metadata logic lives in the Supabase Edge Functions and their shared modules (`supabase/functions/_shared/`). Article extraction uses Mozilla Readability (`_shared/extract-article.ts`, ADR-0008) and needs no Gemini key; only metadata generation uses the project's Gemini key. The pgmq queues (`scrape_blog`, `scrape_article`, `generate_metadata`) are drained by worker Edge Functions kicked by `pg_cron` (ADR-0004). There is no Node-side copy of this logic and no Trigger.dev.
 
 ### Database Migrations
 

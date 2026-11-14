@@ -248,14 +248,14 @@
   },
   "geminiApiKey": {
     "title": "Gemini API Key",
-    "description": "Add your Gemini API key to enable AI metadata generation and article scraping for this project.",
+    "description": "Add your Gemini API key to enable AI metadata generation for this project. Article scraping does not need a key.",
     "placeholder": "Enter your Gemini API key",
     "configured": "API key configured",
     "replace": "Replace Key",
     "remove": "Remove",
     "replaceDescription": "Enter a new API key to replace the existing one.",
     "removeTitle": "Remove Gemini API Key?",
-    "removeMessage": "AI metadata generation and article scraping will stop working for this project until a new key is added. Are you sure?"
+    "removeMessage": "AI metadata generation will stop working for this project until a new key is added. Article scraping keeps running. Are you sure?"
   },
   "pinterestConnection": {
     "title": "Pinterest Connection",
