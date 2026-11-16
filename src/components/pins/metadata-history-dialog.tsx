@@ -22,7 +22,10 @@ export function MetadataHistoryDialog({
   onOpenChange,
 }: MetadataHistoryDialogProps) {
   const { t, i18n } = useTranslation()
-  const { data: history, isLoading } = useMetadataHistory(pinId)
+  // Gate the query on `open`: the dialog is always mounted (closed) in the
+  // pin-row expansion and calendar sidebar, so a closed dialog must not fetch
+  // the metadata history (#150).
+  const { data: history, isLoading } = useMetadataHistory(pinId, { enabled: open })
   const restoreGeneration = useRestoreMetadataGeneration()
 
   const handleRestore = async (generationId: string) => {

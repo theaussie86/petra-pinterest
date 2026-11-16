@@ -22,7 +22,6 @@ import {
   pinsByProjectQueryOptions,
   pinStatusCountsQueryOptions,
   pinQueryOptions,
-  hasProcessingPin,
   type PinsPaginatedOptions,
 } from '@/lib/query/pins'
 import type { PinStatus } from '@/types/pins'
@@ -46,13 +45,18 @@ export function usePinsSuspense(projectId: string) {
   return useSuspenseQuery(pinsByProjectQueryOptions(projectId))
 }
 
+/**
+ * Article-detail pins. No polling: the article-detail route subscribes to `pins`
+ * UPDATE via `useRealtimeInvalidation` and invalidates `['pins', 'article',
+ * articleId]`, so status changes (e.g. metadata generation finishing) refresh
+ * the list without the redundant 3s DB poll (#150).
+ */
 export function useArticlePins(articleId: string) {
   return useQuery({
     queryKey: ['pins', 'article', articleId],
     queryFn: () => getPinsByArticle(articleId),
     enabled: !!articleId,
     staleTime: 30000,
-    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
 }
 

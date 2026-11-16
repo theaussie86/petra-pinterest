@@ -10,6 +10,7 @@ import { useArticleSuspense, useArchiveArticle, useUpdateArticleContent } from '
 import { articleQueryOptions } from '@/lib/query/articles'
 import { useBlogProject } from '@/lib/hooks/use-blog-projects'
 import { useArticlePins } from '@/lib/hooks/use-pins'
+import { useRealtimeInvalidation } from '@/lib/hooks/use-realtime'
 import { ArticlePinCard } from '@/components/pins/article-pin-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -65,6 +66,16 @@ function ArticleDetail() {
   const { data: article } = useArticleSuspense(articleId)
   const { data: project } = useBlogProject(projectId)
   const { data: articlePins } = useArticlePins(articleId)
+
+  // Replaces the former 3s poll: refresh the article's pins when any pin in the
+  // project changes status (e.g. metadata generation finishing). #153 later
+  // swaps this hook's transport to Broadcast; the call site stays the same.
+  useRealtimeInvalidation(
+    `pins:article:${articleId}`,
+    { event: 'UPDATE', table: 'pins', filter: `blog_project_id=eq.${projectId}` },
+    [['pins', 'article', articleId]],
+  )
+
   const archiveMutation = useArchiveArticle()
   const updateContentMutation = useUpdateArticleContent()
   const navigate = useNavigate()
