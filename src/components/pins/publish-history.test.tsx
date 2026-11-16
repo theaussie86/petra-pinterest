@@ -110,11 +110,12 @@ describe('PublishHistory', () => {
     render(<PublishHistory pinId="pin-42" />)
 
     expect(realtimeCalls).toHaveLength(1)
-    const [channel, config] = realtimeCalls[0] as [string, { event: string; table: string; filter?: string }]
-    expect(channel).toContain('pin-42')
+    const [config] = realtimeCalls[0] as [
+      { event: string; table: string; filter?: { column: string; value: string } },
+    ]
     expect(config.event).toBe('INSERT')
     expect(config.table).toBe('pin_publish_events')
-    expect(config.filter).toBe('pin_id=eq.pin-42')
+    expect(config.filter).toEqual({ column: 'pin_id', value: 'pin-42' })
   })
 
   it('shows a realtime-inserted event after the query refetches (no reload)', () => {

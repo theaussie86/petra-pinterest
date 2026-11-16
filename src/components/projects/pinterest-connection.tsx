@@ -33,7 +33,6 @@ export function PinterestConnection({
 }: PinterestConnectionProps) {
   const { t, i18n } = useTranslation()
   useRealtimeInvalidation(
-    `pinterest-connection:${blogProjectId}`,
     { event: 'UPDATE', table: 'pinterest_connections' },
     [['pinterest-connection', blogProjectId]],
   )

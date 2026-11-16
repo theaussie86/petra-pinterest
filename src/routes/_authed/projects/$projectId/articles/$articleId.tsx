@@ -71,8 +71,7 @@ function ArticleDetail() {
   // project changes status (e.g. metadata generation finishing). #153 later
   // swaps this hook's transport to Broadcast; the call site stays the same.
   useRealtimeInvalidation(
-    `pins:article:${articleId}`,
-    { event: 'UPDATE', table: 'pins', filter: `blog_project_id=eq.${projectId}` },
+    { event: 'UPDATE', table: 'pins', filter: { column: 'blog_project_id', value: projectId } },
     [['pins', 'article', articleId]],
   )
 

@@ -207,7 +207,7 @@ describe('PublishLog', () => {
   it('subscribes to realtime INSERTs on pin_publish_events (tenant-wide)', () => {
     render(<PublishLog />)
     expect(realtimeCalls).toHaveLength(1)
-    const [, config] = realtimeCalls[0] as [string, { event: string; table: string }]
+    const [config] = realtimeCalls[0] as [{ event: string; table: string }]
     expect(config.event).toBe('INSERT')
     expect(config.table).toBe('pin_publish_events')
   })

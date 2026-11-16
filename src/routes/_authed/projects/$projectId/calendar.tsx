@@ -75,8 +75,7 @@ function CalendarPage() {
   const searchParams = Route.useSearch()
 
   useRealtimeInvalidation(
-    `calendar-pins:${projectId}`,
-    { event: 'UPDATE', table: 'pins', filter: `blog_project_id=eq.${projectId}` },
+    { event: 'UPDATE', table: 'pins', filter: { column: 'blog_project_id', value: projectId } },
     [['pins', projectId]],
   )
 
