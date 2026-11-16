@@ -106,13 +106,13 @@ step, not an agent one.
 
    - `00032_generate_metadata_queue.sql` - pgmq extension, `generate_metadata`
      queue, `enqueue_generate_metadata`, `kick_queue_worker`, cron
-     `kick-generate-metadata-worker` (15s).
+     `kick-generate-metadata-worker` (15s, every minute since `00043`).
    - `00033_scrape_article_queue.sql` - `scrape_article` queue,
-     `enqueue_scrape_article`, cron `kick-scrape-article-worker` (15s).
+     `enqueue_scrape_article`, cron `kick-scrape-article-worker` (15s, every minute since `00043`).
    - `00034_scrape_blog_queue.sql` - `scrape_blog` queue, `queue_send_batch`,
      `enqueue_scrape_blog`, `enqueue_due_blog_scrapes`; **unschedules**
      `scrape-scheduled-daily` and schedules `enqueue-due-blog-scrapes-daily`
-     (`0 6 * * *`) + `kick-scrape-blog-worker` (15s).
+     (`0 6 * * *`) + `kick-scrape-blog-worker` (15s, every minute since `00043`).
 
    Verify after applying:
    ```sql

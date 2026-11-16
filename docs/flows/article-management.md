@@ -20,7 +20,7 @@ sequenceDiagram
     Server-->>Button: { success: true, dispatched: 1 }
     Button->>Button: Show green checkmark for 3s
 
-    Note over Queue,BlogWorker: pg_cron kicks the worker every ~15s
+    Note over Queue,BlogWorker: pg_cron kicks the worker every minute
     Queue->>BlogWorker: scrape_blog message
     BlogWorker->>BlogWorker: Discover sitemap URLs with lastmod
     BlogWorker->>BlogWorker: Drop legal/utility pages (Impressum, AGB, Datenschutz, ...)
