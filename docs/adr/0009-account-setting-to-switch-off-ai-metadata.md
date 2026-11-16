@@ -20,5 +20,6 @@ A Connected Agent created pins with finished metadata and then, asked to "take o
 ## Consequences
 
 - The project's Gemini key is only needed while the setting is on.
+- In the MCP path the setting is cached per user for up to 60s (#154), so flipping it takes up to a minute to change which tools a Connected Agent sees; the database still enforces it immediately (`enqueue_generate_metadata` raises).
 - `pin_metadata_generations` history stays readable when off; restore still works.
 - MCP tool descriptions can carry an `aiMetadataOffNote` and tools can be gated with `requiresAiMetadata`, analogous to `feature`.
