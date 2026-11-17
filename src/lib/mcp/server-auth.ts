@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type {
   Authenticate,
   FetchedImage,
@@ -10,6 +10,89 @@ import { protectedResourceMetadata, supabaseAuthIssuer } from './metadata'
 import { createBoardLister } from './boards-server'
 import { reconcilePublishJobs } from '@/lib/server/publish-sync'
 import { readAiMetadataEnabled } from '@/lib/ai-metadata-setting'
+import {
+  createTenantContextCache,
+  type CachedTenantContext,
+  type TenantContextCache,
+  type TenantContextLoad,
+} from './tenant-context-cache'
+
+/**
+ * Shared across requests on one Vercel instance so repeat MCP calls from the
+ * same user skip the `profiles`/`tenant_features`/`tenant_settings` reads for up
+ * to 60s (#154). The token is still verified on every call; only the tenant
+ * context is cached, never the RLS client.
+ */
+const tenantContextCache = createTenantContextCache()
+
+/** Builds the per-request RLS-scoped Supabase client from the caller's token. */
+type SupabaseClientFactory = (token: string) => SupabaseClient
+
+function defaultClientFactory(token: string): SupabaseClient {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_PUBLISHABLE_KEY!,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    },
+  )
+}
+
+/** Test seam for {@link createSupabaseAuthenticate}. */
+export interface SupabaseAuthenticateOptions {
+  cache?: TenantContextCache
+  createSupabaseClient?: SupabaseClientFactory
+}
+
+/**
+ * Reads `profiles`, `tenant_features` and the AI-metadata setting through the
+ * RLS-scoped client and resolves the cacheable tenant context. Only a complete,
+ * error-free read is `cacheable`: a missing profile, empty `tenant_id`, a failed
+ * feature read, or a failed settings read (whose "AI on" fallback applies to
+ * this call only) all keep the result out of the cache (ADR-0009).
+ */
+async function loadTenantContext(
+  supabase: SupabaseClient,
+  userId: string,
+  email: string,
+): Promise<TenantContextLoad> {
+  let settingsReadFailed = false
+  const [profileResult, featureResult, aiMetadataEnabled] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('tenant_id, display_name')
+      .eq('id', userId)
+      .single(),
+    supabase.from('tenant_features').select('feature'),
+    // Account setting (ADR-0009). A failed read only affects which tools are
+    // listed; enqueue_generate_metadata still refuses when the setting is off.
+    readAiMetadataEnabled(supabase).catch((err) => {
+      console.warn('[mcp] could not read tenant settings, assuming AI metadata on', err)
+      settingsReadFailed = true
+      return true
+    }),
+  ])
+
+  const profile = profileResult.data as
+    | { tenant_id?: string | null; display_name?: string | null }
+    | null
+  const featureRows = featureResult.data as { feature: string }[] | null
+
+  const cacheable =
+    !settingsReadFailed &&
+    !profileResult.error &&
+    !!profile?.tenant_id &&
+    !featureResult.error
+
+  const context: CachedTenantContext = {
+    tenantId: profile?.tenant_id ?? '',
+    displayName: profile?.display_name ?? email.split('@')[0] ?? 'User',
+    features: (featureRows ?? []).map((row) => row.feature as FeatureKey),
+    aiMetadataEnabled,
+  }
+  return { context, cacheable }
+}
 
 /**
  * Production {@link Authenticate}: verify a Bearer token against Supabase and
@@ -18,19 +101,19 @@ import { readAiMetadataEnabled } from '@/lib/ai-metadata-setting'
  * user — never the service role (ADR-0006).
  *
  * The token is verified with `getClaims(token)` (local verification when asymmetric
- * signing keys are enabled, otherwise a network call to Auth). Profile and
- * tenant features are then read through the same RLS-scoped client.
+ * signing keys are enabled, otherwise a network call to Auth) on every call. The
+ * profile, tenant features and AI-metadata setting are then read through the same
+ * RLS-scoped client, but cached per user for 60s so most tool calls make no auth
+ * DB reads at all (#154).
  */
-export function createSupabaseAuthenticate(): Authenticate {
+export function createSupabaseAuthenticate(
+  options: SupabaseAuthenticateOptions = {},
+): Authenticate {
+  const cache = options.cache ?? tenantContextCache
+  const makeClient = options.createSupabaseClient ?? defaultClientFactory
+
   return async (token: string): Promise<McpUserContext | null> => {
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-        auth: { persistSession: false, autoRefreshToken: false },
-      },
-    )
+    const supabase = makeClient(token)
 
     const { data, error } = await supabase.auth.getClaims(token)
     if (error || !data?.claims) {
@@ -49,28 +132,17 @@ export function createSupabaseAuthenticate(): Authenticate {
     const oauthClientId =
       typeof claims.client_id === 'string' ? claims.client_id : null
 
-    const [{ data: profile }, { data: featureRows }, aiMetadataEnabled] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('tenant_id, display_name')
-        .eq('id', userId)
-        .single(),
-      supabase.from('tenant_features').select('feature'),
-      // Account setting (ADR-0009). A failed read only affects which tools are
-      // listed; enqueue_generate_metadata still refuses when the setting is off.
-      readAiMetadataEnabled(supabase).catch((err) => {
-        console.warn('[mcp] could not read tenant settings, assuming AI metadata on', err)
-        return true
-      }),
-    ])
+    const tenantContext = await cache.resolve(userId, () =>
+      loadTenantContext(supabase, userId, email),
+    )
 
     return {
       userId,
-      tenantId: profile?.tenant_id ?? '',
-      displayName: profile?.display_name ?? email.split('@')[0] ?? 'User',
+      tenantId: tenantContext.tenantId,
+      displayName: tenantContext.displayName,
       email,
-      features: (featureRows ?? []).map((row) => row.feature as FeatureKey),
-      aiMetadataEnabled,
+      features: tenantContext.features,
+      aiMetadataEnabled: tenantContext.aiMetadataEnabled,
       oauthClientId,
       supabase,
       listBoards: createBoardLister(supabase),

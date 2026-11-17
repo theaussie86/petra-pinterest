@@ -73,8 +73,7 @@ export function PinsList({ projectId }: PinsListProps) {
   }, [columnVisibility])
 
   useRealtimeInvalidation(
-    `pins:${projectId}`,
-    { event: 'UPDATE', table: 'pins', filter: `blog_project_id=eq.${projectId}` },
+    { event: 'UPDATE', table: 'pins', filter: { column: 'blog_project_id', value: projectId } },
     [['pins', projectId]],
   )
 

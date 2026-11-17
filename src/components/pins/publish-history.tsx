@@ -19,8 +19,7 @@ export function PublishHistory({ pinId }: PublishHistoryProps) {
   // without a reload. If Realtime is unavailable the query still refetches when
   // the detail page mounts (staleTime fallback).
   useRealtimeInvalidation(
-    `pin-publish-events:${pinId}`,
-    { event: 'INSERT', table: 'pin_publish_events', filter: `pin_id=eq.${pinId}` },
+    { event: 'INSERT', table: 'pin_publish_events', filter: { column: 'pin_id', value: pinId } },
     [['pin-publish-events', pinId]],
   )
 

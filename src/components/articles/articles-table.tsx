@@ -30,8 +30,7 @@ export function ArticlesTable({ projectId }: ArticlesTableProps) {
   const [activeTab, setActiveTab] = useState<'active' | 'archived'>('active')
 
   useRealtimeInvalidation(
-    `articles:${projectId}`,
-    { event: 'INSERT', table: 'blog_articles', filter: `blog_project_id=eq.${projectId}` },
+    { event: 'INSERT', table: 'blog_articles', filter: { column: 'blog_project_id', value: projectId } },
     [['articles', projectId]],
   )
 

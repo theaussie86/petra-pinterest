@@ -116,7 +116,6 @@ export function PublishLog() {
   // clearing the filters. A row that doesn't match the current filters simply
   // doesn't surface.
   useRealtimeInvalidation(
-    'publish-log',
     { event: 'INSERT', table: 'pin_publish_events' },
     [['publish-events']],
   )

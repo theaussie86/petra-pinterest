@@ -13,12 +13,18 @@ function metadataErrorToast(error: unknown, fallbackKey: string) {
 /**
  * Query hook: Get metadata generation history for a pin.
  * Returns up to last 3 generations.
+ *
+ * The history dialog is always mounted (closed) in the pin-row expansion and
+ * calendar sidebar, so the query is gated on `options.enabled` (the dialog's
+ * `open` state) — a closed dialog issues no `pin_metadata_generations`
+ * request (#150). Defaults to enabled for callers that don't pass the option.
  */
-export function useMetadataHistory(pinId: string) {
+export function useMetadataHistory(pinId: string, options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true
   return useQuery({
     queryKey: ['metadata-history', pinId],
     queryFn: () => getMetadataHistory(pinId),
-    enabled: !!pinId,
+    enabled: enabled && !!pinId,
     staleTime: 30000,
   })
 }

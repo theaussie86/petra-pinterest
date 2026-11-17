@@ -9,12 +9,6 @@ import {
 } from '@/lib/api/pins'
 import type { Pin } from '@/types/pins'
 
-const PROCESSING_STATUSES = ['generating_metadata', 'generate_metadata']
-
-export function hasProcessingPin(pins: { status: string }[] | undefined) {
-  return pins?.some((p) => PROCESSING_STATUSES.includes(p.status)) ?? false
-}
-
 /**
  * The cache key for a project's full (non-paginated) pin list. Matches the
  * existing `['pins', projectId]` key so the pins-list/calendar realtime
@@ -30,15 +24,16 @@ export function pinsByProjectQueryKey(projectId: string) {
  * truth referenced by both the calendar route loader
  * (`ensureQueryData(pinsByProjectQueryOptions(projectId))`) and the consuming
  * `usePins`/`usePinsSuspense` hooks, so the scheduled pins arrive in the SSR HTML
- * and hydrate without a client refetch. Keeps the 3s poll while a pin is
- * processing metadata so the calendar reflects generation progress.
+ * and hydrate without a client refetch. No polling: status changes (e.g.
+ * metadata generation finishing) arrive via the pins-list/calendar realtime
+ * invalidation on `['pins', projectId]`, so the 3s poll was redundant DB
+ * load (#150).
  */
 export function pinsByProjectQueryOptions(projectId: string) {
   return queryOptions<Pin[]>({
     queryKey: pinsByProjectQueryKey(projectId),
     queryFn: () => getPinsByProject(projectId),
     staleTime: 30 * 1000,
-    refetchInterval: (query) => (hasProcessingPin(query.state.data) ? 3000 : false),
   })
 }
 

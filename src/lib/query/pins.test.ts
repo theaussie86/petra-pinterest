@@ -206,15 +206,7 @@ describe('pinsByProjectQueryOptions', () => {
     expect(pinsByProjectQueryOptions('proj1').staleTime).toBe(30 * 1000)
   })
 
-  it('polls every 3s while a pin is processing and stops otherwise', () => {
-    const refetchInterval = pinsByProjectQueryOptions('proj1').refetchInterval as (
-      query: any,
-    ) => number | false
-
-    expect(
-      refetchInterval({ state: { data: [{ status: 'generating_metadata' }] } }),
-    ).toBe(3000)
-    expect(refetchInterval({ state: { data: [{ status: 'published' }] } })).toBe(false)
-    expect(refetchInterval({ state: { data: undefined } })).toBe(false)
+  it('does not poll — status changes arrive via realtime, not a refetch interval (#150)', () => {
+    expect(pinsByProjectQueryOptions('proj1').refetchInterval).toBeUndefined()
   })
 })
