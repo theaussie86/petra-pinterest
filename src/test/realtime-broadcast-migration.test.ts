@@ -5,20 +5,12 @@ import { describe, expect, it } from 'vitest'
 // Guards the Realtime Broadcast cutover (issue #153, "Skalierung 2b"). The
 // additive migration must: emit a minimal tenant-scoped broadcast from triggers
 // on the four watched tables, route it to the private `tenant:<id>` topic, and
-// authorize reads via an RLS policy on realtime.messages. The follow-up
-// migration removes the tables from the postgres_changes publication.
+// authorize reads via an RLS policy on realtime.messages. The publication
+// removal (00045) ships in a separate PR after the frontend deploy.
 const additive = readFileSync(
   resolve(
     __dirname,
     '../../supabase/migrations/00044_realtime_broadcast_changes.sql',
-  ),
-  'utf8',
-)
-
-const cutover = readFileSync(
-  resolve(
-    __dirname,
-    '../../supabase/migrations/00045_drop_realtime_postgres_changes.sql',
   ),
   'utf8',
 )
@@ -75,25 +67,5 @@ describe('realtime broadcast migration (00044)', () => {
 
   it('stays additive: does not drop tables from the publication', () => {
     expect(additive).not.toMatch(/drop table/i)
-  })
-})
-
-describe('realtime postgres_changes cutover migration (00045)', () => {
-  it('removes the four tables from the supabase_realtime publication', () => {
-    expect(cutover).toMatch(
-      /alter publication supabase_realtime drop table public\.%I/i,
-    )
-    for (const t of [
-      'pins',
-      'blog_articles',
-      'pin_publish_events',
-      'pinterest_connections',
-    ]) {
-      expect(cutover).toContain(`'${t}'`)
-    }
-  })
-
-  it('guards the removal so re-running is a no-op', () => {
-    expect(cutover).toMatch(/if exists[\s\S]*from pg_publication_tables/i)
   })
 })
